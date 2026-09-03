@@ -428,7 +428,7 @@
                     const insertSql = `INSERT INTO ${tableName} (first_name, last_name, phone, email, address_full, city, state, postal_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                     db.run("BEGIN TRANSACTION;");
                     parsedData.forEach(row => {
-                        db.run(insertSql, [row.first_name || null, row.last_name || null, row.phone || null, "", row.address_full || null, row.city || null, row.state || null, row.postal_code || null]);
+                        db.run(insertSql, [row.first_name || null, row.last_name || null, row.phone || null, row.email || null, row.address_full || null, row.city || null, row.state || null, row.postal_code || null]);
                     });
                     db.run("COMMIT;");
 
