@@ -30,8 +30,8 @@
                 <input type="file" id="fileInput1" accept=".csv" multiple class="hidden">
                 <div id="placeholder1" class="text-center space-y-2 pointer-events-none">
                     <svg class="w-10 h-10 mx-auto text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                    <p class="text-sm font-medium text-slate-300">Drop CSV files for Primary Source here or <span class="text-indigo-400 underline">browse</span></p>
-                    <p class="text-xs text-slate-500">Locks Grid 1 to Phantom or Databorg format</p>
+                    <p class="text-sm font-medium text-slate-300">Drop CSV files here or <span class="text-indigo-400 underline">browse</span></p>
+                    <p class="text-xs text-slate-500">Supports Phantom, Databorg, or Go High Level CSVs</p>
                 </div>
                 <div id="fileGrid1" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
                     <button id="addMoreBtn1" type="button" class="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
@@ -47,7 +47,7 @@
             <div id="sourceBadge2" class="flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl">
                 <div class="flex items-center space-x-3">
                     <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    <span class="text-xs text-slate-400">Grid 2 Secondary Source (Optional):</span>
+                    <span class="text-xs text-slate-400">Grid 2 Source:</span>
                     <span id="sourceName2" class="text-xs font-bold px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">Locked</span>
                 </div>
                 <button onclick="resetGrid(2)" class="text-xs text-slate-400 hover:text-red-400 transition-colors">Clear Grid 2</button>
@@ -57,11 +57,38 @@
                 <input type="file" id="fileInput2" accept=".csv" multiple class="hidden">
                 <div id="placeholder2" class="text-center space-y-2 pointer-events-none">
                     <svg class="w-10 h-10 mx-auto text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-                    <p class="text-sm font-medium text-slate-300">Drop complementary files here to merge across sources</p>
-                    <p id="grid2RequirementText" class="text-xs text-amber-400 font-mono">Accepts only opposite source files</p>
+                    <p class="text-sm font-medium text-slate-300">Drop secondary source files here</p>
+                    <p id="grid2RequirementText" class="text-xs text-amber-400 font-mono"></p>
                 </div>
                 <div id="fileGrid2" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
                     <button id="addMoreBtn2" type="button" class="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
+                        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span class="text-xs font-medium">Add Files</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRID 3 CONTAINER (Hidden initially) -->
+        <div id="grid3Wrapper" class="hidden space-y-3 pt-2">
+            <div id="sourceBadge3" class="flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span class="text-xs text-slate-400">Grid 3 Source:</span>
+                    <span id="sourceName3" class="text-xs font-bold px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase tracking-wider">Locked</span>
+                </div>
+                <button onclick="resetGrid(3)" class="text-xs text-slate-400 hover:text-red-400 transition-colors">Clear Grid 3</button>
+            </div>
+
+            <div id="dropZone3" class="drop-zone relative border-2 border-dashed border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-500 transition-all rounded-2xl p-6 min-h-[160px] flex flex-col items-center justify-center cursor-pointer group">
+                <input type="file" id="fileInput3" accept=".csv" multiple class="hidden">
+                <div id="placeholder3" class="text-center space-y-2 pointer-events-none">
+                    <svg class="w-10 h-10 mx-auto text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    <p class="text-sm font-medium text-slate-300">Drop tertiary source files here</p>
+                    <p id="grid3RequirementText" class="text-xs text-purple-400 font-mono"></p>
+                </div>
+                <div id="fileGrid3" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
+                    <button id="addMoreBtn3" type="button" class="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
                         <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span class="text-xs font-medium">Add Files</span>
                     </button>
@@ -73,7 +100,7 @@
         <div id="actionPanel" class="hidden flex items-center justify-between p-4 bg-slate-800 border border-slate-700 rounded-xl">
             <span id="recordStatus" class="text-xs text-slate-400">Ready to process...</span>
             <button id="processBtn" onclick="processAllGrids()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2">
-                <span id="processBtnText">⚡ Process & Merge Files</span>
+                <span id="processBtnText">⚡ Process Files</span>
             </button>
         </div>
 
@@ -131,10 +158,11 @@
 
     <script>
         let db = null;
-        let grid1Files = [];
-        let grid2Files = [];
-        let grid1Source = null; // 'Phantom' or 'Databorg'
-        let grid2Source = null; // Opposite of grid1Source
+        const gridState = {
+            1: { files: [], source: null },
+            2: { files: [], source: null },
+            3: { files: [], source: null }
+        };
         let processedMasterData = [];
 
         // Initialize SQLite Wasm Engine
@@ -142,9 +170,7 @@
             .then(SQL => { db = new SQL.Database(); })
             .catch(err => showError("Failed to initialize SQLite Wasm: " + err.message));
 
-        // Setup drop zones for both grids
-        setupGridListeners(1);
-        setupGridListeners(2);
+        [1, 2, 3].forEach(setupGridListeners);
 
         function setupGridListeners(gridNum) {
             const dropZone = document.getElementById(`dropZone${gridNum}`);
@@ -153,8 +179,7 @@
 
             dropZone.addEventListener('click', (e) => {
                 if (e.target !== addMoreBtn && !addMoreBtn.contains(e.target)) {
-                    const files = gridNum === 1 ? grid1Files : grid2Files;
-                    if (files.length === 0) fileInput.click();
+                    if (gridState[gridNum].files.length === 0) fileInput.click();
                 }
             });
 
@@ -191,37 +216,37 @@
 
         async function processGridFiles(gridNum, files) {
             hideError();
-            const currentFiles = gridNum === 1 ? grid1Files : grid2Files;
+            const currentGrid = gridState[gridNum];
 
             for (const file of files) {
-                if (currentFiles.some(f => f.file.name === file.name && f.file.size === file.size)) continue;
+                if (currentGrid.files.some(f => f.file.name === file.name && f.file.size === file.size)) continue;
 
                 const fileInfo = await inspectCsvFile(file);
 
                 if (!fileInfo.source) {
-                    showError(`Could not identify source for "${file.name}".`);
+                    showError(`Could not identify source for "${file.name}". Unrecognized headers.`);
                     continue;
                 }
 
-                if (gridNum === 1) {
-                    if (grid1Source === null) {
-                        grid1Source = fileInfo.source;
-                        grid2Source = grid1Source === 'Phantom' ? 'Databorg' : 'Phantom';
-                        document.getElementById('grid2RequirementText').textContent = `Accepts only ${grid2Source} files`;
-                        document.getElementById('sourceName2').textContent = `Locked to ${grid2Source}`;
-                        document.getElementById('grid2Wrapper').classList.remove('hidden');
-                    } else if (grid1Source !== fileInfo.source) {
-                        showError(`Grid 1 is locked to ${grid1Source}. Cannot add "${file.name}".`);
-                        continue;
-                    }
-                } else if (gridNum === 2) {
-                    if (grid2Source !== fileInfo.source) {
-                        showError(`Grid 2 only accepts ${grid2Source} files. "${file.name}" is ${fileInfo.source}.`);
-                        continue;
-                    }
+                // Check for duplicate sources across grids
+                const activeSources = Object.entries(gridState)
+                    .filter(([g, data]) => parseInt(g) !== gridNum && data.source !== null)
+                    .map(([_, data]) => data.source);
+
+                if (activeSources.includes(fileInfo.source)) {
+                    showError(`Source "${fileInfo.source}" is already loaded in another grid.`);
+                    continue;
                 }
 
-                currentFiles.push({ file, source: fileInfo.source, recordCount: fileInfo.recordCount });
+                if (currentGrid.source === null) {
+                    currentGrid.source = fileInfo.source;
+                    updateDynamicGridVisibility();
+                } else if (currentGrid.source !== fileInfo.source) {
+                    showError(`Grid ${gridNum} is locked to ${currentGrid.source}. Cannot add "${file.name}".`);
+                    continue;
+                }
+
+                currentGrid.files.push({ file, source: fileInfo.source, recordCount: fileInfo.recordCount });
             }
 
             renderGrid(gridNum);
@@ -244,13 +269,48 @@
                     complete: () => {
                         const clean = headers.map(h => h.trim().toLowerCase());
                         let source = null;
-                        if (clean.includes('best_mobile')) source = 'Phantom';
+                        if (clean.includes('contact id') || clean.includes('contact_id')) source = 'GHL';
+                        else if (clean.includes('best_mobile')) source = 'Phantom';
                         else if (clean.includes('additional_phones') || clean.includes('quality') || (clean.includes('phone') && clean.includes('postal_code'))) source = 'Databorg';
                         
                         resolve({ headers, source, recordCount });
                     },
                     error: () => resolve({ headers: [], source: null, recordCount: 0 })
                 });
+            });
+        }
+
+        function updateDynamicGridVisibility() {
+            // Reveal Grid 2 if Grid 1 has files
+            if (gridState[1].files.length > 0) {
+                document.getElementById('grid2Wrapper').classList.remove('hidden');
+            } else {
+                document.getElementById('grid2Wrapper').classList.add('hidden');
+                document.getElementById('grid3Wrapper').classList.add('hidden');
+            }
+
+            // Reveal Grid 3 if Grid 2 has files
+            if (gridState[2].files.length > 0) {
+                document.getElementById('grid3Wrapper').classList.remove('hidden');
+            } else {
+                document.getElementById('grid3Wrapper').classList.add('hidden');
+            }
+
+            // Update remaining allowed source badges
+            const usedSources = Object.values(gridState).map(g => g.source).filter(Boolean);
+            const allSources = ['Phantom', 'Databorg', 'GHL'];
+
+            [2, 3].forEach(gNum => {
+                const allowed = allSources.filter(s => !usedSources.includes(s) || gridState[gNum].source === s);
+                const textEl = document.getElementById(`grid${gNum}RequirementText`);
+                const nameEl = document.getElementById(`sourceName${gNum}`);
+
+                if (gridState[gNum].source) {
+                    nameEl.textContent = gridState[gNum].source;
+                } else {
+                    nameEl.textContent = "Locked";
+                    textEl.textContent = `Accepts: ${allowed.join(' or ')}`;
+                }
             });
         }
 
@@ -268,24 +328,19 @@
         }
 
         function renderGrid(gridNum) {
-            const files = gridNum === 1 ? grid1Files : grid2Files;
+            const currentGrid = gridState[gridNum];
             const placeholder = document.getElementById(`placeholder${gridNum}`);
             const fileGrid = document.getElementById(`fileGrid${gridNum}`);
             const sourceBadge = document.getElementById(`sourceBadge${gridNum}`);
             const sourceName = document.getElementById(`sourceName${gridNum}`);
             const addMoreBtn = document.getElementById(`addMoreBtn${gridNum}`);
 
-            if (files.length === 0) {
-                if (gridNum === 1) {
-                    grid1Source = null;
-                    grid2Source = null;
-                    document.getElementById('grid2Wrapper').classList.add('hidden');
-                    grid2Files = [];
-                    renderGrid(2);
-                }
+            if (currentGrid.files.length === 0) {
+                currentGrid.source = null;
                 placeholder.classList.remove('hidden');
                 fileGrid.classList.add('hidden');
                 sourceBadge.classList.add('hidden');
+                updateDynamicGridVisibility();
                 updateActionPanelState();
                 return;
             }
@@ -293,12 +348,12 @@
             placeholder.classList.add('hidden');
             fileGrid.classList.remove('hidden');
             sourceBadge.classList.remove('hidden');
-            if (gridNum === 1) sourceName.textContent = grid1Source;
+            sourceName.textContent = currentGrid.source;
 
             const cards = fileGrid.querySelectorAll('.file-card');
             cards.forEach(card => card.remove());
 
-            files.forEach((item, index) => {
+            currentGrid.files.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = "file-card relative group/card flex flex-col items-center justify-between p-3 h-28 bg-slate-800 border border-slate-700 rounded-xl hover:border-slate-500 transition-all text-center";
                 card.innerHTML = `
@@ -317,58 +372,101 @@
                 fileGrid.insertBefore(card, addMoreBtn);
             });
 
+            updateDynamicGridVisibility();
             updateActionPanelState();
         }
 
         function updateActionPanelState() {
-            if (grid1Files.length === 0 && grid2Files.length === 0) {
+            const activeGrids = Object.values(gridState).filter(g => g.files.length > 0);
+            if (activeGrids.length === 0) {
                 actionPanel.classList.add('hidden');
                 document.getElementById('splitPanel').classList.add('hidden');
                 return;
             }
 
             actionPanel.classList.remove('hidden');
-            const totalRaw = grid1Files.reduce((a, b) => a + b.recordCount, 0) + grid2Files.reduce((a, b) => a + b.recordCount, 0);
+            const totalRaw = activeGrids.reduce((sum, g) => sum + g.files.reduce((a, b) => a + b.recordCount, 0), 0);
+            const sources = activeGrids.map(g => g.source);
 
-            if (grid2Files.length > 0) {
-                recordStatus.textContent = `Cross-Merge Ready: ${grid1Files.length} ${grid1Source} file(s) + ${grid2Files.length} ${grid2Source} file(s) (${totalRaw.toLocaleString()} raw rows).`;
-                document.getElementById('processBtnText').textContent = `⚡ Merge ${grid1Source} & ${grid2Source}`;
+            if (sources.includes('GHL') && sources.some(s => s !== 'GHL')) {
+                recordStatus.textContent = `Comparison Mode: Subtracting GHL records from [${sources.filter(s => s !== 'GHL').join(', ')}] (${totalRaw.toLocaleString()} total raw rows).`;
+                document.getElementById('processBtnText').textContent = `🔍 Compare & Filter Out GHL Records`;
+            } else if (activeGrids.length > 1) {
+                recordStatus.textContent = `Cross-Merge Mode: Merging [${sources.join(', ')}] (${totalRaw.toLocaleString()} total raw rows).`;
+                document.getElementById('processBtnText').textContent = `⚡ Merge ${sources.join(' + ')}`;
             } else {
-                recordStatus.textContent = `Single Source Mode: ${grid1Files.length} ${grid1Source} file(s) loaded (${totalRaw.toLocaleString()} raw rows).`;
-                document.getElementById('processBtnText').textContent = `⚡ Deduplicate ${grid1Source} Files`;
+                recordStatus.textContent = `Single Source Mode: ${activeGrids[0].files.length} ${sources[0]} file(s) loaded (${totalRaw.toLocaleString()} raw rows).`;
+                document.getElementById('processBtnText').textContent = `⚡ Process & Deduplicate ${sources[0]} Files`;
             }
         }
 
-        // --- MASTER ORCHESTRATION ---
+        // --- MASTER PROCESSING & COMPARISON ENGINE ---
         async function processAllGrids() {
-            if (!db || grid1Files.length === 0) return;
+            if (!db) return;
 
             try {
-                recordStatus.textContent = "Processing and building SQLite master tables...";
+                recordStatus.textContent = "Processing and building SQLite tables...";
 
-                // 1. Process Grid 1 into master table
-                await buildSourceMasterTable(grid1Source, grid1Files, "master_grid1");
+                const activeGrids = Object.values(gridState).filter(g => g.files.length > 0);
+                const hasGhl = activeGrids.some(g => g.source === 'GHL');
+                const nonGhlGrids = activeGrids.filter(g => g.source !== 'GHL');
 
-                // 2. If Grid 2 has files, process Grid 2 and run LEFT JOIN Merge
-                if (grid2Files.length > 0) {
-                    await buildSourceMasterTable(grid2Source, grid2Files, "master_grid2");
-
-                    // Standardize column names into master_grid1 via LEFT JOIN
-                    const mergeSql = `
-                        INSERT INTO master_grid1 (first_name, last_name, phone, email, street_address, city, state, postal_code)
-                        SELECT b.first_name, b.last_name, b.phone, b.email, b.street_address, b.city, b.state, b.postal_code
-                        FROM master_grid2 b
-                        LEFT JOIN master_grid1 a ON a.phone = b.phone
-                        WHERE a.phone IS NULL;
-                    `;
-                    db.run(mergeSql);
+                // 1. Process all non-GHL grids into master tables
+                for (let i = 0; i < nonGhlGrids.length; i++) {
+                    await buildSourceMasterTable(nonGhlGrids[i].source, nonGhlGrids[i].files, `master_non_ghl_${i + 1}`);
                 }
 
-                // 3. Extract final merged dataset
-                const result = db.exec("SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_grid1;");
+                // 2. Merge non-GHL master tables together if multiple exist
+                if (nonGhlGrids.length > 1) {
+                    for (let i = 1; i < nonGhlGrids.length; i++) {
+                        const mergeSql = `
+                            INSERT INTO master_non_ghl_1 (first_name, last_name, phone, email, street_address, city, state, postal_code)
+                            SELECT b.first_name, b.last_name, b.phone, b.email, b.street_address, b.city, b.state, b.postal_code
+                            FROM master_non_ghl_${i + 1} b
+                            LEFT JOIN master_non_ghl_1 a ON a.phone = b.phone
+                            WHERE a.phone IS NULL;
+                        `;
+                        db.run(mergeSql);
+                    }
+                }
+
+                // 3. Process GHL if present
+                if (hasGhl) {
+                    const ghlGrid = activeGrids.find(g => g.source === 'GHL');
+                    await buildSourceMasterTable('GHL', ghlGrid.files, 'master_ghl');
+                }
+
+                // 4. Determine final output dataset query
+                let finalQuery = "";
+
+                if (hasGhl && nonGhlGrids.length > 0) {
+                    // Comparison Mode: Subtract GHL records using '+1' country code prefixing
+                    finalQuery = `
+                        SELECT 
+                            COALESCE(b.first_name, '') AS first_name,
+                            COALESCE(b.last_name, '') AS last_name,
+                            b.phone,
+                            COALESCE(b.email, '') AS email,
+                            COALESCE(b.street_address, '') AS street_address,
+                            COALESCE(b.city, '') AS city,
+                            COALESCE(b.state, '') AS state,
+                            COALESCE(b.postal_code, '') AS postal_code
+                        FROM master_non_ghl_1 b
+                        LEFT JOIN master_ghl a ON '+1' || b.phone = a.phone
+                        WHERE a.phone IS NULL;
+                    `;
+                } else if (hasGhl && nonGhlGrids.length === 0) {
+                    // Pure GHL Export Mode
+                    finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_ghl;";
+                } else {
+                    // Pure Non-GHL Merged Export Mode
+                    finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_non_ghl_1;";
+                }
+
+                const result = db.exec(finalQuery);
 
                 if (result.length === 0 || !result[0].values.length) {
-                    showError("Resulting master table is empty.");
+                    showError("Resulting dataset is empty.");
                     return;
                 }
 
@@ -391,7 +489,7 @@
             }
         }
 
-        // Helper to ingest and standardize any source into unified schema: (first_name, last_name, phone, email, street_address, city, state, postal_code)
+        // Helper to ingest and standardize any source into unified schema
         async function buildSourceMasterTable(sourceType, fileList, masterTableName) {
             db.run(`DROP TABLE IF EXISTS ${masterTableName};`);
 
@@ -436,6 +534,32 @@
                         SELECT first_name, last_name, phone, email, address_full AS street_address, city, state, postal_code 
                         FROM ${tableName} 
                         WHERE phone IS NOT NULL AND TRIM(phone) != '' AND postal_code IS NOT NULL AND TRIM(postal_code) != ''
+                    `);
+
+                } else if (sourceType === 'GHL') {
+                    const columnsSchema = ["first_name", "last_name", "phone", "email", "street_address", "city", "state", "postal_code"].map(c => `"${c}" TEXT`).join(", ");
+                    db.run(`CREATE TABLE ${tableName} (${columnsSchema});`);
+
+                    const insertSql = `INSERT INTO ${tableName} (first_name, last_name, phone, email, street_address, city, state, postal_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
+                    db.run("BEGIN TRANSACTION;");
+                    parsedData.forEach(row => {
+                        db.run(insertSql, [
+                            row["First Name"] || row.first_name || null,
+                            row["Last Name"] || row.last_name || null,
+                            row["Phone"] || row.phone || null,
+                            "", // email set to empty as per requirement
+                            row["Address"] || row.street_address || null,
+                            row["City"] || row.city || null,
+                            row["State"] || row.state || null,
+                            row["Postal Code"] || row.postal_code || null
+                        ]);
+                    });
+                    db.run("COMMIT;");
+
+                    unionQueries.push(`
+                        SELECT first_name, last_name, phone, email, street_address, city, state, postal_code 
+                        FROM ${tableName} 
+                        WHERE phone IS NOT NULL AND TRIM(phone) != ''
                     `);
                 }
             }
@@ -536,7 +660,8 @@
         function executeExport() {
             const mode = document.querySelector('input[name="splitMode"]:checked').value;
             const totalRecords = processedMasterData.length;
-            const prefix = grid2Files.length > 0 ? `${grid1Source.toLowerCase()}_${grid2Source.toLowerCase()}_merged` : grid1Source.toLowerCase();
+            const activeSources = Object.values(gridState).map(g => g.source).filter(Boolean);
+            const prefix = activeSources.join('_').toLowerCase();
 
             if (totalRecords === 0) return;
 
@@ -596,21 +721,15 @@
 
         function removeFile(gridNum, index, event) {
             event.stopPropagation();
-            if (gridNum === 1) grid1Files.splice(index, 1);
-            else grid2Files.splice(index, 1);
+            gridState[gridNum].files.splice(index, 1);
             renderGrid(gridNum);
         }
 
         function resetGrid(gridNum) {
-            if (gridNum === 1) {
-                grid1Files = [];
-                grid2Files = [];
-            } else {
-                grid2Files = [];
-            }
+            gridState[gridNum].files = [];
+            gridState[gridNum].source = null;
             hideError();
-            renderGrid(1);
-            renderGrid(2);
+            renderGrid(gridNum);
         }
 
         function showError(msg) {
