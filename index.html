@@ -15,16 +15,20 @@
 
     <div class="w-full max-w-4xl space-y-4">
         
-        <!-- Detected Source Badge -->
-        <div id="sourceBadge" class="hidden flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl">
-            <div class="flex items-center space-x-2">
-                <span class="text-xs text-slate-400">Detected Source Mode:</span>
-                <span id="sourceName" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+        <!-- Detected & Locked Source Badge -->
+        <div id="sourceBadge" class="hidden flex items-center justify-between px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl shadow-lg">
+            <div class="flex items-center space-x-3">
+                <!-- Lock Icon -->
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <span class="text-xs text-slate-400">Grid Locked To Source:</span>
+                <span id="sourceName" class="text-xs font-bold px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
                     Unknown
                 </span>
             </div>
             <button onclick="resetGrid()" class="text-xs text-slate-400 hover:text-red-400 transition-colors">
-                Clear All Files
+                Clear All Files & Unlock
             </button>
         </div>
 
@@ -41,7 +45,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <p class="text-sm font-medium text-slate-300">Drop CSV files here or <span class="text-indigo-400 underline">browse</span></p>
-                <p class="text-xs text-slate-500">Supports Phantom CSVs (contains best_mobile)</p>
+                <p class="text-xs text-slate-500">First file will lock the grid to its source format</p>
             </div>
 
             <!-- Stacked File Grid -->
@@ -59,7 +63,7 @@
         <!-- Error Alert Banner -->
         <div id="errorBanner" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center justify-between">
             <span id="errorMessage">Invalid file format.</span>
-            <button onclick="hideError()" class="text-red-400 hover:text-white ml-2">✕</button>
+            <button onclick="hideError()" class="text-red-400 hover:text-white ml-2 font-bold">✕</button>
         </div>
 
     </div>
@@ -75,8 +79,8 @@
         const errorBanner = document.getElementById('errorBanner');
         const errorMessage = document.getElementById('errorMessage');
 
-        let loadedFiles = []; // Stores { file: File, source: 'Phantom' }
-        let currentActiveSource = null; // 'Phantom' or null
+        let loadedFiles = [];
+        let lockedSource = null; // Stores 'Phantom', 'Go High Level', 'Databorg', or null
 
         // Trigger file browser
         dropZone.addEventListener('click', (e) => {
@@ -118,11 +122,12 @@
             fileInput.value = '';
         });
 
-        // Inspect headers of CSV files asynchronously
+        // Read and classify uploaded CSVs
         async function processFiles(files) {
             hideError();
+
             for (const file of files) {
-                // Check for duplicates
+                // Ignore exact duplicate files
                 if (loadedFiles.some(f => f.file.name === file.name && f.file.size === file.size)) {
                     continue;
                 }
@@ -131,15 +136,17 @@
                 const detectedSource = identifySource(headers);
 
                 if (!detectedSource) {
-                    showError(`"${file.name}" is missing required Phantom columns (must contain "best_mobile").`);
+                    showError(`Could not identify source for "${file.name}". Unrecognized column headers.`);
                     continue;
                 }
 
-                // Enforce single source type rule
-                if (currentActiveSource === null) {
-                    currentActiveSource = detectedSource;
-                } else if (currentActiveSource !== detectedSource) {
-                    showError(`Cannot mix sources! Expected ${currentActiveSource} files, but "${file.name}" is ${detectedSource}.`);
+                // If grid is unlocked, lock it to the first file's source
+                if (lockedSource === null) {
+                    lockedSource = detectedSource;
+                } 
+                // Reject files that do not match the locked source
+                else if (lockedSource !== detectedSource) {
+                    showError(`Grid locked to ${lockedSource}. Cannot add "${file.name}" because it is from ${detectedSource}.`);
                     continue;
                 }
 
@@ -149,32 +156,38 @@
             renderGrid();
         }
 
-        // Parse first row of CSV to read columns
+        // Parse first row of CSV to extract headers
         function getCsvHeaders(file) {
             return new Promise((resolve) => {
                 Papa.parse(file, {
                     preview: 1,
                     header: true,
-                    complete: (results) => {
-                        resolve(results.meta.fields || []);
-                    },
+                    complete: (results) => resolve(results.meta.fields || []),
                     error: () => resolve([])
                 });
             });
         }
 
-        // Identify if the CSV belongs to Phantom
+        // Identify source by matching expected unique column names
         function identifySource(headers) {
-            const cleanHeaders = headers.map(h => h.trim().toLowerCase());
-            if (cleanHeaders.includes('best_mobile')) {
+            const clean = headers.map(h => h.trim().toLowerCase());
+
+            if (clean.includes('best_mobile')) {
                 return 'Phantom';
             }
+            if (clean.includes('contact_id') || clean.includes('phone_number')) {
+                return 'Go High Level';
+            }
+            if (clean.includes('databorg_id') || clean.includes('company_domain')) {
+                return 'Databorg';
+            }
+
             return null;
         }
 
         function renderGrid() {
             if (loadedFiles.length === 0) {
-                currentActiveSource = null;
+                lockedSource = null; // Unlock grid when empty
                 placeholder.classList.remove('hidden');
                 fileGrid.classList.add('hidden');
                 sourceBadge.classList.add('hidden');
@@ -184,9 +197,9 @@
             placeholder.classList.add('hidden');
             fileGrid.classList.remove('hidden');
             sourceBadge.classList.remove('hidden');
-            sourceName.textContent = currentActiveSource;
+            sourceName.textContent = lockedSource;
 
-            // Clear file cards except the 'Add More' button
+            // Clear cards except 'Add More' button
             const cards = fileGrid.querySelectorAll('.file-card');
             cards.forEach(card => card.remove());
 
