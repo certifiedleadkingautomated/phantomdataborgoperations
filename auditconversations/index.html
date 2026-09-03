@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Auditor</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-8 flex flex-col items-center justify-center">
+
+    <div class="w-full max-w-3xl space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl text-center space-y-2">
+            <h1 class="text-2xl font-bold tracking-tight text-white">🔍 GHL Conversation Auditor</h1>
+            <p class="text-xs text-slate-400">Paste client names copied from Google Sheets to stack them into interactive badges for bulk auditing.</p>
+        </div>
+
+        <!-- Tag Box Container -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
+            <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    Client Name Tag Input
+                </label>
+                <button onclick="removeAllTags()" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">
+                    Clear All Clients
+                </button>
+            </div>
+
+            <!-- Dynamic Tag Input Field -->
+            <div id="tagContainer" 
+                 class="w-full min-h-[140px] bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 items-start focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all cursor-text"
+                 onclick="focusInput()">
+                
+                <!-- Tag Pills will render here dynamically -->
+
+                <!-- Editable input field inside tag box -->
+                <input type="text" id="tagInput" 
+                       placeholder="Paste copied cells from Google Sheets here..." 
+                       class="bg-transparent text-xs text-slate-200 focus:outline-none flex-1 min-w-[200px] p-1">
+            </div>
+
+            <!-- Stats & Counter -->
+            <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 text-xs text-slate-400">
+                <span>Total Clients Enclosed:</span>
+                <span id="detectedCountBadge" class="font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
+                    0 Clients Loaded
+                </span>
+            </div>
+        </div>
+
+        <!-- Action Panel -->
+        <div id="actionPanel" class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+            <span id="statusText" class="text-xs text-slate-400">Waiting for client names...</span>
+            <button id="submitAuditBtn" onclick="runAudit()" disabled
+                class="px-5 py-2.5 bg-indigo-600/50 text-slate-400 font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-not-allowed">
+                <span>🚀 Run Secure Audit</span>
+            </button>
+        </div>
+
+        <!-- Results Table (Hidden initially) -->
+        <div id="resultsContainer" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 class="text-sm font-bold text-slate-200">Audit Results</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400">
+                            <th class="py-2 px-3">Client Name</th>
+                            <th class="py-2 px-3">Status</th>
+                            <th class="py-2 px-3">Data Summary</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody" class="divide-y divide-slate-700/50 font-mono">
+                        <!-- Audit rows will render here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Error Alert Banner -->
+        <div id="errorBanner" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center justify-between">
+            <span id="errorMessage">Error message here.</span>
+            <button onclick="hideError()" class="text-red-400 hover:text-white font-bold ml-2">✕</button>
+        </div>
+
+    </div>
+
+    <script>
+        const tagContainer = document.getElementById('tagContainer');
+        const tagInput = document.getElementById('tagInput');
+        const detectedCountBadge = document.getElementById('detectedCountBadge');
+        const submitAuditBtn = document.getElementById('submitAuditBtn');
+        const statusText = document.getElementById('statusText');
+
+        let clientTags = [];
+
+        function focusInput() {
+            tagInput.focus();
+        }
+
+        // Handle Paste Events (Specifically Google Sheets Tab/Newline Clipboard Formats)
+        tagInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            
+            // Split by line breaks (\n, \r) or tabs (\t)
+            const newNames = pastedText
+                .split(/[\n\r\t]+/)
+                .map(name => name.trim())
+                .filter(name => name.length > 0);
+
+            newNames.forEach(name => {
+                if (!clientTags.includes(name)) {
+                    clientTags.push(name);
+                }
+            });
+
+            tagInput.value = '';
+            renderTags();
+        });
+
+        // Handle Manual Typing (Enter or Comma)
+        tagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = tagInput.value.trim();
+                if (value && !clientTags.includes(value)) {
+                    clientTags.push(value);
+                    tagInput.value = '';
+                    renderTags();
+                }
+            } else if (e.key === 'Backspace' && tagInput.value === '' && clientTags.length > 0) {
+                // Backspace deletes last tag if input is empty
+                clientTags.pop();
+                renderTags();
+            }
+        });
+
+        function renderTags() {
+            // Clear existing tags except the input field
+            const existingTags = tagContainer.querySelectorAll('.tag-pill');
+            existingTags.forEach(tag => tag.remove());
+
+            clientTags.forEach((name, index) => {
+                const pill = document.createElement('div');
+                pill.className = "tag-pill inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-medium shadow-sm animate-fade-in";
+                pill.innerHTML = `
+                    <span>${name}</span>
+                    <button onclick="removeSingleTag(${index}, event)" class="text-indigo-400 hover:text-red-400 font-bold ml-1 focus:outline-none">
+                        ✕
+                    </button>
+                `;
+                tagContainer.insertBefore(pill, tagInput);
+            });
+
+            // Update Stats & Action Button
+            detectedCountBadge.textContent = `${clientTags.length} Client(s) Loaded`;
+
+            if (clientTags.length > 0) {
+                submitAuditBtn.disabled = false;
+                submitAuditBtn.className = "px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-pointer";
+                statusText.textContent = "Ready to audit through Cloudflare Worker.";
+            } else {
+                submitAuditBtn.disabled = true;
+                submitAuditBtn.className = "px-5 py-2.5 bg-indigo-600/50 text-slate-400 font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-not-allowed";
+                statusText.textContent = "Waiting for client names...";
+            }
+        }
+
+        function removeSingleTag(index, event) {
+            event.stopPropagation();
+            clientTags.splice(index, 1);
+            renderTags();
+        }
+
+        function removeAllTags() {
+            clientTags = [];
+            tagInput.value = '';
+            renderTags();
+            document.getElementById('resultsContainer').classList.add('hidden');
+        }
+
+        async function runAudit() {
+            if (clientTags.length === 0) return;
+
+            statusText.textContent = "Auditing clients via Cloudflare Worker Proxy...";
+            submitAuditBtn.disabled = true;
+
+            try {
+                // NEXT STEP: Cloudflare Worker Integration
+                console.log("Client names ready for Cloudflare Worker audit:", clientTags);
+
+            } catch (err) {
+                showError("Audit Error: " + err.message);
+                statusText.textContent = "Audit failed.";
+            } finally {
+                submitAuditBtn.disabled = false;
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('errorMessage').textContent = msg;
+            document.getElementById('errorBanner').classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorBanner.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
