@@ -223,7 +223,6 @@
             });
         }
 
-        // Identify Source Format
         function identifySource(headers) {
             const clean = headers.map(h => h.trim().toLowerCase());
             if (clean.includes('best_mobile')) return 'Phantom';
@@ -288,7 +287,6 @@
             });
         }
 
-        // Router for execution based on locked source
         function processFilesBySource() {
             if (lockedSource === 'Phantom') {
                 processPhantomFiles();
@@ -510,14 +508,37 @@
             const index = container.children.length + 1;
             
             const row = document.createElement('div');
-            row.className = "manual-row flex items-center space-x-3";
+            row.className = "manual-row flex items-center space-x-2";
             row.innerHTML = `
-                <span class="text-xs text-slate-400 w-16">Part ${index}:</span>
-                <input type="number" min="1" value="1000" oninput="updateManualAllocations()" 
+                <span class="text-xs text-slate-400 w-14">Part ${index}:</span>
+                <input type="number" min="1" value="0" oninput="updateManualAllocations()" 
                        class="manual-count-input flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <button onclick="autoFillRemainder(this)" type="button" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-indigo-300 text-[10px] font-medium rounded-lg transition-colors" title="Fill with remaining unallocated records">
+                    Auto-Fill
+                </button>
                 <button onclick="this.parentElement.remove(); updateManualAllocations();" class="text-xs text-slate-500 hover:text-red-400 font-bold px-1">✕</button>
             `;
             container.appendChild(row);
+            updateManualAllocations();
+        }
+
+        // Fills current input field with whatever unallocated balance remains
+        function autoFillRemainder(buttonEl) {
+            const row = buttonEl.parentElement;
+            const input = row.querySelector('.manual-count-input');
+            
+            // Temporarily set current input to 0 to calculate remainder without counting itself
+            input.value = 0;
+            
+            const inputs = document.querySelectorAll('.manual-count-input');
+            let totalAllocatedOthers = 0;
+            inputs.forEach(i => {
+                totalAllocatedOthers += parseInt(i.value) || 0;
+            });
+
+            const remaining = processedMasterData.length - totalAllocatedOthers;
+            input.value = Math.max(0, remaining);
+            
             updateManualAllocations();
         }
 
