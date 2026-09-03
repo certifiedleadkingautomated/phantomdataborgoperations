@@ -13,8 +13,21 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-8 flex flex-col items-center justify-center">
 
-    <div class="w-full max-w-4xl space-y-6">
+    <div class="w-full max-w-4xl space-y-4">
         
+        <!-- Detected Source Badge -->
+        <div id="sourceBadge" class="hidden flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl">
+            <div class="flex items-center space-x-2">
+                <span class="text-xs text-slate-400">Detected Source Mode:</span>
+                <span id="sourceName" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Unknown
+                </span>
+            </div>
+            <button onclick="resetGrid()" class="text-xs text-slate-400 hover:text-red-400 transition-colors">
+                Clear All Files
+            </button>
+        </div>
+
         <!-- Drop Zone Container -->
         <div id="dropZone" 
              class="relative border-2 border-dashed border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-500 transition-all rounded-2xl p-6 min-h-[180px] flex flex-col items-center justify-center cursor-pointer group">
@@ -28,7 +41,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <p class="text-sm font-medium text-slate-300">Drop CSV files here or <span class="text-indigo-400 underline">browse</span></p>
-                <p class="text-xs text-slate-500">Supports multiple CSV files</p>
+                <p class="text-xs text-slate-500">Supports Phantom CSVs (contains best_mobile)</p>
             </div>
 
             <!-- Stacked File Grid -->
@@ -43,6 +56,12 @@
             </div>
         </div>
 
+        <!-- Error Alert Banner -->
+        <div id="errorBanner" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center justify-between">
+            <span id="errorMessage">Invalid file format.</span>
+            <button onclick="hideError()" class="text-red-400 hover:text-white ml-2">✕</button>
+        </div>
+
     </div>
 
     <script>
@@ -51,10 +70,15 @@
         const placeholder = document.getElementById('placeholder');
         const fileGrid = document.getElementById('fileGrid');
         const addMoreBtn = document.getElementById('addMoreBtn');
+        const sourceBadge = document.getElementById('sourceBadge');
+        const sourceName = document.getElementById('sourceName');
+        const errorBanner = document.getElementById('errorBanner');
+        const errorMessage = document.getElementById('errorMessage');
 
-        let loadedFiles = [];
+        let loadedFiles = []; // Stores { file: File, source: 'Phantom' }
+        let currentActiveSource = null; // 'Phantom' or null
 
-        // Click to trigger file selection
+        // Trigger file browser
         dropZone.addEventListener('click', (e) => {
             if (e.target !== addMoreBtn && !addMoreBtn.contains(e.target)) {
                 if (loadedFiles.length === 0) fileInput.click();
@@ -66,80 +90,121 @@
             fileInput.click();
         });
 
-        // Drag and drop events
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
+        // Drag and drop handlers
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 dropZone.classList.add('border-indigo-500', 'bg-slate-800');
-            }, false);
+            });
         });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => {
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 dropZone.classList.remove('border-indigo-500', 'bg-slate-800');
-            }, false);
+            });
         });
 
         dropZone.addEventListener('drop', (e) => {
             const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
-            handleFiles(files);
+            processFiles(files);
         });
 
         fileInput.addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            handleFiles(files);
-            fileInput.value = ''; // Reset input
+            processFiles(files);
+            fileInput.value = '';
         });
 
-        function handleFiles(files) {
-            if (!files.length) return;
-            
-            files.forEach(file => {
-                // Prevent exact duplicate files from adding twice
-                if (!loadedFiles.some(f => f.name === file.name && f.size === file.size)) {
-                    loadedFiles.push(file);
+        // Inspect headers of CSV files asynchronously
+        async function processFiles(files) {
+            hideError();
+            for (const file of files) {
+                // Check for duplicates
+                if (loadedFiles.some(f => f.file.name === file.name && f.file.size === file.size)) {
+                    continue;
                 }
-            });
+
+                const headers = await getCsvHeaders(file);
+                const detectedSource = identifySource(headers);
+
+                if (!detectedSource) {
+                    showError(`"${file.name}" is missing required Phantom columns (must contain "best_mobile").`);
+                    continue;
+                }
+
+                // Enforce single source type rule
+                if (currentActiveSource === null) {
+                    currentActiveSource = detectedSource;
+                } else if (currentActiveSource !== detectedSource) {
+                    showError(`Cannot mix sources! Expected ${currentActiveSource} files, but "${file.name}" is ${detectedSource}.`);
+                    continue;
+                }
+
+                loadedFiles.push({ file, source: detectedSource, headers });
+            }
 
             renderGrid();
         }
 
+        // Parse first row of CSV to read columns
+        function getCsvHeaders(file) {
+            return new Promise((resolve) => {
+                Papa.parse(file, {
+                    preview: 1,
+                    header: true,
+                    complete: (results) => {
+                        resolve(results.meta.fields || []);
+                    },
+                    error: () => resolve([])
+                });
+            });
+        }
+
+        // Identify if the CSV belongs to Phantom
+        function identifySource(headers) {
+            const cleanHeaders = headers.map(h => h.trim().toLowerCase());
+            if (cleanHeaders.includes('best_mobile')) {
+                return 'Phantom';
+            }
+            return null;
+        }
+
         function renderGrid() {
             if (loadedFiles.length === 0) {
+                currentActiveSource = null;
                 placeholder.classList.remove('hidden');
                 fileGrid.classList.add('hidden');
+                sourceBadge.classList.add('hidden');
                 return;
             }
 
             placeholder.classList.add('hidden');
             fileGrid.classList.remove('hidden');
+            sourceBadge.classList.remove('hidden');
+            sourceName.textContent = currentActiveSource;
 
-            // Clear cards except the 'Add More' button
+            // Clear file cards except the 'Add More' button
             const cards = fileGrid.querySelectorAll('.file-card');
             cards.forEach(card => card.remove());
 
-            // Render each file card side by side
-            loadedFiles.forEach((file, index) => {
+            loadedFiles.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = "file-card relative group/card flex flex-col items-center justify-center p-3 h-24 bg-slate-800 border border-slate-700 rounded-xl hover:border-slate-500 transition-all text-center";
                 
                 card.innerHTML = `
-                    <!-- Remove File Button -->
                     <button onclick="removeFile(${index}, event)" class="absolute -top-1.5 -right-1.5 bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white rounded-full p-1 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
-                    <!-- File Icon -->
                     <svg class="w-6 h-6 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    <!-- File Name -->
-                    <p class="text-xs font-medium text-slate-200 truncate w-full px-1" title="${file.name}">${file.name}</p>
-                    <span class="text-[10px] text-slate-400 mt-0.5">${(file.size / 1024).toFixed(1)} KB</span>
+                    <p class="text-xs font-medium text-slate-200 truncate w-full px-1" title="${item.file.name}">${item.file.name}</p>
+                    <span class="text-[10px] text-slate-400 mt-0.5">${(item.file.size / 1024).toFixed(1)} KB</span>
                 `;
 
                 fileGrid.insertBefore(card, addMoreBtn);
@@ -150,6 +215,21 @@
             event.stopPropagation();
             loadedFiles.splice(index, 1);
             renderGrid();
+        }
+
+        function resetGrid() {
+            loadedFiles = [];
+            hideError();
+            renderGrid();
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorBanner.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorBanner.classList.add('hidden');
         }
     </script>
 </body>
