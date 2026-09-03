@@ -55,11 +55,61 @@
             </div>
         </div>
 
-        <!-- Action Panel -->
+        <!-- Initial Process Action Panel -->
         <div id="actionPanel" class="hidden flex items-center justify-between p-4 bg-slate-800 border border-slate-700 rounded-xl">
             <span id="recordStatus" class="text-xs text-slate-400">Ready to process files...</span>
             <button id="processBtn" onclick="processPhantomFiles()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2">
                 <span>⚡ Unpivot & Deduplicate Phantom Files</span>
+            </button>
+        </div>
+
+        <!-- Split & Export Options Panel (Shown after processing) -->
+        <div id="splitPanel" class="hidden bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h3 class="text-sm font-bold text-slate-200">Export & Split Configuration</h3>
+                <span id="totalRecordsBadge" class="text-xs font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
+                    0 Records Ready
+                </span>
+            </div>
+
+            <!-- Mode Selector -->
+            <div class="grid grid-cols-2 gap-4">
+                <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500">
+                    <input type="radio" name="splitMode" value="even" checked onchange="toggleSplitMode('even')" class="text-indigo-600 focus:ring-0">
+                    <span class="text-xs font-medium text-slate-200">Split Evenly into N Files</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500">
+                    <input type="radio" name="splitMode" value="manual" onchange="toggleSplitMode('manual')" class="text-indigo-600 focus:ring-0">
+                    <span class="text-xs font-medium text-slate-200">Manual Custom Allocation</span>
+                </label>
+            </div>
+
+            <!-- Mode 1: Even Split Inputs -->
+            <div id="evenModeControls" class="flex items-center space-x-4 bg-slate-900/30 p-4 rounded-xl border border-slate-800">
+                <label class="text-xs text-slate-300">Number of Output Files (N):</label>
+                <input type="number" id="evenPartsInput" min="1" max="50" value="2" 
+                       class="w-20 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <span id="evenEstimate" class="text-xs text-slate-400">~0 records per file</span>
+            </div>
+
+            <!-- Mode 2: Manual Custom Inputs -->
+            <div id="manualModeControls" class="hidden space-y-3 bg-slate-900/30 p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Allocate exact record counts per file:</span>
+                    <button onclick="addManualFileRow()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium">+ Add File Part</button>
+                </div>
+                <div id="manualInputsList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic rows will render here -->
+                </div>
+                <div class="text-xs flex justify-between pt-2 border-t border-slate-800">
+                    <span class="text-slate-400">Total Allocated: <strong id="manualAllocatedCount" class="text-white">0</strong></span>
+                    <span id="manualRemainingText" class="text-slate-400">Remaining: <strong id="manualRemainingCount" class="text-amber-400">0</strong></span>
+                </div>
+            </div>
+
+            <!-- Download Trigger -->
+            <button id="downloadSplitBtn" onclick="executeExport()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-all shadow-lg flex items-center justify-center space-x-2">
+                <span>📥 Download Split CSV File(s)</span>
             </button>
         </div>
 
@@ -87,6 +137,7 @@
         let loadedFiles = [];
         let lockedSource = null;
         let db = null;
+        let processedMasterData = []; // Store master records in memory for splitting
 
         // Initialize SQLite WebAssembly Instance
         initSqlJs({ locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` })
@@ -179,6 +230,7 @@
                 fileGrid.classList.add('hidden');
                 sourceBadge.classList.add('hidden');
                 actionPanel.classList.add('hidden');
+                document.getElementById('splitPanel').classList.add('hidden');
                 return;
             }
 
@@ -207,19 +259,16 @@
             });
         }
 
-        // Execute Phantom Unpivot, Merge, Deduplicate, and Export
+        // Execute Phantom Unpivot, Merge, and Deduplicate
         async function processPhantomFiles() {
             if (!db || loadedFiles.length === 0) return;
 
             try {
                 recordStatus.textContent = "Processing files in SQLite Wasm...";
 
-                // Reset Database Tables
                 db.run("DROP TABLE IF EXISTS master_phantom;");
-                
                 const unionQueries = [];
 
-                // 1. Load each CSV file into its own raw SQLite table
                 for (let i = 0; i < loadedFiles.length; i++) {
                     const tableName = `raw_phantom_${i + 1}`;
                     db.run(`DROP TABLE IF EXISTS ${tableName};`);
@@ -227,7 +276,6 @@
                     const parsedData = await parseCsvFile(loadedFiles[i].file);
                     if (!parsedData.length) continue;
 
-                    // Ensure key columns exist with safe fallback
                     const columnsSchema = ["first_name", "last_name", "best_mobile", "best_mobile_2", "email", "street_address", "city", "state", "zip"]
                         .map(c => `"${c}" TEXT`).join(", ");
                     
@@ -242,7 +290,7 @@
                             row.last_name || null,
                             row.best_mobile || null,
                             row.best_mobile_2 || null,
-                            row.email || null,
+                            "", // Wipes out email values to empty string
                             row.street_address || null,
                             row.city || null,
                             row.state || null,
@@ -251,7 +299,6 @@
                     });
                     db.run("COMMIT;");
 
-                    // Build UNION query parts for best_mobile AND best_mobile_2 (renamed to best_mobile)
                     unionQueries.push(`
                         SELECT first_name, last_name, best_mobile, email, street_address, city, state, zip FROM ${tableName} WHERE best_mobile IS NOT NULL AND TRIM(best_mobile) != ''
                         UNION ALL
@@ -264,7 +311,6 @@
                     return;
                 }
 
-                // 2. Run consolidated query to create deduplicated master table
                 const finalMasterSql = `
                     CREATE TABLE master_phantom AS
                     WITH combined_sources AS (
@@ -277,7 +323,6 @@
 
                 db.run(finalMasterSql);
 
-                // 3. Extract final master dataset from SQLite
                 const result = db.exec("SELECT first_name, last_name, best_mobile, email, street_address, city, state, zip FROM master_phantom;");
                 
                 if (result.length === 0 || !result[0].values.length) {
@@ -285,22 +330,129 @@
                     return;
                 }
 
-                // Format records back to object array for PapaParse CSV Export
                 const columns = result[0].columns;
-                const rows = result[0].values.map(val => {
+                processedMasterData = result[0].values.map(val => {
                     const obj = {};
                     columns.forEach((col, idx) => { obj[col] = val[idx]; });
                     return obj;
                 });
 
-                recordStatus.textContent = `Completed! ${rows.length} unique contact records generated.`;
-
-                // 4. Trigger Automatic CSV Download
-                downloadCsv(rows, `phantom_master_deduplicated_${Date.now()}.csv`);
+                // Display split controls panel
+                document.getElementById('totalRecordsBadge').textContent = `${processedMasterData.length} Records Ready`;
+                actionPanel.classList.add('hidden');
+                document.getElementById('splitPanel').classList.remove('hidden');
+                updateEvenEstimate();
+                setupManualDefaultRows();
 
             } catch (err) {
                 console.error(err);
                 showError("Processing Error: " + err.message);
+            }
+        }
+
+        // --- Split & Download Manager ---
+
+        function toggleSplitMode(mode) {
+            if (mode === 'even') {
+                document.getElementById('evenModeControls').classList.remove('hidden');
+                document.getElementById('manualModeControls').classList.add('hidden');
+            } else {
+                document.getElementById('evenModeControls').classList.add('hidden');
+                document.getElementById('manualModeControls').classList.remove('hidden');
+                updateManualAllocations();
+            }
+        }
+
+        document.getElementById('evenPartsInput').addEventListener('input', updateEvenEstimate);
+
+        function updateEvenEstimate() {
+            const parts = parseInt(document.getElementById('evenPartsInput').value) || 1;
+            const avg = Math.ceil(processedMasterData.length / parts);
+            document.getElementById('evenEstimate').textContent = `~${avg} records per file`;
+        }
+
+        function setupManualDefaultRows() {
+            const container = document.getElementById('manualInputsList');
+            container.innerHTML = '';
+            addManualFileRow();
+            addManualFileRow();
+            updateManualAllocations();
+        }
+
+        function addManualFileRow() {
+            const container = document.getElementById('manualInputsList');
+            const index = container.children.length + 1;
+            
+            const row = document.createElement('div');
+            row.className = "manual-row flex items-center space-x-3";
+            row.innerHTML = `
+                <span class="text-xs text-slate-400 w-16">Part ${index}:</span>
+                <input type="number" min="1" value="1000" oninput="updateManualAllocations()" 
+                       class="manual-count-input flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <button onclick="this.parentElement.remove(); updateManualAllocations();" class="text-xs text-slate-500 hover:text-red-400 font-bold px-1">✕</button>
+            `;
+            container.appendChild(row);
+            updateManualAllocations();
+        }
+
+        function updateManualAllocations() {
+            const inputs = document.querySelectorAll('.manual-count-input');
+            let totalAllocated = 0;
+            
+            inputs.forEach(input => {
+                totalAllocated += parseInt(input.value) || 0;
+            });
+
+            const totalAvailable = processedMasterData.length;
+            const remaining = totalAvailable - totalAllocated;
+
+            document.getElementById('manualAllocatedCount').textContent = totalAllocated;
+            const remainingEl = document.getElementById('manualRemainingCount');
+            remainingEl.textContent = remaining;
+
+            if (remaining < 0) {
+                remainingEl.className = "text-red-400 font-bold";
+                document.getElementById('manualRemainingText').lastChild.textContent = `${Math.abs(remaining)} Over Allocated!`;
+            } else if (remaining > 0) {
+                remainingEl.className = "text-amber-400 font-bold";
+            } else {
+                remainingEl.className = "text-emerald-400 font-bold";
+            }
+        }
+
+        function executeExport() {
+            const mode = document.querySelector('input[name="splitMode"]:checked').value;
+            const totalRecords = processedMasterData.length;
+
+            if (totalRecords === 0) return;
+
+            if (mode === 'even') {
+                const numFiles = parseInt(document.getElementById('evenPartsInput').value) || 1;
+                const chunkSize = Math.ceil(totalRecords / numFiles);
+
+                for (let i = 0; i < numFiles; i++) {
+                    const chunk = processedMasterData.slice(i * chunkSize, (i + 1) * chunkSize);
+                    if (chunk.length > 0) {
+                        downloadCsv(chunk, `phantom_master_part_${i + 1}_of_${numFiles}.csv`);
+                    }
+                }
+            } else {
+                const inputs = document.querySelectorAll('.manual-count-input');
+                let currentIndex = 0;
+
+                inputs.forEach((input, i) => {
+                    const count = parseInt(input.value) || 0;
+                    if (count > 0 && currentIndex < totalRecords) {
+                        const chunk = processedMasterData.slice(currentIndex, currentIndex + count);
+                        currentIndex += count;
+                        downloadCsv(chunk, `phantom_master_custom_part_${i + 1}.csv`);
+                    }
+                });
+
+                if (currentIndex < totalRecords) {
+                    const remainingChunk = processedMasterData.slice(currentIndex);
+                    downloadCsv(remainingChunk, `phantom_master_custom_part_remaining.csv`);
+                }
             }
         }
 
@@ -336,6 +488,7 @@
 
         function resetGrid() {
             loadedFiles = [];
+            processedMasterData = [];
             hideError();
             renderGrid();
         }
