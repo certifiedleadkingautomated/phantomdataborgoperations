@@ -269,7 +269,7 @@
                     complete: () => {
                         const clean = headers.map(h => h.trim().toLowerCase());
                         let source = null;
-                        if (clean.includes('contact id') || clean.includes('contact_id')) source = 'GHL';
+                        if (clean.includes('contact id')) source = 'GHL';
                         else if (clean.includes('best_mobile')) source = 'Phantom';
                         else if (clean.includes('additional_phones') || clean.includes('quality') || (clean.includes('phone') && clean.includes('postal_code'))) source = 'Databorg';
                         
