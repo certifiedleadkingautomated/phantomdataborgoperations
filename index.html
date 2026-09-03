@@ -3,45 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQLite Engine Test</title>
-    <!-- Tailwind CSS for styling -->
+    <title>Data Processor</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- sql.js WebAssembly build for client-side SQLite -->
+    <!-- sql.js WebAssembly -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <!-- PapaParse for parsing CSVs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-6 text-center">
+<body class="bg-slate-900 text-slate-100 min-h-screen p-8 flex flex-col items-center justify-center">
 
-    <div class="max-w-md bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-xl">
-        <h1 class="text-2xl font-bold mb-4 tracking-tight">🗄️ SQLite Connection Test</h1>
+    <div class="w-full max-w-4xl space-y-6">
         
-        <!-- Status Indicator Box -->
-        <div id="dbStatus" class="inline-block px-4 py-2 bg-amber-500/20 text-amber-400 font-mono text-sm rounded-lg border border-amber-500/30 animate-pulse">
-            Status: Initializing SQLite WASM Engine...
+        <!-- Drop Zone Container -->
+        <div id="dropZone" 
+             class="relative border-2 border-dashed border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-500 transition-all rounded-2xl p-6 min-h-[180px] flex flex-col items-center justify-center cursor-pointer group">
+            
+            <!-- Hidden File Input -->
+            <input type="file" id="fileInput" accept=".csv" multiple class="hidden">
+
+            <!-- Initial Placeholder Text -->
+            <div id="placeholder" class="text-center space-y-2 pointer-events-none">
+                <svg class="w-10 h-10 mx-auto text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p class="text-sm font-medium text-slate-300">Drop CSV files here or <span class="text-indigo-400 underline">browse</span></p>
+                <p class="text-xs text-slate-500">Supports multiple CSV files</p>
+            </div>
+
+            <!-- Stacked File Grid -->
+            <div id="fileGrid" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
+                <!-- Add More Button Card -->
+                <button id="addMoreBtn" type="button" class="flex flex-col items-center justify-center h-24 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="text-xs font-medium">Add Files</span>
+                </button>
+            </div>
         </div>
+
     </div>
 
     <script>
-        // Tell sql.js where to fetch the sql-wasm.wasm binary file
-        const wasmConfig = { 
-            locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` 
-        };
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const placeholder = document.getElementById('placeholder');
+        const fileGrid = document.getElementById('fileGrid');
+        const addMoreBtn = document.getElementById('addMoreBtn');
 
-        // Initialize the SQLite WebAssembly Instance
-        initSqlJs(wasmConfig).then(SQL => {
-            // Create an in-memory database instance
-            const db = new SQL.Database();
-            
-            // Connection successful—update the UI status
-            const statusBox = document.getElementById('dbStatus');
-            statusBox.className = "inline-block px-4 py-2 bg-green-500/20 text-green-400 font-mono text-sm rounded-lg border border-green-500/30";
-            statusBox.innerText = "Status: SQLite Engine Connected Successfully!";
-        }).catch(error => {
-            // Catch failed connection or CDN blocking errors
-            const statusBox = document.getElementById('dbStatus');
-            statusBox.className = "inline-block px-4 py-2 bg-red-500/20 text-red-400 font-mono text-sm rounded-lg border border-red-500/30";
-            statusBox.innerText = "Status: Connection Failed";
-            console.error("SQLite Initialization Error:", error);
+        let loadedFiles = [];
+
+        // Click to trigger file selection
+        dropZone.addEventListener('click', (e) => {
+            if (e.target !== addMoreBtn && !addMoreBtn.contains(e.target)) {
+                if (loadedFiles.length === 0) fileInput.click();
+            }
         });
+
+        addMoreBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        // Drag and drop events
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.add('border-indigo-500', 'bg-slate-800');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.classList.remove('border-indigo-500', 'bg-slate-800');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+            fileInput.value = ''; // Reset input
+        });
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            
+            files.forEach(file => {
+                // Prevent exact duplicate files from adding twice
+                if (!loadedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    loadedFiles.push(file);
+                }
+            });
+
+            renderGrid();
+        }
+
+        function renderGrid() {
+            if (loadedFiles.length === 0) {
+                placeholder.classList.remove('hidden');
+                fileGrid.classList.add('hidden');
+                return;
+            }
+
+            placeholder.classList.add('hidden');
+            fileGrid.classList.remove('hidden');
+
+            // Clear cards except the 'Add More' button
+            const cards = fileGrid.querySelectorAll('.file-card');
+            cards.forEach(card => card.remove());
+
+            // Render each file card side by side
+            loadedFiles.forEach((file, index) => {
+                const card = document.createElement('div');
+                card.className = "file-card relative group/card flex flex-col items-center justify-center p-3 h-24 bg-slate-800 border border-slate-700 rounded-xl hover:border-slate-500 transition-all text-center";
+                
+                card.innerHTML = `
+                    <!-- Remove File Button -->
+                    <button onclick="removeFile(${index}, event)" class="absolute -top-1.5 -right-1.5 bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white rounded-full p-1 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                    <!-- File Icon -->
+                    <svg class="w-6 h-6 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <!-- File Name -->
+                    <p class="text-xs font-medium text-slate-200 truncate w-full px-1" title="${file.name}">${file.name}</p>
+                    <span class="text-[10px] text-slate-400 mt-0.5">${(file.size / 1024).toFixed(1)} KB</span>
+                `;
+
+                fileGrid.insertBefore(card, addMoreBtn);
+            });
+        }
+
+        function removeFile(index, event) {
+            event.stopPropagation();
+            loadedFiles.splice(index, 1);
+            renderGrid();
+        }
     </script>
 </body>
 </html>
