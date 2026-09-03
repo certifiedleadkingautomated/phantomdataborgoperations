@@ -46,7 +46,7 @@
             </div>
 
             <div id="fileGrid" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
-                <button id="addMoreBtn" type="button" class="flex flex-col items-center justify-center h-24 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
+                <button id="addMoreBtn" type="button" class="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
                     <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
@@ -63,7 +63,7 @@
             </button>
         </div>
 
-        <!-- Split & Export Options Panel (Shown after processing) -->
+        <!-- Split & Export Options Panel -->
         <div id="splitPanel" class="hidden bg-slate-800 border border-slate-700 rounded-xl p-6 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-700 pb-3">
                 <h3 class="text-sm font-bold text-slate-200">Export & Split Configuration</h3>
@@ -137,7 +137,7 @@
         let loadedFiles = [];
         let lockedSource = null;
         let db = null;
-        let processedMasterData = []; // Store master records in memory for splitting
+        let processedMasterData = [];
 
         // Initialize SQLite WebAssembly Instance
         initSqlJs({ locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` })
@@ -186,34 +186,46 @@
             for (const file of files) {
                 if (loadedFiles.some(f => f.file.name === file.name && f.file.size === file.size)) continue;
 
-                const headers = await getCsvHeaders(file);
-                const detectedSource = identifySource(headers);
+                const fileInfo = await inspectCsvFile(file);
 
-                if (!detectedSource) {
+                if (!fileInfo.source) {
                     showError(`Could not identify source for "${file.name}". Missing "best_mobile" column.`);
                     continue;
                 }
 
                 if (lockedSource === null) {
-                    lockedSource = detectedSource;
-                } else if (lockedSource !== detectedSource) {
+                    lockedSource = fileInfo.source;
+                } else if (lockedSource !== fileInfo.source) {
                     showError(`Grid locked to ${lockedSource}. Cannot add "${file.name}".`);
                     continue;
                 }
 
-                loadedFiles.push({ file, source: detectedSource, headers });
+                loadedFiles.push({ file, source: fileInfo.source, recordCount: fileInfo.recordCount });
             }
 
             renderGrid();
         }
 
-        function getCsvHeaders(file) {
+        // Inspect headers and count total records concurrently
+        function inspectCsvFile(file) {
             return new Promise((resolve) => {
+                let recordCount = 0;
+                let headers = [];
+
                 Papa.parse(file, {
-                    preview: 1,
                     header: true,
-                    complete: (results) => resolve(results.meta.fields || []),
-                    error: () => resolve([])
+                    skipEmptyLines: true,
+                    step: (row, parser) => {
+                        if (headers.length === 0 && row.meta && row.meta.fields) {
+                            headers = row.meta.fields;
+                        }
+                        recordCount++;
+                    },
+                    complete: () => {
+                        const source = identifySource(headers);
+                        resolve({ headers, source, recordCount });
+                    },
+                    error: () => resolve({ headers: [], source: null, recordCount: 0 })
                 });
             });
         }
@@ -239,21 +251,28 @@
             sourceBadge.classList.remove('hidden');
             actionPanel.classList.remove('hidden');
             sourceName.textContent = lockedSource;
-            recordStatus.textContent = `${loadedFiles.length} file(s) ready for processing.`;
+
+            const totalRawRecords = loadedFiles.reduce((acc, cur) => acc + cur.recordCount, 0);
+            recordStatus.textContent = `${loadedFiles.length} file(s) loaded (${totalRawRecords.toLocaleString()} total raw records).`;
 
             const cards = fileGrid.querySelectorAll('.file-card');
             cards.forEach(card => card.remove());
 
             loadedFiles.forEach((item, index) => {
                 const card = document.createElement('div');
-                card.className = "file-card relative group/card flex flex-col items-center justify-center p-3 h-24 bg-slate-800 border border-slate-700 rounded-xl hover:border-slate-500 transition-all text-center";
+                card.className = "file-card relative group/card flex flex-col items-center justify-between p-3 h-28 bg-slate-800 border border-slate-700 rounded-xl hover:border-slate-500 transition-all text-center";
                 card.innerHTML = `
                     <button onclick="removeFile(${index}, event)" class="absolute -top-1.5 -right-1.5 bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white rounded-full p-1 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-                    <svg class="w-6 h-6 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <p class="text-xs font-medium text-slate-200 truncate w-full px-1" title="${item.file.name}">${item.file.name}</p>
-                    <span class="text-[10px] text-slate-400 mt-0.5">${(item.file.size / 1024).toFixed(1)} KB</span>
+                    <div class="flex flex-col items-center">
+                        <svg class="w-5 h-5 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <p class="text-xs font-medium text-slate-200 truncate w-full px-1" title="${item.file.name}">${item.file.name}</p>
+                    </div>
+                    <div class="w-full pt-1 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400">
+                        <span>${(item.file.size / 1024).toFixed(0)} KB</span>
+                        <span class="font-semibold text-emerald-400">${item.recordCount.toLocaleString()} rows</span>
+                    </div>
                 `;
                 fileGrid.insertBefore(card, addMoreBtn);
             });
@@ -337,8 +356,7 @@
                     return obj;
                 });
 
-                // Display split controls panel
-                document.getElementById('totalRecordsBadge').textContent = `${processedMasterData.length} Records Ready`;
+                document.getElementById('totalRecordsBadge').textContent = `${processedMasterData.length.toLocaleString()} Unique Records Ready`;
                 actionPanel.classList.add('hidden');
                 document.getElementById('splitPanel').classList.remove('hidden');
                 updateEvenEstimate();
@@ -368,7 +386,7 @@
         function updateEvenEstimate() {
             const parts = parseInt(document.getElementById('evenPartsInput').value) || 1;
             const avg = Math.ceil(processedMasterData.length / parts);
-            document.getElementById('evenEstimate').textContent = `~${avg} records per file`;
+            document.getElementById('evenEstimate').textContent = `~${avg.toLocaleString()} records per file`;
         }
 
         function setupManualDefaultRows() {
@@ -406,13 +424,13 @@
             const totalAvailable = processedMasterData.length;
             const remaining = totalAvailable - totalAllocated;
 
-            document.getElementById('manualAllocatedCount').textContent = totalAllocated;
+            document.getElementById('manualAllocatedCount').textContent = totalAllocated.toLocaleString();
             const remainingEl = document.getElementById('manualRemainingCount');
-            remainingEl.textContent = remaining;
+            remainingEl.textContent = remaining.toLocaleString();
 
             if (remaining < 0) {
                 remainingEl.className = "text-red-400 font-bold";
-                document.getElementById('manualRemainingText').lastChild.textContent = `${Math.abs(remaining)} Over Allocated!`;
+                document.getElementById('manualRemainingText').lastChild.textContent = `${Math.abs(remaining).toLocaleString()} Over Allocated!`;
             } else if (remaining > 0) {
                 remainingEl.className = "text-amber-400 font-bold";
             } else {
