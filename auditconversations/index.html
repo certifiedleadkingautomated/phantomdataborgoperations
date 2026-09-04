@@ -72,15 +72,20 @@
                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all">
                 </div>
 
-                <!-- Action Panel -->
+                <!-- Action Panel with Elapsed Timer -->
                 <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
                     <button id="submitAuditBtn" onclick="runAudit()" disabled
                         class="w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed">
                         <span>🚀 Run Audit & Analyze with Gemini</span>
                     </button>
 
-                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 text-center">
-                        <span id="statusText" class="text-xs text-slate-400 block">Waiting for client names and start date...</span>
+                    <!-- Status Display & Active Timer -->
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 flex items-center justify-between space-x-2">
+                        <span id="statusText" class="text-xs text-slate-400 truncate">Waiting for client names and start date...</span>
+                        <div id="timerContainer" class="hidden items-center space-x-1.5 shrink-0">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span id="timerText" class="font-mono text-xs text-emerald-400 font-bold">00:00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -132,6 +137,8 @@
         const detectedCountBadge = document.getElementById('detectedCountBadge');
         const submitAuditBtn = document.getElementById('submitAuditBtn');
         const statusText = document.getElementById('statusText');
+        const timerContainer = document.getElementById('timerContainer');
+        const timerText = document.getElementById('timerText');
         const errorMessage = document.getElementById('errorMessage');
         const errorBanner = document.getElementById('errorBanner');
         const clientAccordionsContainer = document.getElementById('clientAccordionsContainer');
@@ -140,9 +147,33 @@
 
         let clientTags = [];
         const MAX_CLIENTS = 10;
+        let timerInterval = null;
+        let secondsElapsed = 0;
 
         function focusInput() {
             tagInput.focus();
+        }
+
+        // Live Timer Controls
+        function startTimer() {
+            secondsElapsed = 0;
+            timerText.textContent = "00:00";
+            timerContainer.classList.remove('hidden');
+            timerContainer.classList.add('flex');
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                const secs = String(secondsElapsed % 60).padStart(2, '0');
+                timerText.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerContainer.classList.remove('flex');
+            timerContainer.classList.add('hidden');
         }
 
         startDatePicker.addEventListener('change', () => {
@@ -260,6 +291,7 @@
             clientTags = [];
             tagInput.value = '';
             hideError();
+            stopTimer();
             renderTags();
             clientAccordionsContainer.innerHTML = '';
             emptyResultsPlaceholder.classList.remove('hidden');
@@ -272,8 +304,10 @@
             const selectedDate = new Date(startDatePicker.value + "T00:00:00");
             const startTimestamp = selectedDate.getTime();
 
-            statusText.textContent = "Fetching GHL data, building CSV, and analyzing with Gemini...";
+            statusText.textContent = "Processing GHL audit & Gemini analysis...";
             submitAuditBtn.disabled = true;
+
+            startTimer();
 
             // Replace with your Cloudflare Worker endpoint
             const WORKER_URL = "https://shy-heart-6e3e.miguel-f88.workers.dev/";
@@ -291,7 +325,7 @@
                 const data = await response.json();
 
                 if (data.success && data.geminiAnalysis) {
-                    statusText.textContent = `Analysis complete! Extracted ${data.totalRecords || 0} valid record(s).`;
+                    statusText.textContent = `Completed in ${timerText.textContent}! (${data.totalRecords || 0} valid records)`;
                     renderGeminiOutput(data.geminiAnalysis);
                 } else {
                     showError("Audit Error: " + (data.error || "No response received from backend."));
@@ -302,6 +336,7 @@
                 showError("Network/Worker Error: " + err.message);
                 statusText.textContent = "Audit request failed.";
             } finally {
+                stopTimer();
                 submitAuditBtn.disabled = false;
             }
         }
