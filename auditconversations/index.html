@@ -183,20 +183,54 @@
 
         async function runAudit() {
             if (clientTags.length === 0) return;
-
-            statusText.textContent = "Auditing clients via Cloudflare Worker Proxy...";
+        
+            statusText.textContent = "Sending client names to Google Sheet via Worker...";
             submitAuditBtn.disabled = true;
-
+        
+            // Replace this with your actual Cloudflare Worker URL
+            const WORKER_URL = "https://shy-heart-6e3e.miguel-f88.workers.dev/";
+        
             try {
-                // NEXT STEP: Cloudflare Worker Integration
-                console.log("Client names ready for Cloudflare Worker audit:", clientTags);
-
+                const response = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ clientNames: clientTags })
+                });
+        
+                const data = await response.json();
+        
+                if (data.success) {
+                    statusText.textContent = `Successfully logged ${data.loggedCount} client(s) to Google Sheet!`;
+                    renderResults(data.names);
+                } else {
+                    showError("Bridge Error: " + data.error);
+                    statusText.textContent = "Failed to log names.";
+                }
+        
             } catch (err) {
-                showError("Audit Error: " + err.message);
-                statusText.textContent = "Audit failed.";
+                showError("Network/Worker Error: " + err.message);
+                statusText.textContent = "Audit request failed.";
             } finally {
                 submitAuditBtn.disabled = false;
             }
+        }
+        
+        function renderResults(names) {
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
+        
+            names.forEach(name => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-700/30 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-semibold text-indigo-300">${name}</td>
+                    <td class="py-2 px-3 text-emerald-400">✓ Logged</td>
+                    <td class="py-2 px-3 text-slate-400">Appended to Google Sheet</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        
+            document.getElementById('resultsContainer').classList.remove('hidden');
         }
 
         function showError(msg) {
