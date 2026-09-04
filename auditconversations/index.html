@@ -3,98 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversation Auditor</title>
+    <title>GHL Conversation Auditor & Gemini Insights</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-8 flex flex-col items-center justify-center">
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col items-center justify-center">
 
-    <div class="w-full max-w-3xl space-y-6">
+    <div class="w-full max-w-7xl space-y-6">
         
         <!-- Header -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl text-center space-y-2">
-            <h1 class="text-2xl font-bold tracking-tight text-white">🔍 GHL Conversation Auditor</h1>
-            <p class="text-xs text-slate-400">Paste client names copied from Google Sheets to stack them into interactive badges for bulk auditing.</p>
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center justify-center space-x-3">
+                <span>🔍 GHL Conversation Auditor</span>
+                <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30 font-mono">Gemini AI Powered</span>
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400 max-w-2xl mx-auto">
+                Bulk audit unreplied GoHighLevel conversation streams across multiple sub-accounts. Filters out negative opt-outs & leads, and extracts actionable high-intent prospects via Gemini 2.5 Flash.
+            </p>
         </div>
 
-        <!-- Tag Box Container -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
-            <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                    Client Name Tag Input
-                </label>
-                <button onclick="removeAllTags()" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">
-                    Clear All Clients
-                </button>
-            </div>
-
-            <!-- Dynamic Tag Input Field -->
-            <div id="tagContainer" 
-                 class="w-full min-h-[140px] bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 items-start focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all cursor-text"
-                 onclick="focusInput()">
+        <!-- Main Workspace: 2-Column Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: Input & Execution Control Panel (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
                 
-                <!-- Tag Pills will render here dynamically -->
+                <!-- Tag Box Container -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                            Client Name Input
+                        </label>
+                        <button onclick="removeAllTags()" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">
+                            Clear All
+                        </button>
+                    </div>
 
-                <!-- Editable input field inside tag box -->
-                <input type="text" id="tagInput" 
-                       placeholder="Paste copied cells from Google Sheets here..." 
-                       class="bg-transparent text-xs text-slate-200 focus:outline-none flex-1 min-w-[200px] p-1">
+                    <!-- Dynamic Tag Input Field -->
+                    <div id="tagContainer" 
+                         class="w-full min-h-[140px] bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 items-start focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all cursor-text"
+                         onclick="focusInput()">
+                        
+                        <!-- Tag Pills will render here dynamically -->
+
+                        <input type="text" id="tagInput" 
+                               placeholder="Paste copied cells from Google Sheets here..." 
+                               class="bg-transparent text-xs text-slate-200 focus:outline-none flex-1 min-w-[180px] p-1">
+                    </div>
+
+                    <!-- Stats & Counter -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 text-xs text-slate-400">
+                        <span>Total Loaded:</span>
+                        <span id="detectedCountBadge" class="font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
+                            0 / 10 Clients
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Mandatory Date Picker Panel -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="startDatePicker" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                            Audit Start Date <span class="text-red-400">*</span>
+                        </label>
+                        <span class="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">Mandatory</span>
+                    </div>
+                    <input type="date" id="startDatePicker" required
+                           class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all">
+                </div>
+
+                <!-- Action Panel -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <button id="submitAuditBtn" onclick="runAudit()" disabled
+                        class="w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed">
+                        <span>🚀 Run Audit & Analyze with Gemini</span>
+                    </button>
+
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 text-center">
+                        <span id="statusText" class="text-xs text-slate-400 block">Waiting for client names and start date...</span>
+                    </div>
+                </div>
+
+                <!-- Error Alert Banner -->
+                <div id="errorBanner" class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs flex items-start justify-between space-x-2">
+                    <span id="errorMessage" class="leading-relaxed">Error message here.</span>
+                    <button onclick="hideError()" class="text-red-400 hover:text-white font-bold">✕</button>
+                </div>
+
             </div>
 
-            <!-- Stats & Counter -->
-            <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 text-xs text-slate-400">
-                <span>Total Clients Enclosed:</span>
-                <span id="detectedCountBadge" class="font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
-                    0 / 10 Clients Loaded
-                </span>
+            <!-- RIGHT COLUMN: Gemini AI Output & Client Accordions (7 Cols) -->
+            <div class="lg:col-span-7 space-y-4">
+                
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                        <h2 class="text-sm font-bold tracking-wider text-slate-200 uppercase flex items-center space-x-2">
+                            <span>✨ Actionable High-Intent Opportunities</span>
+                        </h2>
+                        <span id="opportunityBadge" class="text-xs font-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-md border border-emerald-500/30">
+                            0 Qualified
+                        </span>
+                    </div>
+
+                    <!-- Placeholder / Initial State -->
+                    <div id="emptyResultsPlaceholder" class="p-12 text-center space-y-3">
+                        <div class="w-12 h-12 bg-slate-700/40 rounded-full flex items-center justify-center mx-auto text-slate-400 text-xl">
+                            💬
+                        </div>
+                        <p class="text-xs text-slate-400">Results will appear here as expandable client cards once the Gemini analysis finishes.</p>
+                    </div>
+
+                    <!-- Accordion Stack Container -->
+                    <div id="clientAccordionsContainer" class="space-y-3">
+                        <!-- Accordion Cards for each client will render here -->
+                    </div>
+                </div>
+
             </div>
-        </div>
 
-        <!-- Mandatory Date Picker Panel -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-            <div class="space-y-0.5">
-                <label for="startDatePicker" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Audit Start Date <span class="text-red-400">*</span>
-                </label>
-                <p class="text-[10px] text-slate-400">Mandatory: Fetch inbound conversations starting from this date.</p>
-            </div>
-            <input type="date" id="startDatePicker" required
-                   class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all">
-        </div>
-
-        <!-- Action Panel -->
-        <div id="actionPanel" class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-            <span id="statusText" class="text-xs text-slate-400">Waiting for client names and start date...</span>
-            <button id="submitAuditBtn" onclick="runAudit()" disabled
-                class="px-5 py-2.5 bg-indigo-600/50 text-slate-400 font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-not-allowed">
-                <span>🚀 Run Secure Audit</span>
-            </button>
-        </div>
-
-        <!-- Results Table (Hidden initially) -->
-        <div id="resultsContainer" class="hidden bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-4">
-            <h3 class="text-sm font-bold text-slate-200">Audit Results</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                    <thead>
-                        <tr class="border-b border-slate-700 text-slate-400">
-                            <th class="py-2 px-3">Requested Client</th>
-                            <th class="py-2 px-3">Status / Matched Name</th>
-                            <th class="py-2 px-3">Location ID</th>
-                            <th class="py-2 px-3">Convs Fetched</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsTableBody" class="divide-y divide-slate-700/50 font-mono">
-                        <!-- Audit rows will render here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Error Alert Banner -->
-        <div id="errorBanner" class="hidden p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center justify-between">
-            <span id="errorMessage">Error message here.</span>
-            <button onclick="hideError()" class="text-red-400 hover:text-white font-bold ml-2">✕</button>
         </div>
 
     </div>
@@ -108,6 +134,9 @@
         const statusText = document.getElementById('statusText');
         const errorMessage = document.getElementById('errorMessage');
         const errorBanner = document.getElementById('errorBanner');
+        const clientAccordionsContainer = document.getElementById('clientAccordionsContainer');
+        const emptyResultsPlaceholder = document.getElementById('emptyResultsPlaceholder');
+        const opportunityBadge = document.getElementById('opportunityBadge');
 
         let clientTags = [];
         const MAX_CLIENTS = 10;
@@ -116,25 +145,21 @@
             tagInput.focus();
         }
 
-        // Validate state on date change
         startDatePicker.addEventListener('change', () => {
             hideError();
             validateFormState();
         });
 
-        // Handle Paste Events (Limits to first 10 items)
         tagInput.addEventListener('paste', (e) => {
             e.preventDefault();
             hideError();
 
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
-            
             const incomingNames = pastedText
                 .split(/[\n\r\t]+/)
                 .map(name => name.trim())
                 .filter(name => name.length > 0);
 
-            let addedCount = 0;
             let limitReached = false;
 
             for (const name of incomingNames) {
@@ -144,7 +169,6 @@
                 }
                 if (!clientTags.includes(name)) {
                     clientTags.push(name);
-                    addedCount++;
                 }
             }
 
@@ -156,7 +180,6 @@
             renderTags();
         });
 
-        // Handle Manual Typing (Enter or Comma)
         tagInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ',') {
                 e.preventDefault();
@@ -186,7 +209,7 @@
 
             clientTags.forEach((name, index) => {
                 const pill = document.createElement('div');
-                pill.className = "tag-pill inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-medium shadow-sm animate-fade-in";
+                pill.className = "tag-pill inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-medium shadow-sm";
                 pill.innerHTML = `
                     <span>${name}</span>
                     <button onclick="removeSingleTag(${index}, event)" class="text-indigo-400 hover:text-red-400 font-bold ml-1 focus:outline-none">
@@ -196,7 +219,7 @@
                 tagContainer.insertBefore(pill, tagInput);
             });
 
-            detectedCountBadge.textContent = `${clientTags.length} / ${MAX_CLIENTS} Clients Loaded`;
+            detectedCountBadge.textContent = `${clientTags.length} / ${MAX_CLIENTS} Clients`;
 
             if (clientTags.length >= MAX_CLIENTS) {
                 tagInput.style.display = 'none';
@@ -213,15 +236,15 @@
 
             if (hasClients && hasDate) {
                 submitAuditBtn.disabled = false;
-                submitAuditBtn.className = "px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-pointer";
-                statusText.textContent = "Ready to audit through Cloudflare Worker.";
+                submitAuditBtn.className = "w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer";
+                statusText.textContent = "Ready to execute audit and feed CSV to Gemini.";
             } else if (hasClients && !hasDate) {
                 submitAuditBtn.disabled = true;
-                submitAuditBtn.className = "px-5 py-2.5 bg-indigo-600/50 text-slate-400 font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-not-allowed";
+                submitAuditBtn.className = "w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed";
                 statusText.textContent = "Please select a mandatory Start Date.";
             } else {
                 submitAuditBtn.disabled = true;
-                submitAuditBtn.className = "px-5 py-2.5 bg-indigo-600/50 text-slate-400 font-medium text-xs rounded-lg transition-all shadow-lg flex items-center space-x-2 cursor-not-allowed";
+                submitAuditBtn.className = "w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed";
                 statusText.textContent = "Waiting for client names...";
             }
         }
@@ -238,30 +261,22 @@
             tagInput.value = '';
             hideError();
             renderTags();
-            document.getElementById('resultsContainer').classList.add('hidden');
+            clientAccordionsContainer.innerHTML = '';
+            emptyResultsPlaceholder.classList.remove('hidden');
+            opportunityBadge.textContent = "0 Qualified";
         }
 
         async function runAudit() {
-            // Strict Validation
-            if (clientTags.length === 0) {
-                showError("Please add at least one client name.");
-                return;
-            }
+            if (clientTags.length === 0 || !startDatePicker.value) return;
 
-            if (!startDatePicker.value) {
-                showError("Audit Start Date is mandatory. Please select a date.");
-                return;
-            }
-
-            // Convert selected YYYY-MM-DD to Start of Day Epoch Timestamp (ms)
             const selectedDate = new Date(startDatePicker.value + "T00:00:00");
             const startTimestamp = selectedDate.getTime();
 
-            statusText.textContent = "Auditing clients & appending conversations via Cloudflare Worker...";
+            statusText.textContent = "Fetching GHL data, building CSV, and analyzing with Gemini...";
             submitAuditBtn.disabled = true;
 
-            // Replace with your actual Cloudflare Worker URL
-            const WORKER_URL = "https://shy-heart-6e3e.miguel-f88.workers.dev/";
+            // Replace with your Cloudflare Worker endpoint
+            const WORKER_URL = "https://your-worker-name.your-subdomain.workers.dev";
 
             try {
                 const response = await fetch(WORKER_URL, {
@@ -275,11 +290,11 @@
 
                 const data = await response.json();
 
-                if (data.success && Array.isArray(data.results)) {
-                    statusText.textContent = `Audit complete! Appended data for ${data.results.length} client(s).`;
-                    renderResults(data.results);
+                if (data.success && data.geminiAnalysis) {
+                    statusText.textContent = `Analysis complete! Extracted ${data.totalRecords || 0} valid record(s).`;
+                    renderGeminiOutput(data.geminiAnalysis);
                 } else {
-                    showError("Bridge Error: " + (data.error || "No results returned"));
+                    showError("Audit Error: " + (data.error || "No response received from backend."));
                     statusText.textContent = "Audit failed.";
                 }
 
@@ -291,33 +306,90 @@
             }
         }
 
-        function renderResults(resultsList) {
-            const tableBody = document.getElementById('resultsTableBody');
-            tableBody.innerHTML = '';
+        function renderGeminiOutput(geminiJson) {
+            clientAccordionsContainer.innerHTML = '';
+            emptyResultsPlaceholder.classList.add('hidden');
 
-            if (!resultsList || resultsList.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="py-3 px-3 text-center text-slate-400">No matching records found.</td>
-                    </tr>
+            const clientsObj = geminiJson.clients || {};
+            const clientNamesList = Object.keys(clientsObj);
+            let totalQualified = 0;
+
+            if (clientNamesList.length === 0) {
+                clientAccordionsContainer.innerHTML = `
+                    <div class="p-6 bg-slate-900 border border-slate-700 rounded-xl text-center text-xs text-slate-400">
+                        No high-intent conversations found matching the criteria.
+                    </div>
                 `;
-                document.getElementById('resultsContainer').classList.remove('hidden');
+                opportunityBadge.textContent = "0 Qualified";
                 return;
             }
 
-            resultsList.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-700/30 transition-colors";
-                tr.innerHTML = `
-                    <td class="py-2 px-3 font-semibold text-indigo-300">${item.requestedName}</td>
-                    <td class="py-2 px-3 text-emerald-400">✓ Matched (${item.matchedName})</td>
-                    <td class="py-2 px-3 text-amber-300 font-mono">${item.locationId}</td>
-                    <td class="py-2 px-3 text-sky-300 font-mono">${item.conversationsFetched} convs</td>
+            clientNamesList.forEach((clientName, index) => {
+                const messages = clientsObj[clientName] || [];
+                totalQualified += messages.length;
+
+                const accordionCard = document.createElement('div');
+                accordionCard.className = "bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-md transition-all";
+
+                const isFirst = index === 0;
+
+                accordionCard.innerHTML = `
+                    <!-- Accordion Header -->
+                    <button onclick="toggleAccordion('acc-${index}')" 
+                            class="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-800 flex items-center justify-between text-left transition-colors font-medium border-b border-slate-700/40">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-indigo-300">${clientName}</span>
+                            <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                                ${messages.length} Intent Leads
+                            </span>
+                        </div>
+                        <span id="icon-acc-${index}" class="text-xs text-slate-400 transform transition-transform ${isFirst ? 'rotate-180' : ''}">
+                            ▼
+                        </span>
+                    </button>
+
+                    <!-- Accordion Body -->
+                    <div id="acc-${index}" class="${isFirst ? '' : 'hidden'} p-4 space-y-3 divide-y divide-slate-800 font-mono text-xs">
+                        ${messages.length === 0 ? '<p class="text-slate-500 text-[11px]">No unreplied high-intent messages for this client.</p>' : ''}
+                        ${messages.map(msg => `
+                            <div class="pt-3 first:pt-0 space-y-1.5">
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="font-semibold text-indigo-200">${msg.contactName || 'Unknown Contact'}</span>
+                                    <span class="text-[10px] text-slate-500">${msg.dateReceived ? new Date(msg.dateReceived).toLocaleString() : ''}</span>
+                                </div>
+                                <div class="text-[11px] text-amber-300 font-sans font-medium">
+                                    📞 ${msg.phone || 'No Phone'}
+                                </div>
+                                <div class="p-2.5 bg-slate-800/90 rounded-lg text-slate-200 font-sans italic border border-slate-700/50">
+                                    "${msg.message || ''}"
+                                </div>
+                                ${msg.intentReason ? `
+                                    <div class="text-[10px] text-emerald-400 font-sans">
+                                        💡 <span class="font-semibold">Reason:</span> ${msg.intentReason}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
                 `;
-                tableBody.appendChild(tr);
+
+                clientAccordionsContainer.appendChild(accordionCard);
             });
 
-            document.getElementById('resultsContainer').classList.remove('hidden');
+            opportunityBadge.textContent = `${totalQualified} Qualified`;
+        }
+
+        function toggleAccordion(id) {
+            const body = document.getElementById(id);
+            const icon = document.getElementById(`icon-${id}`);
+
+            if (body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                body.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
         }
 
         function showError(msg) {
