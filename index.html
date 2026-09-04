@@ -335,12 +335,16 @@
             return `${nameWithoutExt.substr(0, frontChars)}...${nameWithoutExt.substr(nameWithoutExt.length - backChars)}${ext}`;
         }
 
-        function copyToClipboard(text, element) {
-            navigator.clipboard.writeText(text).then(() => {
+        function copyToClipboard(filenameWithExt, element) {
+            // Strip file extension (e.g., "my_leads.csv" -> "my_leads")
+            const extIndex = filenameWithExt.lastIndexOf('.');
+            const cleanName = extIndex !== -1 ? filenameWithExt.slice(0, extIndex) : filenameWithExt;
+        
+            navigator.clipboard.writeText(cleanName).then(() => {
                 const copyNotice = element.querySelector('.copy-notice');
                 if (copyNotice) {
                     const originalText = copyNotice.textContent;
-                    copyNotice.textContent = 'Copied!';
+                    copyNotice.textContent = 'Copied Name!';
                     copyNotice.classList.remove('text-slate-400');
                     copyNotice.classList.add('text-emerald-400', 'font-bold');
                     setTimeout(() => {
@@ -389,17 +393,17 @@
                     <button onclick="removeFile(${gridNum}, ${index}, event)" class="absolute -top-1.5 -right-1.5 bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white rounded-full p-1 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg z-20">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-
-                    <!-- Interactive Tooltip Floating Popup -->
-                    <div onclick="copyToClipboard('${escapedName}', this)" 
-                         class="pointer-events-auto absolute bottom-full mb-2 hidden group-hover/card:flex flex-col items-center z-30 cursor-pointer animate-fade-in w-max max-w-[260px]">
-                        <div class="bg-slate-900 border border-slate-600 text-slate-100 text-[11px] rounded-lg px-2.5 py-1.5 shadow-2xl space-y-0.5 text-center break-all">
-                            <p class="font-mono">${item.file.name}</p>
-                            <p class="copy-notice text-[9px] text-slate-400 tracking-wider uppercase font-sans">Click to Copy</p>
+                
+                    <!-- Tooltip Container with Invisible Hitbox Bridge (pb-3 -mb-3) -->
+                    <div onclick="copyToClipboard('${escapedName}', this); event.stopPropagation();" 
+                         class="absolute bottom-full pb-3 -mb-3 hidden group-hover/card:flex flex-col items-center z-30 cursor-pointer w-max max-w-[260px] pointer-events-auto">
+                        <div class="bg-slate-900 border border-slate-600 text-slate-100 text-[11px] rounded-lg px-2.5 py-1.5 shadow-2xl space-y-0.5 text-center break-all hover:border-indigo-400 transition-colors">
+                            <p class="font-mono text-indigo-200">${item.file.name}</p>
+                            <p class="copy-notice text-[9px] text-slate-400 tracking-wider uppercase font-sans">Click to Copy Name</p>
                         </div>
                         <div class="w-2 h-2 bg-slate-900 border-r border-b border-slate-600 transform rotate-45 -mt-1"></div>
                     </div>
-
+                
                     <div class="flex flex-col items-center w-full">
                         <svg class="w-5 h-5 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <p class="text-xs font-medium text-slate-200 block px-1 truncate w-full">${formatFileName(item.file.name)}</p>
