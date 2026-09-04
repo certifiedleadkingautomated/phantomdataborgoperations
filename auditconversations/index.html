@@ -55,7 +55,7 @@
                     <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 text-xs text-slate-400">
                         <span>Total Loaded:</span>
                         <span id="detectedCountBadge" class="font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
-                            0 / 10 Clients
+                            0 / 20 Clients
                         </span>
                     </div>
                 </div>
@@ -204,7 +204,7 @@
             }
 
             if (limitReached || incomingNames.length > MAX_CLIENTS) {
-                showError(`Limit reached: Retained the first 10 client names to prevent request timeouts.`);
+                showError(`Limit reached: Retained the first 20 client names to prevent request timeouts.`);
             }
 
             tagInput.value = '';
