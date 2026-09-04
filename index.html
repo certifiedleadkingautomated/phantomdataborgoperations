@@ -113,6 +113,18 @@
                 </span>
             </div>
 
+            <!-- Custom Output Filename Field -->
+            <div class="space-y-1.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-700/60">
+                <label for="customFilenameInput" class="text-xs font-semibold text-slate-300 block">
+                    Custom Base Filename Prefix:
+                </label>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="customFilenameInput" placeholder="e.g. campaign_leads" 
+                           class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
+                    <span class="text-[11px] text-slate-500 font-mono">_{count}k_part_1_of_N.csv</span>
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500">
                     <input type="radio" name="splitMode" value="even" checked onchange="toggleSplitMode('even')" class="text-indigo-600 focus:ring-0">
@@ -228,7 +240,6 @@
                     continue;
                 }
 
-                // Check for duplicate sources across grids
                 const activeSources = Object.entries(gridState)
                     .filter(([g, data]) => parseInt(g) !== gridNum && data.source !== null)
                     .map(([_, data]) => data.source);
@@ -281,7 +292,6 @@
         }
 
         function updateDynamicGridVisibility() {
-            // Reveal Grid 2 if Grid 1 has files
             if (gridState[1].files.length > 0) {
                 document.getElementById('grid2Wrapper').classList.remove('hidden');
             } else {
@@ -289,14 +299,12 @@
                 document.getElementById('grid3Wrapper').classList.add('hidden');
             }
 
-            // Reveal Grid 3 if Grid 2 has files
             if (gridState[2].files.length > 0) {
                 document.getElementById('grid3Wrapper').classList.remove('hidden');
             } else {
                 document.getElementById('grid3Wrapper').classList.add('hidden');
             }
 
-            // Update remaining allowed source badges
             const usedSources = Object.values(gridState).map(g => g.source).filter(Boolean);
             const allSources = ['Phantom', 'Databorg', 'GHL'];
 
@@ -325,6 +333,23 @@
             const backChars = Math.floor(charsToShow / 2);
 
             return `${nameWithoutExt.substr(0, frontChars)}...${nameWithoutExt.substr(nameWithoutExt.length - backChars)}${ext}`;
+        }
+
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text).then(() => {
+                const copyNotice = element.querySelector('.copy-notice');
+                if (copyNotice) {
+                    const originalText = copyNotice.textContent;
+                    copyNotice.textContent = 'Copied!';
+                    copyNotice.classList.remove('text-slate-400');
+                    copyNotice.classList.add('text-emerald-400', 'font-bold');
+                    setTimeout(() => {
+                        copyNotice.textContent = originalText;
+                        copyNotice.classList.remove('text-emerald-400', 'font-bold');
+                        copyNotice.classList.add('text-slate-400');
+                    }, 1500);
+                }
+            });
         }
 
         function renderGrid(gridNum) {
@@ -356,13 +381,28 @@
             currentGrid.files.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = "file-card relative group/card flex flex-col items-center justify-between p-3 h-28 bg-slate-800 border border-slate-700 rounded-xl hover:border-slate-500 transition-all text-center";
+                
+                // Escape quotes for safe inline JS passing
+                const escapedName = item.file.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
                 card.innerHTML = `
-                    <button onclick="removeFile(${gridNum}, ${index}, event)" class="absolute -top-1.5 -right-1.5 bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white rounded-full p-1 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg">
+                    <button onclick="removeFile(${gridNum}, ${index}, event)" class="absolute -top-1.5 -right-1.5 bg-slate-700 hover:bg-red-500 text-slate-300 hover:text-white rounded-full p-1 opacity-0 group-hover/card:opacity-100 transition-opacity shadow-lg z-20">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
+
+                    <!-- Interactive Tooltip Floating Popup -->
+                    <div onclick="copyToClipboard('${escapedName}', this)" 
+                         class="pointer-events-auto absolute bottom-full mb-2 hidden group-hover/card:flex flex-col items-center z-30 cursor-pointer animate-fade-in w-max max-w-[260px]">
+                        <div class="bg-slate-900 border border-slate-600 text-slate-100 text-[11px] rounded-lg px-2.5 py-1.5 shadow-2xl space-y-0.5 text-center break-all">
+                            <p class="font-mono">${item.file.name}</p>
+                            <p class="copy-notice text-[9px] text-slate-400 tracking-wider uppercase font-sans">Click to Copy</p>
+                        </div>
+                        <div class="w-2 h-2 bg-slate-900 border-r border-b border-slate-600 transform rotate-45 -mt-1"></div>
+                    </div>
+
                     <div class="flex flex-col items-center w-full">
                         <svg class="w-5 h-5 text-indigo-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        <p class="text-xs font-medium text-slate-200 block px-1 truncate w-full" title="${item.file.name}">${formatFileName(item.file.name)}</p>
+                        <p class="text-xs font-medium text-slate-200 block px-1 truncate w-full">${formatFileName(item.file.name)}</p>
                     </div>
                     <div class="w-full pt-1 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400">
                         <span>${(item.file.size / 1024).toFixed(0)} KB</span>
@@ -400,7 +440,6 @@
             }
         }
 
-        // --- MASTER PROCESSING & COMPARISON ENGINE ---
         async function processAllGrids() {
             if (!db) return;
 
@@ -411,12 +450,10 @@
                 const hasGhl = activeGrids.some(g => g.source === 'GHL');
                 const nonGhlGrids = activeGrids.filter(g => g.source !== 'GHL');
 
-                // 1. Process all non-GHL grids into master tables
                 for (let i = 0; i < nonGhlGrids.length; i++) {
                     await buildSourceMasterTable(nonGhlGrids[i].source, nonGhlGrids[i].files, `master_non_ghl_${i + 1}`);
                 }
 
-                // 2. Merge non-GHL master tables together if multiple exist
                 if (nonGhlGrids.length > 1) {
                     for (let i = 1; i < nonGhlGrids.length; i++) {
                         const mergeSql = `
@@ -430,17 +467,14 @@
                     }
                 }
 
-                // 3. Process GHL if present
                 if (hasGhl) {
                     const ghlGrid = activeGrids.find(g => g.source === 'GHL');
                     await buildSourceMasterTable('GHL', ghlGrid.files, 'master_ghl');
                 }
 
-                // 4. Determine final output dataset query
                 let finalQuery = "";
 
                 if (hasGhl && nonGhlGrids.length > 0) {
-                    // Comparison Mode: Subtract GHL records using '+1' country code prefixing
                     finalQuery = `
                         SELECT 
                             COALESCE(b.first_name, '') AS first_name,
@@ -456,10 +490,8 @@
                         WHERE a.phone IS NULL;
                     `;
                 } else if (hasGhl && nonGhlGrids.length === 0) {
-                    // Pure GHL Export Mode
                     finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_ghl;";
                 } else {
-                    // Pure Non-GHL Merged Export Mode
                     finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_non_ghl_1;";
                 }
 
@@ -480,6 +512,12 @@
                 document.getElementById('totalRecordsBadge').textContent = `${processedMasterData.length.toLocaleString()} Unique Records Ready`;
                 actionPanel.classList.add('hidden');
                 document.getElementById('splitPanel').classList.remove('hidden');
+                
+                // Pre-fill default filename box if empty
+                const activeSources = Object.values(gridState).map(g => g.source).filter(Boolean);
+                const defaultPrefix = activeSources.join('_').toLowerCase();
+                document.getElementById('customFilenameInput').value = defaultPrefix;
+
                 updateEvenEstimate();
                 setupManualDefaultRows();
 
@@ -489,10 +527,8 @@
             }
         }
 
-        // Helper to ingest and standardize any source into unified schema
         async function buildSourceMasterTable(sourceType, fileList, masterTableName) {
             db.run(`DROP TABLE IF EXISTS ${masterTableName};`);
-
             const unionQueries = [];
 
             for (let i = 0; i < fileList.length; i++) {
@@ -526,7 +562,7 @@
                     const insertSql = `INSERT INTO ${tableName} (first_name, last_name, phone, email, address_full, city, state, postal_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
                     db.run("BEGIN TRANSACTION;");
                     parsedData.forEach(row => {
-                        db.run(insertSql, [row.first_name || null, row.last_name || null, row.phone || null, row.email || null, row.address_full || null, row.city || null, row.state || null, row.postal_code || null]);
+                        db.run(insertSql, [row.first_name || null, row.last_name || null, row.phone || null, "", row.address_full || null, row.city || null, row.state || null, row.postal_code || null]);
                     });
                     db.run("COMMIT;");
 
@@ -547,7 +583,7 @@
                             row["First Name"] || row.first_name || null,
                             row["Last Name"] || row.last_name || null,
                             row["Phone"] || row.phone || null,
-                            "", // email set to empty as per requirement
+                            "", 
                             row["Address"] || row.street_address || null,
                             row["City"] || row.city || null,
                             row["State"] || row.state || null,
@@ -575,7 +611,6 @@
             db.run(buildSql);
         }
 
-        // --- SPLIT & DOWNLOAD MANAGER ---
         function toggleSplitMode(mode) {
             if (mode === 'even') {
                 document.getElementById('evenModeControls').classList.remove('hidden');
@@ -657,13 +692,26 @@
             }
         }
 
+        // Helper: Format record counts into 'k' notation (e.g. 15400 -> "15k")
+        function formatCountK(count) {
+            if (count >= 1000) {
+                return `${Math.round(count / 1000)}k`;
+            }
+            return count.toString();
+        }
+
         function executeExport() {
             const mode = document.querySelector('input[name="splitMode"]:checked').value;
             const totalRecords = processedMasterData.length;
-            const activeSources = Object.values(gridState).map(g => g.source).filter(Boolean);
-            const prefix = activeSources.join('_').toLowerCase();
-
+            
             if (totalRecords === 0) return;
+
+            // Get custom base filename input
+            let customPrefix = document.getElementById('customFilenameInput').value.trim();
+            if (!customPrefix) {
+                const activeSources = Object.values(gridState).map(g => g.source).filter(Boolean);
+                customPrefix = activeSources.join('_').toLowerCase();
+            }
 
             if (mode === 'even') {
                 const numFiles = parseInt(document.getElementById('evenPartsInput').value) || 1;
@@ -672,25 +720,33 @@
                 for (let i = 0; i < numFiles; i++) {
                     const chunk = processedMasterData.slice(i * chunkSize, (i + 1) * chunkSize);
                     if (chunk.length > 0) {
-                        downloadCsv(chunk, `${prefix}_part_${i + 1}_of_${numFiles}.csv`);
+                        const countStr = formatCountK(chunk.length);
+                        const filename = `${customPrefix}_${countStr}_part_${i + 1}_of_${numFiles}.csv`;
+                        downloadCsv(chunk, filename);
                     }
                 }
             } else {
                 const inputs = document.querySelectorAll('.manual-count-input');
                 let currentIndex = 0;
+                const activeInputs = Array.from(inputs).filter(i => (parseInt(i.value) || 0) > 0);
+                const totalParts = activeInputs.length;
 
-                inputs.forEach((input, i) => {
+                activeInputs.forEach((input, i) => {
                     const count = parseInt(input.value) || 0;
                     if (count > 0 && currentIndex < totalRecords) {
                         const chunk = processedMasterData.slice(currentIndex, currentIndex + count);
                         currentIndex += count;
-                        downloadCsv(chunk, `${prefix}_custom_part_${i + 1}.csv`);
+                        const countStr = formatCountK(chunk.length);
+                        const filename = `${customPrefix}_${countStr}_part_${i + 1}_of_${totalParts}.csv`;
+                        downloadCsv(chunk, filename);
                     }
                 });
 
                 if (currentIndex < totalRecords) {
                     const remainingChunk = processedMasterData.slice(currentIndex);
-                    downloadCsv(remainingChunk, `${prefix}_custom_part_remaining.csv`);
+                    const countStr = formatCountK(remainingChunk.length);
+                    const filename = `${customPrefix}_${countStr}_part_remaining.csv`;
+                    downloadCsv(remainingChunk, filename);
                 }
             }
         }
