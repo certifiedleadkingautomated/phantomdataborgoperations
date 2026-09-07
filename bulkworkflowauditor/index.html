@@ -470,7 +470,7 @@
                                                 </span>
                                                 ${todayReport.success ? `
                                                     <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                                                        🚀 ${(todayReport.messagesSentToday || 0).toLocaleString()} Messages Sent Today
+                                                        🚀 ${(todayReport.messagesSentToday).toLocaleString()} Messages Sent Today
                                                     </span>
                                                 ` : `
                                                     <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
@@ -479,17 +479,17 @@
                                                 `}
                                             </div>
                                     
-                                            ${todayReport.success ? `
-                                                <div class="text-[11px] text-slate-400 font-mono flex items-center justify-between pt-1 border-t border-slate-800">
-                                                    <span>Workflow: <strong class="text-indigo-300">${todayReport.workflowName}</strong></span>
-                                                    <span>Step ID: <span class="text-slate-400">${todayReport.subSourceId}</span></span>
-                                                </div>
+                                            // ${todayReport.success ? `
+                                            //     <div class="text-[11px] text-slate-400 font-mono flex items-center justify-between pt-1 border-t border-slate-800">
+                                            //         <span>Workflow: <strong class="text-indigo-300">${todayReport.workflowName}</strong></span>
+                                            //         <span>Step ID: <span class="text-slate-400">${todayReport.subSourceId}</span></span>
+                                            //     </div>
                                                 
-                                                <details class="text-[10px] text-slate-400 pt-1 cursor-pointer">
-                                                    <summary class="hover:text-slate-200 font-semibold text-indigo-300">🔍 View Complete Aggregate JSON</summary>
-                                                    <pre class="mt-1 p-2 bg-slate-900 text-slate-300 rounded overflow-x-auto text-[9px] font-mono">${JSON.stringify(todayReport.todaySmsData, null, 2)}</pre>
-                                                </details>
-                                            ` : ''}
+                                            //     <details class="text-[10px] text-slate-400 pt-1 cursor-pointer">
+                                            //         <summary class="hover:text-slate-200 font-semibold text-indigo-300">🔍 View Complete Aggregate JSON</summary>
+                                            //         <pre class="mt-1 p-2 bg-slate-900 text-slate-300 rounded overflow-x-auto text-[9px] font-mono">${JSON.stringify(todayReport.todaySmsData, null, 2)}</pre>
+                                            //     </details>
+                                            // ` : ''}
                                         </div>
                                     ` : ''}
         
