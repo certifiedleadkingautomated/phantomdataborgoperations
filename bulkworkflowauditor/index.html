@@ -262,7 +262,7 @@
             startTimer();
 
             // Replace with your Cloudflare Worker URL
-            const WORKER_URL = "https://blue-queen-3bef.miguel-f88.workers.dev/";
+            const WORKER_URL = "https://your-worker-name.your-subdomain.workers.dev";
 
             try {
                 const response = await fetch(WORKER_URL, {
@@ -291,6 +291,76 @@
                 stopTimer();
                 submitAuditBtn.disabled = false;
             }
+        }
+
+        // Add N business days (skipping Saturdays & Sundays) to a given start date
+        function addBusinessDays(startDate, numDays) {
+            let current = new Date(startDate);
+            let added = 0;
+            while (added < numDays) {
+                current.setDate(current.getDate() + 1);
+                const dayOfWeek = current.getDay(); // 0 = Sunday, 6 = Saturday
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    added++;
+                }
+            }
+            return current;
+        }
+
+        function calculateWorkflowTimeline(wf, dailyRate) {
+            const total = wf.totalCount || 0;
+            const processed = wf.processedCount || 0;
+            const remaining = Math.max(0, total - processed);
+
+            if (dailyRate <= 0 || remaining === 0) {
+                return {
+                    daysStr: "0 days (completed)",
+                    finishDateStr: "Completed"
+                };
+            }
+
+            const rawDays = remaining / dailyRate;
+            const totalDays = Math.round(rawDays);
+            const zipDays = Math.max(0, totalDays - 2);
+
+            let zipPromptText = "";
+            if (zipDays === 0) {
+                zipPromptText = "ask for zip codes today";
+            } else if (zipDays === 1) {
+                zipPromptText = "ask for zip codes tomorrow";
+            } else {
+                zipPromptText = `ask for zip codes in ${zipDays} days`;
+            }
+
+            const mainDaysLine = `${totalDays} days (${zipPromptText})`;
+
+            const status = (wf.status || "").toLowerCase();
+            let startDate = new Date();
+            let prefix = "Est. Finish:";
+
+            if (status === "scheduled" || status === "legacy_scheduled") {
+                if (wf.sprintSchedule && wf.sprintSchedule.startAt) {
+                    startDate = new Date(wf.sprintSchedule.startAt);
+                    prefix = "Scheduled to finish:";
+                }
+            } else if (status === "paused") {
+                prefix = "Was expected to finish on:";
+            } else if (status === "cancelled") {
+                prefix = "Would have finished on:";
+            }
+
+            const finishDate = addBusinessDays(startDate, totalDays);
+            const formattedFinish = finishDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            return {
+                daysStr: mainDaysLine,
+                finishDateStr: `${prefix} ${formattedFinish}`
+            };
         }
 
         function renderResults(results) {
@@ -324,51 +394,25 @@
                     <div id="acc-${idx}" class="${isFirst ? '' : 'hidden'} p-4 space-y-4 font-mono text-xs">
                         ${workflows.length === 0 ? '<p class="text-slate-500 text-xs">No bulk-workflow-v2 records found for this location.</p>' : ''}
                         ${workflows.map(wf => {
+                            const timeline = calculateWorkflowTimeline(wf, dailyRate);
                             const sched = wf.sprintSchedule || {};
                             const daysStr = Array.isArray(sched.batchExecutionDays) ? sched.batchExecutionDays.join(', ').toUpperCase() : 'N/A';
                             
-                            // Frequency String
                             const freqStr = (sched.batchRepeatAfter && sched.batchRepeatType) 
                                 ? `Every ${sched.batchRepeatAfter} ${sched.batchRepeatType}` 
                                 : 'N/A';
 
-                            // Time Window String
                             const timeWindowStr = (sched.batchExecutionStartTime && sched.batchExecutionEndTime)
                                 ? `${sched.batchExecutionStartTime} - ${sched.batchExecutionEndTime}`
                                 : 'N/A';
 
-                            // Days Left & Parenthetical String Calculation
-                            const total = wf.totalCount || 0;
-                            const processed = wf.processedCount || 0;
-                            const remaining = Math.max(0, total - processed);
-
-                            let daysLeft = 0;
-                            let parentheticalText = "(today)";
-
-                            if (dailyRate > 0 && remaining > 0) {
-                                daysLeft = Math.round(remaining / dailyRate); // Standard rounding (.5 rounds up)
-                                
-                                if (daysLeft === 0) {
-                                    parentheticalText = "(today)";
-                                } else if (daysLeft === 1) {
-                                    parentheticalText = "(tomorrow)";
-                                } else {
-                                    const adjustedDays = Math.max(0, daysLeft - 2);
-                                    parentheticalText = `(${adjustedDays} days left)`;
-                                }
-                            } else if (remaining === 0) {
-                                parentheticalText = "(completed)";
-                            }
-
                             return `
                                 <div class="p-4 bg-slate-800/90 rounded-xl border border-slate-700/60 space-y-3">
-                                    <!-- Title & Status -->
                                     <div class="flex items-center justify-between text-slate-200 font-sans font-bold text-xs border-b border-slate-700 pb-2">
                                         <span class="text-indigo-200 text-sm">📲 ${wf.title || 'SMS Bulk Workflow'}</span>
                                         <span class="text-[10px] uppercase px-2.5 py-0.5 rounded ${getStatusBadgeClass(wf.status)}">${wf.status}</span>
                                     </div>
 
-                                    <!-- Main Grid -->
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-300">
                                         <div><span class="text-slate-500">Created Date:</span> ${wf.dateAdded ? new Date(wf.dateAdded).toLocaleString() : 'N/A'}</div>
                                         <div><span class="text-slate-500">Created By User:</span> ${wf.byUserName || 'N/A'}</div>
@@ -380,14 +424,20 @@
                                         <div><span class="text-slate-500">Location Timezone:</span> ${sched.locationTimezone || 'N/A'}</div>
                                         <div><span class="text-slate-500">Next Resume Batch:</span> ${sched.nextResume ? new Date(sched.nextResume).toLocaleString() : 'N/A'}</div>
                                         <div><span class="text-slate-500">Date Updated (Pause/Resume):</span> ${wf.dateUpdated ? new Date(wf.dateUpdated).toLocaleString() : 'None'}</div>
-                                        <div><span class="text-slate-500">Processed / Total:</span> <strong class="text-emerald-400">${processed.toLocaleString()}</strong> / ${total.toLocaleString()}</div>
-                                        <div>
-                                            <span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} msgs/day 
-                                            <span class="text-sky-300 font-bold ml-1">${parentheticalText}</span>
+                                        <div><span class="text-slate-500">Processed / Total:</span> <strong class="text-emerald-400">${wf.processedCount.toLocaleString()}</strong> / ${wf.totalCount.toLocaleString()}</div>
+                                        <div><span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} msgs/day</div>
+
+                                        <!-- TIMELINE DISPLAY -->
+                                        <div class="col-span-1 md:col-span-2 p-2.5 bg-slate-900/80 rounded-lg border border-slate-700/70 space-y-1">
+                                            <div class="text-xs font-bold text-sky-300">
+                                                ⏳ ${timeline.daysStr}
+                                            </div>
+                                            <div class="text-[11px] font-mono text-amber-300">
+                                                📅 ${timeline.finishDateStr}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <!-- Timeline Completion/Cancellation -->
                                     ${wf.processingCompletedOn ? `
                                         <div class="text-[10px] text-emerald-400 pt-1 border-t border-slate-700/50">
                                             ✓ Completed On: ${new Date(wf.processingCompletedOn).toLocaleString()}
@@ -399,7 +449,6 @@
                                         </div>
                                     ` : ''}
 
-                                    <!-- Document Source Query Collapsible -->
                                     <details class="text-[10px] text-slate-400 bg-slate-900/60 rounded-lg p-2 border border-slate-700/40 cursor-pointer">
                                         <summary class="font-semibold text-indigo-300 hover:text-indigo-200">🔍 View Document Source Query JSON</summary>
                                         <pre class="mt-2 text-[9px] overflow-x-auto text-slate-300 bg-slate-950 p-2 rounded">${JSON.stringify(wf.documentSourceQuery, null, 2)}</pre>
