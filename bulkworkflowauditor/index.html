@@ -17,7 +17,7 @@
                 <span>⚙️ GHL Bulk Workflow Inspector</span>
             </h1>
             <p class="text-xs md:text-sm text-slate-400 max-w-2xl mx-auto">
-                Retrieve active and past `bulk-workflow-v2` actions across sub-accounts using location lookup and bearer auth tokens.
+                Retrieve active & scheduled SMS bulk workflows across sub-accounts with remaining execution timeline estimates.
             </p>
         </div>
 
@@ -261,7 +261,8 @@
             submitAuditBtn.disabled = true;
             startTimer();
 
-            const WORKER_URL = "https://blue-queen-3bef.miguel-f88.workers.dev/"; // Replace with your Worker URL
+            // Replace with your Cloudflare Worker URL
+            const WORKER_URL = "https://blue-queen-3bef.miguel-f88.workers.dev/";
 
             try {
                 const response = await fetch(WORKER_URL, {
@@ -300,6 +301,7 @@
 
             results.forEach((res, idx) => {
                 const workflows = res.data || [];
+                const dailyRate = res.dailyRateColS || 0;
                 totalWorkflows += workflows.length;
 
                 const isFirst = idx === 0;
@@ -314,29 +316,97 @@
                             <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
                                 ${workflows.length} Workflows
                             </span>
-                            <span class="text-[10px] font-mono text-slate-500">Location ID: ${res.locationId || 'N/A'}</span>
+                            <span class="text-[10px] font-mono text-slate-400">Daily Rate (Col S): <strong class="text-sky-300">${dailyRate.toLocaleString()} msgs/day</strong></span>
                         </div>
                         <span id="icon-acc-${idx}" class="text-xs text-slate-400 transform transition-transform ${isFirst ? 'rotate-180' : ''}">▼</span>
                     </button>
 
                     <div id="acc-${idx}" class="${isFirst ? '' : 'hidden'} p-4 space-y-4 font-mono text-xs">
                         ${workflows.length === 0 ? '<p class="text-slate-500 text-xs">No bulk-workflow-v2 records found for this location.</p>' : ''}
-                        ${workflows.map(wf => `
-                            <div class="p-3 bg-slate-800/90 rounded-xl border border-slate-700/60 space-y-2">
-                                <div class="flex items-center justify-between text-slate-200 font-sans font-bold text-xs border-b border-slate-700 pb-1.5">
-                                    <span class="text-indigo-200">📝 ${wf.description || 'No Description'}</span>
-                                    <span class="text-[10px] uppercase px-2 py-0.5 rounded ${getStatusBadgeClass(wf.status)}">${wf.status}</span>
+                        ${workflows.map(wf => {
+                            const sched = wf.sprintSchedule || {};
+                            const daysStr = Array.isArray(sched.batchExecutionDays) ? sched.batchExecutionDays.join(', ').toUpperCase() : 'N/A';
+                            
+                            // Frequency String
+                            const freqStr = (sched.batchRepeatAfter && sched.batchRepeatType) 
+                                ? `Every ${sched.batchRepeatAfter} ${sched.batchRepeatType}` 
+                                : 'N/A';
+
+                            // Time Window String
+                            const timeWindowStr = (sched.batchExecutionStartTime && sched.batchExecutionEndTime)
+                                ? `${sched.batchExecutionStartTime} - ${sched.batchExecutionEndTime}`
+                                : 'N/A';
+
+                            // Days Left & Parenthetical String Calculation
+                            const total = wf.totalCount || 0;
+                            const processed = wf.processedCount || 0;
+                            const remaining = Math.max(0, total - processed);
+
+                            let daysLeft = 0;
+                            let parentheticalText = "(today)";
+
+                            if (dailyRate > 0 && remaining > 0) {
+                                daysLeft = Math.round(remaining / dailyRate); // Standard rounding (.5 rounds up)
+                                
+                                if (daysLeft === 0) {
+                                    parentheticalText = "(today)";
+                                } else if (daysLeft === 1) {
+                                    parentheticalText = "(tomorrow)";
+                                } else {
+                                    const adjustedDays = Math.max(0, daysLeft - 2);
+                                    parentheticalText = `(${adjustedDays} days left)`;
+                                }
+                            } else if (remaining === 0) {
+                                parentheticalText = "(completed)";
+                            }
+
+                            return `
+                                <div class="p-4 bg-slate-800/90 rounded-xl border border-slate-700/60 space-y-3">
+                                    <!-- Title & Status -->
+                                    <div class="flex items-center justify-between text-slate-200 font-sans font-bold text-xs border-b border-slate-700 pb-2">
+                                        <span class="text-indigo-200 text-sm">📲 ${wf.title || 'SMS Bulk Workflow'}</span>
+                                        <span class="text-[10px] uppercase px-2.5 py-0.5 rounded ${getStatusBadgeClass(wf.status)}">${wf.status}</span>
+                                    </div>
+
+                                    <!-- Main Grid -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-300">
+                                        <div><span class="text-slate-500">Created Date:</span> ${wf.dateAdded ? new Date(wf.dateAdded).toLocaleString() : 'N/A'}</div>
+                                        <div><span class="text-slate-500">Created By User:</span> ${wf.byUserName || 'N/A'}</div>
+                                        <div><span class="text-slate-500">Scheduled Start At:</span> ${sched.startAt ? new Date(sched.startAt).toLocaleString() : 'N/A'}</div>
+                                        <div><span class="text-slate-500">Batch Quantity:</span> ${sched.batchQuantity || 'N/A'} msgs</div>
+                                        <div><span class="text-slate-500">Sending Frequency:</span> ${freqStr}</div>
+                                        <div><span class="text-slate-500">Execution Days:</span> ${daysStr}</div>
+                                        <div><span class="text-slate-500">Time Window:</span> ${timeWindowStr}</div>
+                                        <div><span class="text-slate-500">Location Timezone:</span> ${sched.locationTimezone || 'N/A'}</div>
+                                        <div><span class="text-slate-500">Next Resume Batch:</span> ${sched.nextResume ? new Date(sched.nextResume).toLocaleString() : 'N/A'}</div>
+                                        <div><span class="text-slate-500">Date Updated (Pause/Resume):</span> ${wf.dateUpdated ? new Date(wf.dateUpdated).toLocaleString() : 'None'}</div>
+                                        <div><span class="text-slate-500">Processed / Total:</span> <strong class="text-emerald-400">${processed.toLocaleString()}</strong> / ${total.toLocaleString()}</div>
+                                        <div>
+                                            <span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} msgs/day 
+                                            <span class="text-sky-300 font-bold ml-1">${parentheticalText}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Timeline Completion/Cancellation -->
+                                    ${wf.processingCompletedOn ? `
+                                        <div class="text-[10px] text-emerald-400 pt-1 border-t border-slate-700/50">
+                                            ✓ Completed On: ${new Date(wf.processingCompletedOn).toLocaleString()}
+                                        </div>
+                                    ` : ''}
+                                    ${wf.processingCancelledOn ? `
+                                        <div class="text-[10px] text-red-400 pt-1 border-t border-slate-700/50">
+                                            ✕ Cancelled On: ${new Date(wf.processingCancelledOn).toLocaleString()}
+                                        </div>
+                                    ` : ''}
+
+                                    <!-- Document Source Query Collapsible -->
+                                    <details class="text-[10px] text-slate-400 bg-slate-900/60 rounded-lg p-2 border border-slate-700/40 cursor-pointer">
+                                        <summary class="font-semibold text-indigo-300 hover:text-indigo-200">🔍 View Document Source Query JSON</summary>
+                                        <pre class="mt-2 text-[9px] overflow-x-auto text-slate-300 bg-slate-950 p-2 rounded">${JSON.stringify(wf.documentSourceQuery, null, 2)}</pre>
+                                    </details>
                                 </div>
-                                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
-                                    <div><span class="text-slate-500">By User:</span> ${wf.byUserName}</div>
-                                    <div><span class="text-slate-500">Created:</span> ${wf.dateAdded ? new Date(wf.dateAdded).toLocaleString() : ''}</div>
-                                    <div><span class="text-slate-500">Processed:</span> ${wf.statsProcessed} / ${wf.statsTotal}</div>
-                                    <div><span class="text-slate-500">Successful:</span> <span class="text-emerald-400">${wf.statsSuccessSuccess}</span></div>
-                                    <div><span class="text-slate-500">Batch Qty:</span> ${wf.sprintSchedule.batchQuantity || 'N/A'}</div>
-                                    <div><span class="text-slate-500">Schedule Type:</span> ${wf.scheduleType}</div>
-                                </div>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 `;
 
