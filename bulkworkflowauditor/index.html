@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHL Bulk Workflow Inspector</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col items-center justify-center">
+
+    <div class="w-full max-w-7xl space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl text-center space-y-2">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center justify-center space-x-3">
+                <span>⚙️ GHL Bulk Workflow Inspector</span>
+            </h1>
+            <p class="text-xs md:text-sm text-slate-400 max-w-2xl mx-auto">
+                Retrieve active and past `bulk-workflow-v2` actions across sub-accounts using location lookup and bearer auth tokens.
+            </p>
+        </div>
+
+        <!-- 2-Column Main Workspace -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: Control Inputs (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Client Name Input -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                            Client Name Input
+                        </label>
+                        <button onclick="removeAllTags()" class="text-xs text-slate-400 hover:text-red-400 transition-colors font-medium">
+                            Clear All
+                        </button>
+                    </div>
+
+                    <div id="tagContainer" 
+                         class="w-full min-h-[120px] bg-slate-900 border border-slate-700 rounded-xl p-3 flex flex-wrap gap-2 items-start focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all cursor-text"
+                         onclick="focusInput()">
+                        <input type="text" id="tagInput" 
+                               placeholder="Paste client names from Google Sheets..." 
+                               class="bg-transparent text-xs text-slate-200 focus:outline-none flex-1 min-w-[180px] p-1">
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 text-xs text-slate-400">
+                        <span>Total Clients:</span>
+                        <span id="detectedCountBadge" class="font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
+                            0 / 20 Clients
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Authorization Token Input -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-2">
+                    <label for="tokenInput" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                        GHL Bearer Authorization Token <span class="text-red-400">*</span>
+                    </label>
+                    <textarea id="tokenInput" rows="3" placeholder="Paste full Bearer / token-id string here..."
+                              class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Action Panel with Timer -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <button id="submitAuditBtn" onclick="runInspection()" disabled
+                        class="w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed">
+                        <span>🚀 Fetch Bulk Workflows</span>
+                    </button>
+
+                    <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 flex items-center justify-between space-x-2">
+                        <span id="statusText" class="text-xs text-slate-400 truncate">Waiting for inputs...</span>
+                        <div id="timerContainer" class="hidden items-center space-x-1.5 shrink-0">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span id="timerText" class="font-mono text-xs text-emerald-400 font-bold">00:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Banner -->
+                <div id="errorBanner" class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 text-xs flex items-start justify-between space-x-2">
+                    <span id="errorMessage" class="leading-relaxed">Error message here.</span>
+                    <button onclick="hideError()" class="text-red-400 hover:text-white font-bold">✕</button>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Workflow Results Accordions (7 Cols) -->
+            <div class="lg:col-span-7 space-y-4">
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+                        <h2 class="text-sm font-bold tracking-wider text-slate-200 uppercase">
+                            <span>Fetched Bulk Workflows</span>
+                        </h2>
+                        <span id="summaryBadge" class="text-xs font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-1 rounded-md border border-indigo-500/30">
+                            0 Workflows Found
+                        </span>
+                    </div>
+
+                    <!-- Placeholder -->
+                    <div id="emptyResultsPlaceholder" class="p-12 text-center space-y-3">
+                        <div class="w-12 h-12 bg-slate-700/40 rounded-full flex items-center justify-center mx-auto text-slate-400 text-xl">
+                            📋
+                        </div>
+                        <p class="text-xs text-slate-400">Results will appear here as expandable accordions once requested.</p>
+                    </div>
+
+                    <!-- Accordions Container -->
+                    <div id="accordionsContainer" class="space-y-3"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const tagContainer = document.getElementById('tagContainer');
+        const tagInput = document.getElementById('tagInput');
+        const tokenInput = document.getElementById('tokenInput');
+        const detectedCountBadge = document.getElementById('detectedCountBadge');
+        const submitAuditBtn = document.getElementById('submitAuditBtn');
+        const statusText = document.getElementById('statusText');
+        const timerContainer = document.getElementById('timerContainer');
+        const timerText = document.getElementById('timerText');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorBanner = document.getElementById('errorBanner');
+        const accordionsContainer = document.getElementById('accordionsContainer');
+        const emptyResultsPlaceholder = document.getElementById('emptyResultsPlaceholder');
+        const summaryBadge = document.getElementById('summaryBadge');
+
+        let clientTags = [];
+        const MAX_CLIENTS = 20;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+
+        function focusInput() { tagInput.focus(); }
+
+        tokenInput.addEventListener('input', validateFormState);
+
+        function startTimer() {
+            secondsElapsed = 0;
+            timerText.textContent = "00:00";
+            timerContainer.classList.remove('hidden');
+            timerContainer.classList.add('flex');
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                const secs = String(secondsElapsed % 60).padStart(2, '0');
+                timerText.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerContainer.classList.remove('flex');
+            timerContainer.classList.add('hidden');
+        }
+
+        tagInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            hideError();
+
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            const incomingNames = pastedText.split(/[\n\r\t]+/).map(n => n.trim()).filter(n => n.length > 0);
+
+            let limitReached = false;
+            for (const name of incomingNames) {
+                if (clientTags.length >= MAX_CLIENTS) { limitReached = true; break; }
+                if (!clientTags.includes(name)) clientTags.push(name);
+            }
+
+            if (limitReached || incomingNames.length > MAX_CLIENTS) {
+                showError(`Limit reached: Retained first 20 client names.`);
+            }
+
+            tagInput.value = '';
+            renderTags();
+        });
+
+        tagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                hideError();
+
+                if (clientTags.length >= MAX_CLIENTS) {
+                    showError(`Maximum limit of ${MAX_CLIENTS} clients reached.`);
+                    return;
+                }
+
+                const val = tagInput.value.trim();
+                if (val && !clientTags.includes(val)) {
+                    clientTags.push(val);
+                    tagInput.value = '';
+                    renderTags();
+                }
+            } else if (e.key === 'Backspace' && tagInput.value === '' && clientTags.length > 0) {
+                clientTags.pop();
+                hideError();
+                renderTags();
+            }
+        });
+
+        function renderTags() {
+            const existing = tagContainer.querySelectorAll('.tag-pill');
+            existing.forEach(t => t.remove());
+
+            clientTags.forEach((name, idx) => {
+                const pill = document.createElement('div');
+                pill.className = "tag-pill inline-flex items-center space-x-1.5 px-3 py-1 bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 rounded-lg text-xs font-medium shadow-sm";
+                pill.innerHTML = `
+                    <span>${name}</span>
+                    <button onclick="removeSingleTag(${idx}, event)" class="text-indigo-400 hover:text-red-400 font-bold ml-1 focus:outline-none">✕</button>
+                `;
+                tagContainer.insertBefore(pill, tagInput);
+            });
+
+            detectedCountBadge.textContent = `${clientTags.length} / ${MAX_CLIENTS} Clients`;
+            tagInput.style.display = clientTags.length >= MAX_CLIENTS ? 'none' : 'inline-block';
+            validateFormState();
+        }
+
+        function validateFormState() {
+            const hasClients = clientTags.length > 0;
+            const hasToken = tokenInput.value.trim().length > 0;
+
+            if (hasClients && hasToken) {
+                submitAuditBtn.disabled = false;
+                submitAuditBtn.className = "w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer";
+                statusText.textContent = "Ready to query GHL Bulk Workflows.";
+            } else {
+                submitAuditBtn.disabled = true;
+                submitAuditBtn.className = "w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed";
+                statusText.textContent = !hasClients ? "Waiting for client names..." : "Authorization Token is required.";
+            }
+        }
+
+        function removeSingleTag(idx, e) {
+            e.stopPropagation();
+            clientTags.splice(idx, 1);
+            renderTags();
+        }
+
+        function removeAllTags() {
+            clientTags = [];
+            tagInput.value = '';
+            renderTags();
+            accordionsContainer.innerHTML = '';
+            emptyResultsPlaceholder.classList.remove('hidden');
+            summaryBadge.textContent = "0 Workflows Found";
+        }
+
+        async function runInspection() {
+            if (clientTags.length === 0 || !tokenInput.value.trim()) return;
+
+            statusText.textContent = "Fetching GHL bulk workflows...";
+            submitAuditBtn.disabled = true;
+            startTimer();
+
+            const WORKER_URL = "https://blue-queen-3bef.miguel-f88.workers.dev/"; // Replace with your Worker URL
+
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        clientNames: clientTags,
+                        authToken: tokenInput.value.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.results)) {
+                    statusText.textContent = `Completed in ${timerText.textContent}!`;
+                    renderResults(data.results);
+                } else {
+                    showError("Inspection Error: " + (data.error || "Failed to fetch."));
+                    statusText.textContent = "Request failed.";
+                }
+
+            } catch (err) {
+                showError("Network Error: " + err.message);
+                statusText.textContent = "Request failed.";
+            } finally {
+                stopTimer();
+                submitAuditBtn.disabled = false;
+            }
+        }
+
+        function renderResults(results) {
+            accordionsContainer.innerHTML = '';
+            emptyResultsPlaceholder.classList.add('hidden');
+
+            let totalWorkflows = 0;
+
+            results.forEach((res, idx) => {
+                const workflows = res.data || [];
+                totalWorkflows += workflows.length;
+
+                const isFirst = idx === 0;
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-md";
+
+                card.innerHTML = `
+                    <button onclick="toggleAccordion('acc-${idx}')" 
+                            class="w-full px-4 py-3 bg-slate-800/80 hover:bg-slate-800 flex items-center justify-between text-left transition-colors font-medium border-b border-slate-700/40">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-indigo-300">${res.requestedName}</span>
+                            <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                                ${workflows.length} Workflows
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-500">Location ID: ${res.locationId || 'N/A'}</span>
+                        </div>
+                        <span id="icon-acc-${idx}" class="text-xs text-slate-400 transform transition-transform ${isFirst ? 'rotate-180' : ''}">▼</span>
+                    </button>
+
+                    <div id="acc-${idx}" class="${isFirst ? '' : 'hidden'} p-4 space-y-4 font-mono text-xs">
+                        ${workflows.length === 0 ? '<p class="text-slate-500 text-xs">No bulk-workflow-v2 records found for this location.</p>' : ''}
+                        ${workflows.map(wf => `
+                            <div class="p-3 bg-slate-800/90 rounded-xl border border-slate-700/60 space-y-2">
+                                <div class="flex items-center justify-between text-slate-200 font-sans font-bold text-xs border-b border-slate-700 pb-1.5">
+                                    <span class="text-indigo-200">📝 ${wf.description || 'No Description'}</span>
+                                    <span class="text-[10px] uppercase px-2 py-0.5 rounded ${getStatusBadgeClass(wf.status)}">${wf.status}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
+                                    <div><span class="text-slate-500">By User:</span> ${wf.byUserName}</div>
+                                    <div><span class="text-slate-500">Created:</span> ${wf.dateAdded ? new Date(wf.dateAdded).toLocaleString() : ''}</div>
+                                    <div><span class="text-slate-500">Processed:</span> ${wf.statsProcessed} / ${wf.statsTotal}</div>
+                                    <div><span class="text-slate-500">Successful:</span> <span class="text-emerald-400">${wf.statsSuccessSuccess}</span></div>
+                                    <div><span class="text-slate-500">Batch Qty:</span> ${wf.sprintSchedule.batchQuantity || 'N/A'}</div>
+                                    <div><span class="text-slate-500">Schedule Type:</span> ${wf.scheduleType}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+                accordionsContainer.appendChild(card);
+            });
+
+            summaryBadge.textContent = `${totalWorkflows} Workflows Found`;
+        }
+
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'complete': return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                case 'processing': return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+                case 'cancelled': return 'bg-red-500/20 text-red-300 border border-red-500/30';
+                case 'paused': return 'bg-sky-500/20 text-sky-300 border border-sky-500/30';
+                default: return 'bg-slate-700 text-slate-300';
+            }
+        }
+
+        function toggleAccordion(id) {
+            const body = document.getElementById(id);
+            const icon = document.getElementById(`icon-${id}`);
+            if (body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                body.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorBanner.classList.remove('hidden');
+        }
+
+        function hideError() { errorBanner.classList.add('hidden'); }
+    </script>
+</body>
+</html>
