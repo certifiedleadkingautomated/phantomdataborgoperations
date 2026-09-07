@@ -463,24 +463,33 @@
         
                                     <!-- TODAY'S SMS AGGREGATE PANEL (Shown ONLY for active 'processing' workflows) -->
                                     ${isProcessing ? `
-                                        <div class="p-3 bg-slate-950 border border-indigo-500/30 rounded-lg space-y-1 font-sans">
-                                            <div class="text-xs font-bold text-slate-200 flex items-center justify-between">
-                                                <span>📊 Today's SMS Reporting (Workflow SMS01)</span>
-                                                ${todayReport.success ? '<span class="text-[10px] text-emerald-400 font-mono">✓ Live Data</span>' : '<span class="text-[10px] text-amber-400 font-mono">⚠️ Pending/Skipped</span>'}
+                                        <div class="p-3 bg-slate-950 border border-indigo-500/40 rounded-xl space-y-2 font-sans shadow-inner">
+                                            <div class="flex items-center justify-between text-xs font-bold text-slate-200">
+                                                <span class="flex items-center space-x-1.5">
+                                                    <span>📊 Today's SMS Sent (Workflow SMS01)</span>
+                                                </span>
+                                                ${todayReport.success ? `
+                                                    <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                        🚀 ${(todayReport.messagesSentToday || 0).toLocaleString()} Messages Sent Today
+                                                    </span>
+                                                ` : `
+                                                    <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                                        ⚠️ ${todayReport.reason || 'Pending'}
+                                                    </span>
+                                                `}
                                             </div>
+                                    
                                             ${todayReport.success ? `
-                                                <div class="text-[11px] text-slate-300 font-mono pt-1">
-                                                    Workflow Name: <strong class="text-indigo-300">${todayReport.workflowName}</strong> | Step ID: <span class="text-slate-400">${todayReport.subSourceId}</span>
+                                                <div class="text-[11px] text-slate-400 font-mono flex items-center justify-between pt-1 border-t border-slate-800">
+                                                    <span>Workflow: <strong class="text-indigo-300">${todayReport.workflowName}</strong></span>
+                                                    <span>Step ID: <span class="text-slate-400">${todayReport.subSourceId}</span></span>
                                                 </div>
-                                                <details class="text-[10px] text-slate-400 mt-1 cursor-pointer">
-                                                    <summary class="hover:text-slate-200 font-semibold text-indigo-300">🔍 View Today's Message Aggregate JSON</summary>
+                                                
+                                                <details class="text-[10px] text-slate-400 pt-1 cursor-pointer">
+                                                    <summary class="hover:text-slate-200 font-semibold text-indigo-300">🔍 View Complete Aggregate JSON</summary>
                                                     <pre class="mt-1 p-2 bg-slate-900 text-slate-300 rounded overflow-x-auto text-[9px] font-mono">${JSON.stringify(todayReport.todaySmsData, null, 2)}</pre>
                                                 </details>
-                                            ` : `
-                                                <div class="text-[11px] text-slate-400 italic">
-                                                    ${todayReport.reason || todayReport.error || 'No reporting available.'}
-                                                </div>
-                                            `}
+                                            ` : ''}
                                         </div>
                                     ` : ''}
         
