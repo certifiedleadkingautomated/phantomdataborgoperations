@@ -308,12 +308,24 @@
             }
         }
 
-        function addBusinessDays(startDate, numDays) {
+        function addBusinessDays(startDate, numDays, includeStartDate = false) {
             let current = new Date(startDate);
-            let added = 0;
-            while (added < numDays) {
+            
+            // If numDays is 0 or less, return the start date
+            if (numDays <= 0) return current;
+        
+            // If starting on a weekend, advance to Monday first
+            while (current.getDay() === 0 || current.getDay() === 6) {
                 current.setDate(current.getDate() + 1);
-                const dayOfWeek = current.getDay();
+            }
+        
+            // If start date is Day 1, we only need to advance (numDays - 1) additional business days
+            let daysToAdvance = includeStartDate ? numDays - 1 : numDays;
+            let added = 0;
+        
+            while (added < daysToAdvance) {
+                current.setDate(current.getDate() + 1);
+                const dayOfWeek = current.getDay(); // 0 = Sun, 6 = Sat
                 if (dayOfWeek !== 0 && dayOfWeek !== 6) {
                     added++;
                 }
@@ -322,21 +334,22 @@
         }
 
         function calculateWorkflowTimeline(wf, dailyRate) {
-            const total = wf.totalCount || 0;
+            const total = wf.totalCount || wf.total || 0;
             const processed = wf.processedCount || 0;
             const remaining = Math.max(0, total - processed);
-
+        
             if (dailyRate <= 0 || remaining === 0) {
                 return {
                     daysStr: "0 days (completed)",
                     referenceDateStr: "Reference Date: Completed"
                 };
             }
-
+        
+            // 1. Calculate raw days from total remaining and round (.5 or greater rounds UP)
             const rawDays = remaining / dailyRate;
             const totalDays = Math.round(rawDays);
             const zipDays = Math.max(0, totalDays - 2);
-
+        
             let zipPromptText = "";
             if (zipDays === 0) {
                 zipPromptText = "ask for zip codes today";
@@ -345,13 +358,14 @@
             } else {
                 zipPromptText = `ask for zip codes in ${zipDays} days`;
             }
-
+        
             const mainDaysLine = `${totalDays} days (${zipPromptText})`;
-
+        
+            // 2. Determine anchor start date based on workflow status
             const status = (wf.status || "").toLowerCase();
-            let startDate = new Date();
+            let startDate = new Date(); // Default: Present day for active/processing
             let prefix = "Zip Codes Reference Date:";
-
+        
             if (status === "scheduled" || status === "legacy_scheduled") {
                 if (wf.sprintSchedule && wf.sprintSchedule.startAt) {
                     startDate = new Date(wf.sprintSchedule.startAt);
@@ -362,15 +376,16 @@
             } else if (status === "cancelled") {
                 prefix = "Would have asked zip codes on:";
             }
-
-            const refDate = addBusinessDays(startDate, zipDays);
+        
+            // 3. Calculate reference date using zipDays with includeStartDate = true (Day 1 = Start Date)
+            const refDate = addBusinessDays(startDate, zipDays, true);
             const formattedRefDate = refDate.toLocaleDateString('en-US', {
                 weekday: 'short',
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
             });
-
+        
             return {
                 daysStr: mainDaysLine,
                 referenceDateStr: `${prefix} ${formattedRefDate}`
