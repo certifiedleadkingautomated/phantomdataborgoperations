@@ -17,7 +17,7 @@
                 <span>⚙️ GHL Bulk Workflow Inspector</span>
             </h1>
             <p class="text-xs md:text-sm text-slate-400 max-w-2xl mx-auto">
-                Retrieve active & scheduled SMS bulk workflows across sub-accounts with remaining execution timeline estimates.
+                Retrieve active & scheduled SMS bulk workflows across sub-accounts with remaining execution timeline estimates and live daily SMS sending aggregates.
             </p>
         </div>
 
@@ -54,12 +54,21 @@
                     </div>
                 </div>
 
-                <!-- Authorization Token Input -->
+                <!-- Token 1 Input (Bulk Actions) -->
                 <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-2">
-                    <label for="tokenInput" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                        GHL Bearer Authorization Token <span class="text-red-400">*</span>
+                    <label for="tokenInput1" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                        Token 1: Bulk Actions Bearer Token <span class="text-red-400">*</span>
                     </label>
-                    <textarea id="tokenInput" rows="3" placeholder="Paste full Bearer / token-id string here..."
+                    <textarea id="tokenInput1" rows="2" placeholder="Paste Token 1 (Bulk Actions API)..."
+                              class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-none"></textarea>
+                </div>
+
+                <!-- Token 2 Input (Backend Workflows & Reporting) -->
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-2">
+                    <label for="tokenInput2" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                        Token 2: Backend Services Bearer Token <span class="text-red-400">*</span>
+                    </label>
+                    <textarea id="tokenInput2" rows="2" placeholder="Paste Token 2 (Workflow & Reporting API)..."
                               class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-none"></textarea>
                 </div>
 
@@ -67,7 +76,7 @@
                 <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
                     <button id="submitAuditBtn" onclick="runInspection()" disabled
                         class="w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed">
-                        <span>🚀 Fetch Bulk Workflows</span>
+                        <span>🚀 Fetch Bulk Workflows & Daily Stats</span>
                     </button>
 
                     <div class="p-3 bg-slate-900/60 rounded-xl border border-slate-700/50 flex items-center justify-between space-x-2">
@@ -119,7 +128,8 @@
     <script>
         const tagContainer = document.getElementById('tagContainer');
         const tagInput = document.getElementById('tagInput');
-        const tokenInput = document.getElementById('tokenInput');
+        const tokenInput1 = document.getElementById('tokenInput1');
+        const tokenInput2 = document.getElementById('tokenInput2');
         const detectedCountBadge = document.getElementById('detectedCountBadge');
         const submitAuditBtn = document.getElementById('submitAuditBtn');
         const statusText = document.getElementById('statusText');
@@ -138,7 +148,8 @@
 
         function focusInput() { tagInput.focus(); }
 
-        tokenInput.addEventListener('input', validateFormState);
+        tokenInput1.addEventListener('input', validateFormState);
+        tokenInput2.addEventListener('input', validateFormState);
 
         function startTimer() {
             secondsElapsed = 0;
@@ -226,16 +237,19 @@
 
         function validateFormState() {
             const hasClients = clientTags.length > 0;
-            const hasToken = tokenInput.value.trim().length > 0;
+            const hasToken1 = tokenInput1.value.trim().length > 0;
+            const hasToken2 = tokenInput2.value.trim().length > 0;
 
-            if (hasClients && hasToken) {
+            if (hasClients && hasToken1 && hasToken2) {
                 submitAuditBtn.disabled = false;
                 submitAuditBtn.className = "w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer";
-                statusText.textContent = "Ready to query GHL Bulk Workflows.";
+                statusText.textContent = "Ready to query GHL Bulk Workflows & Reporting.";
             } else {
                 submitAuditBtn.disabled = true;
                 submitAuditBtn.className = "w-full py-3 bg-indigo-600/50 text-slate-400 font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed";
-                statusText.textContent = !hasClients ? "Waiting for client names..." : "Authorization Token is required.";
+                if (!hasClients) statusText.textContent = "Waiting for client names...";
+                else if (!hasToken1) statusText.textContent = "Token 1 (Bulk Actions) is required.";
+                else statusText.textContent = "Token 2 (Backend Services) is required.";
             }
         }
 
@@ -255,9 +269,9 @@
         }
 
         async function runInspection() {
-            if (clientTags.length === 0 || !tokenInput.value.trim()) return;
+            if (clientTags.length === 0 || !tokenInput1.value.trim() || !tokenInput2.value.trim()) return;
 
-            statusText.textContent = "Fetching GHL bulk workflows...";
+            statusText.textContent = "Executing GHL multi-stage API queries...";
             submitAuditBtn.disabled = true;
             startTimer();
 
@@ -270,7 +284,8 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         clientNames: clientTags,
-                        authToken: tokenInput.value.trim()
+                        authToken: tokenInput1.value.trim(),
+                        authToken2: tokenInput2.value.trim()
                     })
                 });
 
@@ -293,13 +308,12 @@
             }
         }
 
-        // Add N business days (skipping Saturdays & Sundays) to a given start date
         function addBusinessDays(startDate, numDays) {
             let current = new Date(startDate);
             let added = 0;
             while (added < numDays) {
                 current.setDate(current.getDate() + 1);
-                const dayOfWeek = current.getDay(); // 0 = Sunday, 6 = Saturday
+                const dayOfWeek = current.getDay();
                 if (dayOfWeek !== 0 && dayOfWeek !== 6) {
                     added++;
                 }
@@ -311,19 +325,18 @@
             const total = wf.totalCount || 0;
             const processed = wf.processedCount || 0;
             const remaining = Math.max(0, total - processed);
-        
+
             if (dailyRate <= 0 || remaining === 0) {
                 return {
                     daysStr: "0 days (completed)",
                     referenceDateStr: "Reference Date: Completed"
                 };
             }
-        
-            // 1. Calculate Total Days & Zip Prompt Days (Minus 2)
+
             const rawDays = remaining / dailyRate;
             const totalDays = Math.round(rawDays);
             const zipDays = Math.max(0, totalDays - 2);
-        
+
             let zipPromptText = "";
             if (zipDays === 0) {
                 zipPromptText = "ask for zip codes today";
@@ -332,26 +345,24 @@
             } else {
                 zipPromptText = `ask for zip codes in ${zipDays} days`;
             }
-        
+
             const mainDaysLine = `${totalDays} days (${zipPromptText})`;
-        
-            // 2. Determine Start Date based on Workflow Status
+
             const status = (wf.status || "").toLowerCase();
-            let startDate = new Date(); // Default: Today for active/processing
-            let prefix = "Reference Date:";
-        
+            let startDate = new Date();
+            let prefix = "Zip Codes Reference Date:";
+
             if (status === "scheduled" || status === "legacy_scheduled") {
                 if (wf.sprintSchedule && wf.sprintSchedule.startAt) {
                     startDate = new Date(wf.sprintSchedule.startAt);
-                    prefix = "Reference Date:";
+                    prefix = "Scheduled Zip Codes Reference Date:";
                 }
             } else if (status === "paused") {
                 prefix = "Was scheduled for zip codes on:";
             } else if (status === "cancelled") {
                 prefix = "Would have asked zip codes on:";
             }
-        
-            // 3. Compute Zip Codes Reference Date using Zip Days (Mon-Fri)
+
             const refDate = addBusinessDays(startDate, zipDays);
             const formattedRefDate = refDate.toLocaleDateString('en-US', {
                 weekday: 'short',
@@ -359,7 +370,7 @@
                 month: 'short',
                 day: 'numeric'
             });
-        
+
             return {
                 daysStr: mainDaysLine,
                 referenceDateStr: `${prefix} ${formattedRefDate}`
@@ -375,6 +386,7 @@
             results.forEach((res, idx) => {
                 const workflows = res.data || [];
                 const dailyRate = res.dailyRateColS || 0;
+                const todayReport = res.todaySmsReport || {};
                 totalWorkflows += workflows.length;
 
                 const isFirst = idx === 0;
@@ -395,6 +407,28 @@
                     </button>
 
                     <div id="acc-${idx}" class="${isFirst ? '' : 'hidden'} p-4 space-y-4 font-mono text-xs">
+                        
+                        <!-- Today's Live SMS Aggregate Status Panel -->
+                        <div class="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-1 font-sans">
+                            <div class="text-xs font-bold text-slate-200 flex items-center justify-between">
+                                <span>📊 Today's SMS Reporting (Workflow SMS01)</span>
+                                ${todayReport.success ? '<span class="text-[10px] text-emerald-400 font-mono">✓ Live Data</span>' : '<span class="text-[10px] text-amber-400 font-mono">⚠️ Skipped / Not Active</span>'}
+                            </div>
+                            ${todayReport.success ? `
+                                <div class="text-[11px] text-slate-300 font-mono pt-1">
+                                    Workflow: <strong class="text-indigo-300">${todayReport.workflowName}</strong> | Step ID: <span class="text-slate-400">${todayReport.subSourceId}</span>
+                                </div>
+                                <details class="text-[10px] text-slate-400 mt-1 cursor-pointer">
+                                    <summary class="hover:text-slate-200">View Aggregate JSON Payload</summary>
+                                    <pre class="mt-1 p-2 bg-slate-900 text-slate-300 rounded overflow-x-auto text-[9px]">${JSON.stringify(todayReport.todaySmsData, null, 2)}</pre>
+                                </details>
+                            ` : `
+                                <div class="text-[11px] text-slate-400 italic">
+                                    ${todayReport.reason || todayReport.error || 'No reporting required for this status.'}
+                                </div>
+                            `}
+                        </div>
+
                         ${workflows.length === 0 ? '<p class="text-slate-500 text-xs">No bulk-workflow-v2 records found for this location.</p>' : ''}
                         ${workflows.map(wf => {
                             const timeline = calculateWorkflowTimeline(wf, dailyRate);
@@ -419,25 +453,18 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-slate-300">
                                         <div><span class="text-slate-500">Created Date:</span> ${wf.dateAdded ? new Date(wf.dateAdded).toLocaleString() : 'N/A'}</div>
                                         <div><span class="text-slate-500">Created By User:</span> ${wf.byUserName || 'N/A'}</div>
-                                        <div><span class="text-slate-500">Scheduled Start At:</span> ${sched.startAt ? new Date(sched.startAt).toLocaleString() : 'N/A'}</div>
-                                        <div><span class="text-slate-500">Batch Quantity:</span> ${sched.batchQuantity || 'N/A'}</div>
-                                        <div><span class="text-slate-500">Sending Frequency:</span> ${freqStr}</div>
-                                        <div><span class="text-slate-500">Execution Days:</span> ${daysStr}</div>
-                                        <div><span class="text-slate-500">Time Window:</span> ${timeWindowStr}</div>
-                                        <div><span class="text-slate-500">Location Timezone:</span> ${sched.locationTimezone || 'N/A'}</div>
-                                        <div><span class="text-slate-500">Next Resume Batch:</span> ${sched.nextResume ? new Date(sched.nextResume).toLocaleString() : 'N/A'}</div>
-                                        <div><span class="text-slate-500">Date Updated (Pause/Resume):</span> ${wf.dateUpdated ? new Date(wf.dateUpdated).toLocaleString() : 'None'}</div>
                                         <div><span class="text-slate-500">Processed / Total:</span> <strong class="text-emerald-400">${wf.processedCount.toLocaleString()}</strong> / ${wf.totalCount.toLocaleString()}</div>
-                                        <div><span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} messages/day</div>
+                                        <div><span class="text-slate-500">Daily Sending Rate:</span> ${dailyRate.toLocaleString()} messages/day</div>
 
+                                        <!-- TIMELINE DISPLAY -->
                                         <div class="col-span-1 md:col-span-2 p-2.5 bg-slate-900/80 rounded-lg border border-slate-700/70 space-y-1">
-                                        <div class="text-xs font-bold text-sky-300">
-                                            ⏳ ${timeline.daysStr}
+                                            <div class="text-xs font-bold text-sky-300">
+                                                ⏳ ${timeline.daysStr}
+                                            </div>
+                                            <div class="text-[11px] font-mono text-amber-300">
+                                                📅 ${timeline.referenceDateStr}
+                                            </div>
                                         </div>
-                                        <div class="text-[11px] font-mono text-amber-300">
-                                            📅 ${timeline.referenceDateStr}
-                                        </div>
-                                    </div>
                                     </div>
 
                                     ${wf.processingCompletedOn ? `
