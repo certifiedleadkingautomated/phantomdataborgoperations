@@ -338,12 +338,12 @@
             // 2. Determine Start Date based on Workflow Status
             const status = (wf.status || "").toLowerCase();
             let startDate = new Date(); // Default: Today for active/processing
-            let prefix = "Zip Codes Reference Date:";
+            let prefix = "Reference Date:";
         
             if (status === "scheduled" || status === "legacy_scheduled") {
                 if (wf.sprintSchedule && wf.sprintSchedule.startAt) {
                     startDate = new Date(wf.sprintSchedule.startAt);
-                    prefix = "Scheduled Zip Codes Reference Date:";
+                    prefix = "Reference Date:";
                 }
             } else if (status === "paused") {
                 prefix = "Was scheduled for zip codes on:";
