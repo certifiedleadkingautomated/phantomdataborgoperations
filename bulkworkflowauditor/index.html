@@ -417,7 +417,7 @@
                                         <div><span class="text-slate-500">Created Date:</span> ${wf.dateAdded ? new Date(wf.dateAdded).toLocaleString() : 'N/A'}</div>
                                         <div><span class="text-slate-500">Created By User:</span> ${wf.byUserName || 'N/A'}</div>
                                         <div><span class="text-slate-500">Scheduled Start At:</span> ${sched.startAt ? new Date(sched.startAt).toLocaleString() : 'N/A'}</div>
-                                        <div><span class="text-slate-500">Batch Quantity:</span> ${sched.batchQuantity || 'N/A'} msgs</div>
+                                        <div><span class="text-slate-500">Batch Quantity:</span> ${sched.batchQuantity || 'N/A'} messages</div>
                                         <div><span class="text-slate-500">Sending Frequency:</span> ${freqStr}</div>
                                         <div><span class="text-slate-500">Execution Days:</span> ${daysStr}</div>
                                         <div><span class="text-slate-500">Time Window:</span> ${timeWindowStr}</div>
@@ -425,7 +425,7 @@
                                         <div><span class="text-slate-500">Next Resume Batch:</span> ${sched.nextResume ? new Date(sched.nextResume).toLocaleString() : 'N/A'}</div>
                                         <div><span class="text-slate-500">Date Updated (Pause/Resume):</span> ${wf.dateUpdated ? new Date(wf.dateUpdated).toLocaleString() : 'None'}</div>
                                         <div><span class="text-slate-500">Processed / Total:</span> <strong class="text-emerald-400">${wf.processedCount.toLocaleString()}</strong> / ${wf.totalCount.toLocaleString()}</div>
-                                        <div><span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} msgs/day</div>
+                                        <div><span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} messages/day</div>
 
                                         <!-- TIMELINE DISPLAY -->
                                         <div class="col-span-1 md:col-span-2 p-2.5 bg-slate-900/80 rounded-lg border border-slate-700/70 space-y-1">
