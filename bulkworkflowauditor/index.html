@@ -430,15 +430,14 @@
                                         <div><span class="text-slate-500">Processed / Total:</span> <strong class="text-emerald-400">${wf.processedCount.toLocaleString()}</strong> / ${wf.totalCount.toLocaleString()}</div>
                                         <div><span class="text-slate-500">Daily Rate (Col S):</span> ${dailyRate.toLocaleString()} messages/day</div>
 
-                                        <!-- TIMELINE DISPLAY -->
                                         <div class="col-span-1 md:col-span-2 p-2.5 bg-slate-900/80 rounded-lg border border-slate-700/70 space-y-1">
-                                            <div class="text-xs font-bold text-sky-300">
-                                                ⏳ ${timeline.daysStr}
-                                            </div>
-                                            <div class="text-[11px] font-mono text-amber-300">
-                                                📅 ${timeline.finishDateStr}
-                                            </div>
+                                        <div class="text-xs font-bold text-sky-300">
+                                            ⏳ ${timeline.daysStr}
                                         </div>
+                                        <div class="text-[11px] font-mono text-amber-300">
+                                            📅 ${timeline.referenceDateStr}
+                                        </div>
+                                    </div>
                                     </div>
 
                                     ${wf.processingCompletedOn ? `
