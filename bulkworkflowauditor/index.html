@@ -311,18 +311,19 @@
             const total = wf.totalCount || 0;
             const processed = wf.processedCount || 0;
             const remaining = Math.max(0, total - processed);
-
+        
             if (dailyRate <= 0 || remaining === 0) {
                 return {
                     daysStr: "0 days (completed)",
-                    finishDateStr: "Completed"
+                    referenceDateStr: "Reference Date: Completed"
                 };
             }
-
+        
+            // 1. Calculate Total Days & Zip Prompt Days (Minus 2)
             const rawDays = remaining / dailyRate;
             const totalDays = Math.round(rawDays);
             const zipDays = Math.max(0, totalDays - 2);
-
+        
             let zipPromptText = "";
             if (zipDays === 0) {
                 zipPromptText = "ask for zip codes today";
@@ -331,35 +332,37 @@
             } else {
                 zipPromptText = `ask for zip codes in ${zipDays} days`;
             }
-
+        
             const mainDaysLine = `${totalDays} days (${zipPromptText})`;
-
+        
+            // 2. Determine Start Date based on Workflow Status
             const status = (wf.status || "").toLowerCase();
-            let startDate = new Date();
-            let prefix = "Est. Finish:";
-
+            let startDate = new Date(); // Default: Today for active/processing
+            let prefix = "Zip Codes Reference Date:";
+        
             if (status === "scheduled" || status === "legacy_scheduled") {
                 if (wf.sprintSchedule && wf.sprintSchedule.startAt) {
                     startDate = new Date(wf.sprintSchedule.startAt);
-                    prefix = "Scheduled to finish:";
+                    prefix = "Scheduled Zip Codes Reference Date:";
                 }
             } else if (status === "paused") {
-                prefix = "Was expected to finish on:";
+                prefix = "Was scheduled for zip codes on:";
             } else if (status === "cancelled") {
-                prefix = "Would have finished on:";
+                prefix = "Would have asked zip codes on:";
             }
-
-            const finishDate = addBusinessDays(startDate, totalDays);
-            const formattedFinish = finishDate.toLocaleDateString('en-US', {
+        
+            // 3. Compute Zip Codes Reference Date using Zip Days (Mon-Fri)
+            const refDate = addBusinessDays(startDate, zipDays);
+            const formattedRefDate = refDate.toLocaleDateString('en-US', {
                 weekday: 'short',
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
             });
-
+        
             return {
                 daysStr: mainDaysLine,
-                finishDateStr: `${prefix} ${formattedFinish}`
+                referenceDateStr: `${prefix} ${formattedRefDate}`
             };
         }
 
