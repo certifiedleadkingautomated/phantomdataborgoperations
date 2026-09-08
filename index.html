@@ -113,21 +113,21 @@
                 </span>
             </div>
 
-            <!-- Unique Zip Codes String Display -->
+            <!-- Unique Zip Codes Display with Contact Counts -->
             <div class="space-y-1.5 bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
                 <div class="flex items-center justify-between">
                     <label for="postalCodesOutput" class="text-xs font-semibold text-slate-300 flex items-center space-x-2">
-                        <span>📍 Unique Postal Codes String</span>
+                        <span>📍 Unique Postal Codes & Contact Counts</span>
                         <span id="zipCountBadge" class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
                             0 Unique Zips
                         </span>
                     </label>
                     <button onclick="copyZipCodesString()" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium flex items-center space-x-1">
-                        <span id="copyZipText">📋 Copy Zip String</span>
+                        <span id="copyZipText">📋 Copy Clean Zip String</span>
                     </button>
                 </div>
                 <textarea id="postalCodesOutput" readonly rows="2" 
-                          placeholder="Unique comma-separated zip codes will appear here..." 
+                          placeholder="Unique zip codes with contact counts will appear here..." 
                           class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-none cursor-pointer"
                           onclick="this.select()"></textarea>
 
@@ -151,29 +151,44 @@
                 </div>
             </div>
 
-            <!-- Custom Output Filename Field -->
+            <!-- Custom Output Filename Field (Mandatory) -->
             <div class="space-y-1.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-700/60">
-                <label for="customFilenameInput" class="text-xs font-semibold text-slate-300 block">
-                    Custom Base Filename Prefix:
-                </label>
+                <div class="flex items-center justify-between">
+                    <label for="customFilenameInput" class="text-xs font-semibold text-slate-300 block">
+                        Custom Base Filename Prefix <span class="text-red-400">*</span>
+                    </label>
+                    <span id="filenameWarning" class="text-[10px] text-red-400 font-mono hidden">Required to export</span>
+                </div>
                 <div class="flex items-center space-x-2">
-                    <input type="text" id="customFilenameInput" placeholder="e.g. campaign_leads" 
+                    <input type="text" id="customFilenameInput" required placeholder="e.g. campaign_leads" 
+                           oninput="validateFilenameInput()"
                            class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono">
-                    <span class="text-[11px] text-slate-500 font-mono">_{count}k_part_1_of_N.csv</span>
+                    <span class="text-[11px] text-slate-500 font-mono">_ZIPLIST_{count}k_part_1_of_N.csv</span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500">
-                    <input type="radio" name="splitMode" value="even" checked onchange="toggleSplitMode('even')" class="text-indigo-600 focus:ring-0">
-                    <span class="text-xs font-medium text-slate-200">Split Evenly into N Files</span>
+            <!-- Distribution Strategy Selector -->
+            <div class="space-y-2">
+                <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
+                    Splitting Strategy
                 </label>
-                <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500">
-                    <input type="radio" name="splitMode" value="manual" onchange="toggleSplitMode('manual')" class="text-indigo-600 focus:ring-0">
-                    <span class="text-xs font-medium text-slate-200">Manual Custom Allocation</span>
-                </label>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500 transition-all">
+                        <input type="radio" name="splitMode" value="even" checked onchange="toggleSplitMode('even')" class="text-indigo-600 focus:ring-0">
+                        <span class="text-xs font-medium text-slate-200">Split Evenly (N Files)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500 transition-all">
+                        <input type="radio" name="splitMode" value="zip" onchange="toggleSplitMode('zip')" class="text-indigo-600 focus:ring-0">
+                        <span class="text-xs font-medium text-slate-200">Intelligent Zip Balance</span>
+                    </label>
+                    <label class="flex items-center space-x-2 bg-slate-900/50 p-3 rounded-lg border border-slate-700 cursor-pointer hover:border-slate-500 transition-all">
+                        <input type="radio" name="splitMode" value="manual" onchange="toggleSplitMode('manual')" class="text-indigo-600 focus:ring-0">
+                        <span class="text-xs font-medium text-slate-200">Manual Custom Counts</span>
+                    </label>
+                </div>
             </div>
 
+            <!-- Even Mode Controls -->
             <div id="evenModeControls" class="flex items-center space-x-4 bg-slate-900/30 p-4 rounded-xl border border-slate-800">
                 <label class="text-xs text-slate-300">Number of Output Files (N):</label>
                 <input type="number" id="evenPartsInput" min="1" max="50" value="2" 
@@ -181,6 +196,21 @@
                 <span id="evenEstimate" class="text-xs text-slate-400">~0 records per file</span>
             </div>
 
+            <!-- Intelligent Zip Mode Controls -->
+            <div id="zipModeControls" class="hidden space-y-2 bg-slate-900/30 p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center space-x-4">
+                    <label class="text-xs text-slate-300">Target Number of Files (N):</label>
+                    <input type="number" id="zipPartsInput" min="1" max="50" value="3" oninput="updateZipBalanceEstimate()"
+                           class="w-20 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <span id="zipBalanceEstimate" class="text-xs text-indigo-300 font-mono">Keeps full zip clusters intact</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    Groups contacts by zip code so that no zip code is split across files, balancing total contact counts across each output file as evenly as possible.
+                </p>
+                <div id="zipDistributionPreview" class="pt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-[10px] font-mono"></div>
+            </div>
+
+            <!-- Manual Mode Controls -->
             <div id="manualModeControls" class="hidden space-y-3 bg-slate-900/30 p-4 rounded-xl border border-slate-800">
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-slate-300">Allocate exact record counts per file:</span>
@@ -218,8 +248,9 @@
         // Map storing: zip -> state_name
         let zipToStateMap = {};
         let uszipsLoaded = false;
+        let cleanZipListOnly = [];
 
-        // Path to uszips.csv on your GitHub repo (raw version)
+        // Path to uszips.csv
         const GITHUB_USZIPS_URL = "./uszips.csv";
 
         // Initialize SQLite Wasm Engine
@@ -229,7 +260,6 @@
 
         [1, 2, 3].forEach(setupGridListeners);
 
-        // Load uszips.csv on page load
         window.addEventListener('DOMContentLoaded', loadUszipsDatabase);
 
         function loadUszipsDatabase() {
@@ -287,12 +317,27 @@
                 let state = String(row.state_name || row.state || row.STATE_NAME || '').trim();
 
                 if (zip && state) {
-                    // Store both padded (5-digit) and numeric stripped versions
                     const padded = zip.padStart(5, '0');
                     zipToStateMap[padded] = state;
                     zipToStateMap[String(parseInt(zip, 10))] = state;
                 }
             });
+        }
+
+        function validateFilenameInput() {
+            const val = document.getElementById('customFilenameInput').value.trim();
+            const warningEl = document.getElementById('filenameWarning');
+            const downloadBtn = document.getElementById('downloadSplitBtn');
+
+            if (!val) {
+                warningEl.classList.remove('hidden');
+                downloadBtn.disabled = true;
+                downloadBtn.className = "w-full py-2.5 bg-indigo-600/40 text-slate-400 font-medium text-xs rounded-lg transition-all shadow-lg flex items-center justify-center space-x-2 cursor-not-allowed";
+            } else {
+                warningEl.classList.add('hidden');
+                downloadBtn.disabled = false;
+                downloadBtn.className = "w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-lg transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer";
+            }
         }
 
         function setupGridListeners(gridNum) {
@@ -625,13 +670,13 @@
                 actionPanel.classList.add('hidden');
                 document.getElementById('splitPanel').classList.remove('hidden');
                 
-                const activeSources = Object.values(gridState).map(g => g.source).filter(Boolean);
-                const defaultPrefix = activeSources.join('_').toLowerCase();
-                document.getElementById('customFilenameInput').value = defaultPrefix;
+                document.getElementById('customFilenameInput').value = "";
+                validateFilenameInput();
 
                 extractUniquePostalCodes();
 
                 updateEvenEstimate();
+                updateZipBalanceEstimate();
                 setupManualDefaultRows();
 
             } catch (err) {
@@ -640,31 +685,32 @@
             }
         }
 
-        // Extract unique 5-digit postal codes AND summarize count per US State
         function extractUniquePostalCodes() {
-            const zipsSet = new Set();
+            const zipCountMap = {};
 
             processedMasterData.forEach(row => {
                 let rawZip = String(row.postal_code || '').trim();
                 const match = rawZip.match(/\b\d{5}\b/);
-                if (match) {
-                    zipsSet.add(match[0]);
-                } else if (rawZip.length > 0 && /^\d+$/.test(rawZip)) {
-                    zipsSet.add(rawZip.padStart(5, '0'));
+                let cleanZip = match ? match[0] : (rawZip ? rawZip.padStart(5, '0') : 'OTHER');
+
+                if (cleanZip) {
+                    zipCountMap[cleanZip] = (zipCountMap[cleanZip] || 0) + 1;
                 }
             });
 
-            const uniqueZips = Array.from(zipsSet).sort();
-            const zipString = uniqueZips.join(',');
+            const uniqueZips = Object.keys(zipCountMap).sort();
+            cleanZipListOnly = uniqueZips;
+
+            const zipDisplayString = uniqueZips.map(z => `${z} (${zipCountMap[z]})`).join(', ');
 
             const outputEl = document.getElementById('postalCodesOutput');
             const badgeEl = document.getElementById('zipCountBadge');
 
-            outputEl.value = zipString;
+            outputEl.value = zipDisplayString;
             badgeEl.textContent = `${uniqueZips.length} Unique Zips`;
 
-            // Render State-by-State Distribution Summary
             renderStateSummary(uniqueZips);
+            updateZipBalanceEstimate();
         }
 
         function renderStateSummary(uniqueZips) {
@@ -680,7 +726,6 @@
             let unmappedCount = 0;
 
             uniqueZips.forEach(zip => {
-                // Try padded 5-digit key first, then unpadded numeric key
                 const paddedKey = zip.padStart(5, '0');
                 const numericKey = String(parseInt(zip, 10));
 
@@ -730,13 +775,14 @@
         }
 
         function copyZipCodesString() {
-            const outputEl = document.getElementById('postalCodesOutput');
-            if (!outputEl.value) return;
+            if (cleanZipListOnly.length === 0) return;
 
-            navigator.clipboard.writeText(outputEl.value).then(() => {
+            const cleanCommaString = cleanZipListOnly.join(',');
+
+            navigator.clipboard.writeText(cleanCommaString).then(() => {
                 const btnText = document.getElementById('copyZipText');
                 const originalText = btnText.textContent;
-                btnText.textContent = '✓ Copied!';
+                btnText.textContent = '✓ Copied Clean Zips!';
                 btnText.className = 'text-emerald-400 font-bold';
 
                 setTimeout(() => {
@@ -831,11 +877,16 @@
         }
 
         function toggleSplitMode(mode) {
+            document.getElementById('evenModeControls').classList.add('hidden');
+            document.getElementById('zipModeControls').classList.add('hidden');
+            document.getElementById('manualModeControls').classList.add('hidden');
+
             if (mode === 'even') {
                 document.getElementById('evenModeControls').classList.remove('hidden');
-                document.getElementById('manualModeControls').classList.add('hidden');
+            } else if (mode === 'zip') {
+                document.getElementById('zipModeControls').classList.remove('hidden');
+                updateZipBalanceEstimate();
             } else {
-                document.getElementById('evenModeControls').classList.add('hidden');
                 document.getElementById('manualModeControls').classList.remove('hidden');
                 updateManualAllocations();
             }
@@ -847,6 +898,61 @@
             const parts = parseInt(document.getElementById('evenPartsInput').value) || 1;
             const avg = Math.ceil(processedMasterData.length / parts);
             document.getElementById('evenEstimate').textContent = `~${avg.toLocaleString()} records per file`;
+        }
+
+        function partitionDataByZip(targetParts) {
+            const zipGroups = {};
+
+            processedMasterData.forEach(row => {
+                let rawZip = String(row.postal_code || '').trim();
+                const match = rawZip.match(/\b\d{5}\b/);
+                let cleanZip = match ? match[0] : (rawZip ? rawZip.padStart(5, '0') : 'OTHER');
+
+                if (!zipGroups[cleanZip]) {
+                    zipGroups[cleanZip] = [];
+                }
+                zipGroups[cleanZip].push(row);
+            });
+
+            const clusters = Object.entries(zipGroups).map(([zip, rows]) => ({ zip, rows, count: rows.length }));
+            clusters.sort((a, b) => b.count - a.count);
+
+            const numBuckets = Math.max(1, Math.min(targetParts, clusters.length));
+            const buckets = Array.from({ length: numBuckets }, () => ({ rows: [], zips: [], totalCount: 0 }));
+
+            clusters.forEach(cluster => {
+                buckets.sort((a, b) => a.totalCount - b.totalCount);
+                buckets[0].rows.push(...cluster.rows);
+                buckets[0].zips.push(cluster.zip);
+                buckets[0].totalCount += cluster.count;
+            });
+
+            return buckets.filter(b => b.rows.length > 0);
+        }
+
+        function updateZipBalanceEstimate() {
+            const parts = parseInt(document.getElementById('zipPartsInput').value) || 1;
+            const previewContainer = document.getElementById('zipDistributionPreview');
+            previewContainer.innerHTML = '';
+
+            if (processedMasterData.length === 0) return;
+
+            const buckets = partitionDataByZip(parts);
+
+            buckets.forEach((b, i) => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800 p-2 rounded-lg border border-slate-700/80 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-indigo-300 font-bold border-b border-slate-700/60 pb-1 mb-1">
+                        <span>Part ${i + 1}</span>
+                        <span class="text-emerald-400 font-mono">${b.totalCount.toLocaleString()} recs</span>
+                    </div>
+                    <div class="text-[9px] text-slate-400 truncate" title="${b.zips.join(', ')}">
+                        ${b.zips.length} zips: ${b.zips.slice(0, 3).join(', ')}${b.zips.length > 3 ? '...' : ''}
+                    </div>
+                `;
+                previewContainer.appendChild(card);
+            });
         }
 
         function setupManualDefaultRows() {
@@ -918,17 +1024,52 @@
             return count.toString();
         }
 
+        // Extracts space-separated unique zip list present in a dataset chunk
+        function extractChunkZipListString(dataChunk) {
+            const zipsSet = new Set();
+            dataChunk.forEach(row => {
+                let rawZip = String(row.postal_code || '').trim();
+                const match = rawZip.match(/\b\d{5}\b/);
+                if (match) {
+                    zipsSet.add(match[0]);
+                } else if (rawZip.length > 0 && /^\d+$/.test(rawZip)) {
+                    zipsSet.add(rawZip.padStart(5, '0'));
+                }
+            });
+            const sortedZips = Array.from(zipsSet).sort();
+            return sortedZips.join(' ');
+        }
+
+        // Safe filename construction preventing Windows filename length issues (>180 chars)
+        function constructSafeFilename(prefix, zipString, countStr, partIdx, totalParts) {
+            const suffix = `_${countStr}_part_${partIdx}_of_${totalParts}.csv`;
+            const fixedLength = prefix.length + suffix.length + 2; // Extra padding
+            const maxZipLength = Math.max(10, 180 - fixedLength);
+
+            let safeZipString = zipString;
+            if (safeZipString.length > maxZipLength) {
+                safeZipString = safeZipString.slice(0, maxZipLength).trim();
+            }
+
+            if (safeZipString.length > 0) {
+                return `${prefix}_${safeZipString}${suffix}`;
+            } else {
+                return `${prefix}${suffix}`;
+            }
+        }
+
         function executeExport() {
+            const customPrefix = document.getElementById('customFilenameInput').value.trim();
+            
+            if (!customPrefix) {
+                showError("Please enter a mandatory Custom Base Filename Prefix before downloading.");
+                document.getElementById('customFilenameInput').focus();
+                return;
+            }
+
             const mode = document.querySelector('input[name="splitMode"]:checked').value;
             const totalRecords = processedMasterData.length;
-            
             if (totalRecords === 0) return;
-
-            let customPrefix = document.getElementById('customFilenameInput').value.trim();
-            if (!customPrefix) {
-                const activeSources = Object.values(gridState).map(g => g.source).filter(Boolean);
-                customPrefix = activeSources.join('_').toLowerCase();
-            }
 
             if (mode === 'even') {
                 const numFiles = parseInt(document.getElementById('evenPartsInput').value) || 1;
@@ -937,11 +1078,23 @@
                 for (let i = 0; i < numFiles; i++) {
                     const chunk = processedMasterData.slice(i * chunkSize, (i + 1) * chunkSize);
                     if (chunk.length > 0) {
+                        const zipListStr = extractChunkZipListString(chunk);
                         const countStr = formatCountK(chunk.length);
-                        const filename = `${customPrefix}_${countStr}_part_${i + 1}_of_${numFiles}.csv`;
+                        const filename = constructSafeFilename(customPrefix, zipListStr, countStr, i + 1, numFiles);
                         downloadCsv(chunk, filename);
                     }
                 }
+            } else if (mode === 'zip') {
+                const targetParts = parseInt(document.getElementById('zipPartsInput').value) || 1;
+                const buckets = partitionDataByZip(targetParts);
+                const totalFiles = buckets.length;
+
+                buckets.forEach((bucket, i) => {
+                    const zipListStr = extractChunkZipListString(bucket.rows);
+                    const countStr = formatCountK(bucket.rows.length);
+                    const filename = constructSafeFilename(customPrefix, zipListStr, countStr, i + 1, totalFiles);
+                    downloadCsv(bucket.rows, filename);
+                });
             } else {
                 const inputs = document.querySelectorAll('.manual-count-input');
                 let currentIndex = 0;
@@ -953,16 +1106,18 @@
                     if (count > 0 && currentIndex < totalRecords) {
                         const chunk = processedMasterData.slice(currentIndex, currentIndex + count);
                         currentIndex += count;
+                        const zipListStr = extractChunkZipListString(chunk);
                         const countStr = formatCountK(chunk.length);
-                        const filename = `${customPrefix}_${countStr}_part_${i + 1}_of_${totalParts}.csv`;
+                        const filename = constructSafeFilename(customPrefix, zipListStr, countStr, i + 1, totalParts);
                         downloadCsv(chunk, filename);
                     }
                 });
 
                 if (currentIndex < totalRecords) {
                     const remainingChunk = processedMasterData.slice(currentIndex);
+                    const zipListStr = extractChunkZipListString(remainingChunk);
                     const countStr = formatCountK(remainingChunk.length);
-                    const filename = `${customPrefix}_${countStr}_part_remaining.csv`;
+                    const filename = constructSafeFilename(customPrefix, zipListStr, countStr, totalParts + 1, totalParts + 1);
                     downloadCsv(remainingChunk, filename);
                 }
             }
