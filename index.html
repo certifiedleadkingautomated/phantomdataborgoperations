@@ -632,6 +632,7 @@
                 let finalQuery = "";
 
                 if (hasGhl && nonGhlGrids.length > 0) {
+                    // Comparison Mode: Subtract GHL records
                     finalQuery = `
                         SELECT 
                             COALESCE(b.first_name, '') AS first_name,
@@ -647,8 +648,14 @@
                         WHERE a.phone IS NULL;
                     `;
                 } else if (hasGhl && nonGhlGrids.length === 0) {
-                    finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_ghl;";
+                    // Pure GHL Export Mode: Retain tags, filter out empty/blank zip codes
+                    finalQuery = `
+                        SELECT first_name, last_name, phone, email, street_address, city, state, postal_code, COALESCE(tags, '') AS tags 
+                        FROM master_ghl 
+                        WHERE postal_code IS NOT NULL AND TRIM(postal_code) != '';
+                    `;
                 } else {
+                    // Pure Non-GHL Merged Export Mode
                     finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_non_ghl_1;";
                 }
 
@@ -691,7 +698,7 @@
             processedMasterData.forEach(row => {
                 let rawZip = String(row.postal_code || '').trim();
                 const match = rawZip.match(/\b\d{5}\b/);
-                let cleanZip = match ? match[0] : (rawZip ? rawZip.padStart(5, '0') : 'OTHER');
+                let cleanZip = match ? match[0] : (rawZip ? rawZip.padStart(5, '0') : null);
 
                 if (cleanZip) {
                     zipCountMap[cleanZip] = (zipCountMap[cleanZip] || 0) + 1;
@@ -815,9 +822,9 @@
                     db.run("COMMIT;");
 
                     unionQueries.push(`
-                        SELECT first_name, last_name, best_mobile AS phone, email, street_address, city, state, zip AS postal_code FROM ${tableName} WHERE best_mobile IS NOT NULL AND TRIM(best_mobile) != ''
+                        SELECT first_name, last_name, best_mobile AS phone, email, street_address, city, state, zip AS postal_code, '' AS tags FROM ${tableName} WHERE best_mobile IS NOT NULL AND TRIM(best_mobile) != ''
                         UNION ALL
-                        SELECT first_name, last_name, best_mobile_2 AS phone, email, street_address, city, state, zip AS postal_code FROM ${tableName} WHERE best_mobile_2 IS NOT NULL AND TRIM(best_mobile_2) != ''
+                        SELECT first_name, last_name, best_mobile_2 AS phone, email, street_address, city, state, zip AS postal_code, '' AS tags FROM ${tableName} WHERE best_mobile_2 IS NOT NULL AND TRIM(best_mobile_2) != ''
                     `);
 
                 } else if (sourceType === 'Databorg') {
@@ -832,16 +839,16 @@
                     db.run("COMMIT;");
 
                     unionQueries.push(`
-                        SELECT first_name, last_name, phone, email, address_full AS street_address, city, state, postal_code 
+                        SELECT first_name, last_name, phone, email, address_full AS street_address, city, state, postal_code, '' AS tags 
                         FROM ${tableName} 
                         WHERE phone IS NOT NULL AND TRIM(phone) != '' AND postal_code IS NOT NULL AND TRIM(postal_code) != ''
                     `);
 
                 } else if (sourceType === 'GHL') {
-                    const columnsSchema = ["first_name", "last_name", "phone", "email", "street_address", "city", "state", "postal_code"].map(c => `"${c}" TEXT`).join(", ");
+                    const columnsSchema = ["first_name", "last_name", "phone", "email", "street_address", "city", "state", "postal_code", "tags"].map(c => `"${c}" TEXT`).join(", ");
                     db.run(`CREATE TABLE ${tableName} (${columnsSchema});`);
 
-                    const insertSql = `INSERT INTO ${tableName} (first_name, last_name, phone, email, street_address, city, state, postal_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`;
+                    const insertSql = `INSERT INTO ${tableName} (first_name, last_name, phone, email, street_address, city, state, postal_code, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
                     db.run("BEGIN TRANSACTION;");
                     parsedData.forEach(row => {
                         db.run(insertSql, [
@@ -852,13 +859,14 @@
                             row["Address"] || row.street_address || null,
                             row["City"] || row.city || null,
                             row["State"] || row.state || null,
-                            row["Postal Code"] || row.postal_code || null
+                            row["Postal Code"] || row.postal_code || null,
+                            row["Tags"] || row.tags || null
                         ]);
                     });
                     db.run("COMMIT;");
 
                     unionQueries.push(`
-                        SELECT first_name, last_name, phone, email, street_address, city, state, postal_code 
+                        SELECT first_name, last_name, phone, email, street_address, city, state, postal_code, tags 
                         FROM ${tableName} 
                         WHERE phone IS NOT NULL AND TRIM(phone) != ''
                     `);
@@ -868,7 +876,7 @@
             const buildSql = `
                 CREATE TABLE ${masterTableName} AS
                 WITH combined AS ( ${unionQueries.join(" UNION ALL ")} )
-                SELECT first_name, last_name, phone, email, street_address, city, state, postal_code
+                SELECT first_name, last_name, phone, email, street_address, city, state, postal_code, tags
                 FROM combined
                 GROUP BY phone;
             `;
@@ -1024,7 +1032,6 @@
             return count.toString();
         }
 
-        // Extracts space-separated unique zip list present in a dataset chunk
         // Extracts comma-separated unique zip list present in a dataset chunk
         function extractChunkZipListString(dataChunk) {
             const zipsSet = new Set();
@@ -1038,13 +1045,13 @@
                 }
             });
             const sortedZips = Array.from(zipsSet).sort();
-            return sortedZips.join(','); // Changed from ' ' to ','
+            return sortedZips.join(',');
         }
 
         // Safe filename construction preventing Windows filename length issues (>180 chars)
         function constructSafeFilename(prefix, zipString, countStr, partIdx, totalParts) {
             const suffix = `_${countStr}_part_${partIdx}_of_${totalParts}.csv`;
-            const fixedLength = prefix.length + suffix.length + 2; // Extra padding
+            const fixedLength = prefix.length + suffix.length + 2;
             const maxZipLength = Math.max(10, 180 - fixedLength);
 
             let safeZipString = zipString;
