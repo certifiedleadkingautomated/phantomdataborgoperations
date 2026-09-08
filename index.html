@@ -113,7 +113,7 @@
                 </span>
             </div>
 
-            <!-- Unique Zip Codes Display with Contact Counts -->
+            <!-- Unique Zip Codes Display with Contact Counts (Expandable Textarea) -->
             <div class="space-y-1.5 bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
                 <div class="flex items-center justify-between">
                     <label for="postalCodesOutput" class="text-xs font-semibold text-slate-300 flex items-center space-x-2">
@@ -126,12 +126,13 @@
                         <span id="copyZipText">📋 Copy Clean Zip String</span>
                     </button>
                 </div>
-                <textarea id="postalCodesOutput" readonly rows="2" 
+                <!-- Vertically Expandable Textarea (resize-y) -->
+                <textarea id="postalCodesOutput" readonly rows="3" 
                           placeholder="Unique zip codes with contact counts will appear here..." 
-                          class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-none cursor-pointer"
+                          class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-y min-h-[70px] max-h-[400px] cursor-pointer"
                           onclick="this.select()"></textarea>
 
-                <!-- State-by-State Zip Code Distribution Summary -->
+                <!-- State-by-State Zip Code Distribution Summary (Expandable Rectangles) -->
                 <div id="stateSummaryContainer" class="pt-2 border-t border-slate-800 space-y-2">
                     <div class="flex items-center justify-between text-[11px]">
                         <span class="font-semibold text-slate-300 uppercase tracking-wider">🗺️ State Distribution Summary</span>
@@ -144,9 +145,9 @@
                         <input type="file" id="uszipsFileInput" accept=".csv" class="text-[10px] text-slate-300 file:bg-slate-700 file:border-0 file:rounded file:px-2 file:py-1 file:text-[10px] file:text-slate-200 hover:file:bg-slate-600">
                     </div>
 
-                    <!-- State Counts Grid Display -->
-                    <div id="stateBadgeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1">
-                        <p class="text-[11px] text-slate-500 italic col-span-full">Process files to generate state summary.</p>
+                    <!-- Expandable State Accordion Cards Stack -->
+                    <div id="stateBadgeGrid" class="space-y-2 pt-1">
+                        <p class="text-[11px] text-slate-500 italic">Process files to generate state summary.</p>
                     </div>
                 </div>
             </div>
@@ -249,6 +250,7 @@
         let zipToStateMap = {};
         let uszipsLoaded = false;
         let cleanZipListOnly = [];
+        let zipToContactCountMap = {}; // Global zip -> count map
 
         // Path to uszips.csv
         const GITHUB_USZIPS_URL = "./uszips.csv";
@@ -632,7 +634,6 @@
                 let finalQuery = "";
 
                 if (hasGhl && nonGhlGrids.length > 0) {
-                    // Comparison Mode: Subtract GHL records
                     finalQuery = `
                         SELECT 
                             COALESCE(b.first_name, '') AS first_name,
@@ -648,14 +649,12 @@
                         WHERE a.phone IS NULL;
                     `;
                 } else if (hasGhl && nonGhlGrids.length === 0) {
-                    // Pure GHL Export Mode: Retain tags, filter out empty/blank zip codes
                     finalQuery = `
                         SELECT first_name, last_name, phone, email, street_address, city, state, postal_code, COALESCE(tags, '') AS tags 
                         FROM master_ghl 
                         WHERE postal_code IS NOT NULL AND TRIM(postal_code) != '';
                     `;
                 } else {
-                    // Pure Non-GHL Merged Export Mode
                     finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_non_ghl_1;";
                 }
 
@@ -693,7 +692,7 @@
         }
 
         function extractUniquePostalCodes() {
-            const zipCountMap = {};
+            zipToContactCountMap = {};
 
             processedMasterData.forEach(row => {
                 let rawZip = String(row.postal_code || '').trim();
@@ -701,14 +700,14 @@
                 let cleanZip = match ? match[0] : (rawZip ? rawZip.padStart(5, '0') : null);
 
                 if (cleanZip) {
-                    zipCountMap[cleanZip] = (zipCountMap[cleanZip] || 0) + 1;
+                    zipToContactCountMap[cleanZip] = (zipToContactCountMap[cleanZip] || 0) + 1;
                 }
             });
 
-            const uniqueZips = Object.keys(zipCountMap).sort();
+            const uniqueZips = Object.keys(zipToContactCountMap).sort();
             cleanZipListOnly = uniqueZips;
 
-            const zipDisplayString = uniqueZips.map(z => `${z} (${zipCountMap[z]})`).join(', ');
+            const zipDisplayString = uniqueZips.map(z => `${z} (${zipToContactCountMap[z]})`).join(', ');
 
             const outputEl = document.getElementById('postalCodesOutput');
             const badgeEl = document.getElementById('zipCountBadge');
@@ -720,64 +719,135 @@
             updateZipBalanceEstimate();
         }
 
+        // Render State Summary as Expandable Accordion Cards (One-At-A-Time)
         function renderStateSummary(uniqueZips) {
             const gridEl = document.getElementById('stateBadgeGrid');
             gridEl.innerHTML = '';
 
             if (uniqueZips.length === 0) {
-                gridEl.innerHTML = `<p class="text-[11px] text-slate-500 italic col-span-full">No valid postal codes found.</p>`;
+                gridEl.innerHTML = `<p class="text-[11px] text-slate-500 italic font-sans">No valid postal codes found.</p>`;
                 return;
             }
 
-            const stateCounts = {};
-            let unmappedCount = 0;
+            // Group unique zips and sum total contacts per state
+            const stateGroups = {};
+            let unmappedZips = [];
 
             uniqueZips.forEach(zip => {
                 const paddedKey = zip.padStart(5, '0');
                 const numericKey = String(parseInt(zip, 10));
 
                 const state = zipToStateMap[paddedKey] || zipToStateMap[numericKey] || zipToStateMap[zip];
+                const count = zipToContactCountMap[zip] || 0;
 
                 if (state) {
-                    stateCounts[state] = (stateCounts[state] || 0) + 1;
+                    if (!stateGroups[state]) {
+                        stateGroups[state] = { zips: [], totalContacts: 0 };
+                    }
+                    stateGroups[state].zips.push({ zip, count });
+                    stateGroups[state].totalContacts += count;
                 } else {
-                    unmappedCount++;
+                    unmappedZips.push({ zip, count });
                 }
             });
 
-            const sortedStates = Object.entries(stateCounts).sort((a, b) => b[1] - a[1]);
+            const sortedStates = Object.entries(stateGroups).sort((a, b) => b[1].totalContacts - a[1].totalContacts);
 
-            if (sortedStates.length === 0 && unmappedCount > 0) {
+            if (sortedStates.length === 0 && unmappedZips.length > 0) {
                 gridEl.innerHTML = `
-                    <div class="col-span-full p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[11px] text-amber-300">
-                        Mapped ${uniqueZips.length} zips, but uszips.csv lookup had no state matches. Ensure uszips.csv contains columns: zip, state_name.
+                    <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[11px] text-amber-300 font-sans">
+                        Mapped ${uniqueZips.length} zips, but uszips.csv lookup had no state matches.
                     </div>
                 `;
                 return;
             }
 
-            sortedStates.forEach(([stateName, count]) => {
+            sortedStates.forEach(([stateName, data], index) => {
                 const card = document.createElement('div');
-                card.className = "flex items-center justify-between p-2 bg-slate-800/90 border border-slate-700/80 rounded-lg text-xs font-mono shadow-sm hover:border-indigo-500/50 transition-colors";
+                card.className = "state-accordion-card bg-slate-800/90 border border-slate-700/80 rounded-xl overflow-hidden shadow-sm transition-all";
+
                 card.innerHTML = `
-                    <span class="text-slate-300 font-sans truncate font-medium mr-1" title="${stateName}">${stateName}</span>
-                    <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30 text-[10px]">
-                        ${count} zips
-                    </span>
+                    <!-- Accordion Rectangle Header -->
+                    <button onclick="toggleStateAccordion('state-acc-${index}')" 
+                            class="w-full px-3.5 py-2.5 bg-slate-800/80 hover:bg-slate-750 flex items-center justify-between text-left transition-colors font-medium border-b border-slate-700/40 focus:outline-none">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-slate-200">${stateName}</span>
+                            <span class="text-[10px] font-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">
+                                ${data.zips.length} zips
+                            </span>
+                            <span class="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                                ${data.totalContacts.toLocaleString()} contacts
+                            </span>
+                        </div>
+                        <span id="icon-state-acc-${index}" class="text-xs text-slate-400 transform transition-transform">▼</span>
+                    </button>
+
+                    <!-- Expandable Grid Content for Zips -->
+                    <div id="state-acc-${index}" class="state-acc-body hidden p-3 bg-slate-900/90 border-t border-slate-800">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 font-mono text-xs">
+                            ${data.zips.map(item => `
+                                <div class="flex items-center justify-between p-1.5 bg-slate-800/90 border border-slate-700/70 rounded-lg text-[11px]">
+                                    <span class="text-indigo-200 font-bold">${item.zip}</span>
+                                    <span class="text-slate-400 text-[10px]">${item.count.toLocaleString()} recs</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 `;
+
                 gridEl.appendChild(card);
             });
 
-            if (unmappedCount > 0) {
+            if (unmappedZips.length > 0) {
+                const unmappedTotal = unmappedZips.reduce((sum, item) => sum + item.count, 0);
                 const unmappedCard = document.createElement('div');
-                unmappedCard.className = "flex items-center justify-between p-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-xs font-mono";
+                unmappedCard.className = "state-accordion-card bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden shadow-sm";
+
                 unmappedCard.innerHTML = `
-                    <span class="text-slate-400 font-sans italic">Unmapped Zips</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-700 text-slate-300 text-[10px] font-bold">
-                        ${unmappedCount}
-                    </span>
+                    <button onclick="toggleStateAccordion('state-acc-unmapped')" 
+                            class="w-full px-3.5 py-2.5 bg-slate-800/40 hover:bg-slate-800/80 flex items-center justify-between text-left transition-colors font-medium focus:outline-none">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-slate-400 italic">Unmapped Zips</span>
+                            <span class="text-[10px] font-mono bg-slate-700 text-slate-300 px-2 py-0.5 rounded">
+                                ${unmappedZips.length} zips
+                            </span>
+                            <span class="text-[10px] font-mono bg-slate-700 text-slate-300 px-2 py-0.5 rounded">
+                                ${unmappedTotal.toLocaleString()} contacts
+                            </span>
+                        </div>
+                        <span id="icon-state-acc-unmapped" class="text-xs text-slate-400 transform transition-transform">▼</span>
+                    </button>
+
+                    <div id="state-acc-unmapped" class="state-acc-body hidden p-3 bg-slate-900/90 border-t border-slate-800">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 font-mono text-xs">
+                            ${unmappedZips.map(item => `
+                                <div class="flex items-center justify-between p-1.5 bg-slate-800/90 border border-slate-700/70 rounded-lg text-[11px]">
+                                    <span class="text-indigo-200 font-bold">${item.zip}</span>
+                                    <span class="text-slate-400 text-[10px]">${item.count.toLocaleString()} recs</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
                 `;
                 gridEl.appendChild(unmappedCard);
+            }
+        }
+
+        // One-At-A-Time State Accordion Toggle Handler
+        function toggleStateAccordion(id) {
+            const targetBody = document.getElementById(id);
+            const targetIcon = document.getElementById(`icon-${id}`);
+
+            const isOpen = !targetBody.classList.contains('hidden');
+
+            // Close all open state accordions
+            document.querySelectorAll('.state-acc-body').forEach(b => b.classList.add('hidden'));
+            document.querySelectorAll('[id^="icon-state-acc-"]').forEach(i => i.classList.remove('rotate-180'));
+
+            // Toggle target accordion if it was closed
+            if (!isOpen) {
+                targetBody.classList.remove('hidden');
+                if (targetIcon) targetIcon.classList.add('rotate-180');
             }
         }
 
@@ -1032,7 +1102,6 @@
             return count.toString();
         }
 
-        // Extracts comma-separated unique zip list present in a dataset chunk
         function extractChunkZipListString(dataChunk) {
             const zipsSet = new Set();
             dataChunk.forEach(row => {
@@ -1048,7 +1117,6 @@
             return sortedZips.join(',');
         }
 
-        // Safe filename construction preventing Windows filename length issues (>180 chars)
         function constructSafeFilename(prefix, zipString, countStr, partIdx, totalParts) {
             const suffix = `_${countStr}_part_${partIdx}_of_${totalParts}.csv`;
             const fixedLength = prefix.length + suffix.length + 2;
