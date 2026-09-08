@@ -701,7 +701,7 @@
             const uniqueZips = Object.keys(zipCountMap).sort();
             cleanZipListOnly = uniqueZips;
 
-            const zipDisplayString = uniqueZips.map(z => `${z} (${zipCountMap[z]} contacts)`).join(', ');
+            const zipDisplayString = uniqueZips.map(z => `${z} (${zipCountMap[z]})`).join(', ');
 
             const outputEl = document.getElementById('postalCodesOutput');
             const badgeEl = document.getElementById('zipCountBadge');
