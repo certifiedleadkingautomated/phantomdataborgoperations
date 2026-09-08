@@ -1025,6 +1025,7 @@
         }
 
         // Extracts space-separated unique zip list present in a dataset chunk
+        // Extracts comma-separated unique zip list present in a dataset chunk
         function extractChunkZipListString(dataChunk) {
             const zipsSet = new Set();
             dataChunk.forEach(row => {
@@ -1037,7 +1038,7 @@
                 }
             });
             const sortedZips = Array.from(zipsSet).sort();
-            return sortedZips.join(' ');
+            return sortedZips.join(','); // Changed from ' ' to ','
         }
 
         // Safe filename construction preventing Windows filename length issues (>180 chars)
