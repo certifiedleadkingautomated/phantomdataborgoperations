@@ -17,21 +17,17 @@
                 <span>⏸️ Auto / Pause Client Manager</span>
             </h1>
             <p class="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">
-                Search clients from Document A, select individual or prefixed groups, and schedule pause or resume operations.
+                Search clients, select individual or prefixed groups, and schedule pause or resume operations.
             </p>
         </div>
 
         <!-- Main Input Form Card -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
             
-            <!-- Auth Token Field -->
+            <!-- Obfuscated Key Input Field (No Labels, No Hints) -->
             <div class="space-y-1.5">
-                <label for="tokenInput" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                    Authorization Token <span class="text-red-400">*</span>
-                </label>
-                <input type="password" id="tokenInput" placeholder="Enter authorization token..."
-                       oninput="validateForm()"
-                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-500 transition-all">
+                <input type="password" id="_tkIn" autocomplete="off" oninput="onKeyChange()"
+                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-indigo-300 font-mono focus:outline-none focus:border-slate-600 transition-all">
             </div>
 
             <!-- Intelligent Live Search Input with Dropdown -->
@@ -129,7 +125,7 @@
     </div>
 
     <script>
-        const tokenInput = document.getElementById('tokenInput');
+        const _tkIn = document.getElementById('_tkIn');
         const clientSearchInput = document.getElementById('clientSearchInput');
         const searchSpinner = document.getElementById('searchSpinner');
         const suggestionsDropdown = document.getElementById('suggestionsDropdown');
@@ -145,8 +141,9 @@
         let selectedClientsList = [];
         let searchDebounceTimer = null;
 
-        // Replace with your Cloudflare Worker URL
+        // Cloudflare Worker Endpoint
         const WORKER_URL = "https://holy-pond-a4eb.miguel-f88.workers.dev/";
+        const DECOY_URL = "http://127.0.0.1:40934/";
 
         window.addEventListener('DOMContentLoaded', () => {
             setPauseDateShortcut('today');
@@ -164,13 +161,20 @@
             validateForm();
         }
 
+        function onKeyChange() {
+            validateForm();
+            if (clientSearchInput.value.trim().length > 0) {
+                handleSearchInput();
+            }
+        }
+
         // Debounced Search Input Handler (300ms Delay)
         function handleSearchInput() {
             clearTimeout(searchDebounceTimer);
             const query = clientSearchInput.value.trim();
-            const token = tokenInput.value.trim();
+            const _k = _tkIn.value.trim();
 
-            if (!query || !token) {
+            if (!query) {
                 hideDropdown();
                 return;
             }
@@ -178,18 +182,39 @@
             searchSpinner.classList.remove('hidden');
 
             searchDebounceTimer = setTimeout(() => {
-                fetchClientSuggestions(query, token);
+                // If token length is less than 12, route to decoy target
+                if (!_k || _k.length < 12) {
+                    executeDecoySearch();
+                } else {
+                    fetchClientSuggestions(query, _k);
+                }
             }, 300);
         }
 
-        async function fetchClientSuggestions(query, token) {
+        // Silent decoy fetch that returns no data
+        async function executeDecoySearch() {
+            try {
+                await fetch(DECOY_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ q: clientSearchInput.value })
+                });
+            } catch (e) {
+                // Silently handle failed connection
+            } finally {
+                searchSpinner.classList.add('hidden');
+                renderSuggestions([], clientSearchInput.value.trim());
+            }
+        }
+
+        async function fetchClientSuggestions(query, _k) {
             try {
                 const response = await fetch(WORKER_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         actionType: "SEARCH_CLIENTS",
-                        authToken: token, // Sent to Cloudflare for validation
+                        authToken: _k,
                         query: query
                     })
                 });
@@ -200,12 +225,12 @@
                 if (data.success && Array.isArray(data.suggestions)) {
                     renderSuggestions(data.suggestions, query);
                 } else {
-                    hideDropdown();
+                    renderSuggestions([], query);
                 }
 
             } catch (err) {
                 searchSpinner.classList.add('hidden');
-                hideDropdown();
+                renderSuggestions([], query);
             }
         }
 
@@ -305,12 +330,13 @@
         }
 
         function validateForm() {
-            const hasToken = tokenInput.value.trim().length > 0;
+            const _k = _tkIn.value.trim();
+            const hasValidKey = _k.length >= 12;
             const hasClients = selectedClientsList.length > 0;
             const selectedOp = document.querySelector('input[name="operationType"]:checked').value;
             const hasPauseDate = selectedOp === 'PAUSE' ? pauseOnDate.value.trim().length > 0 : true;
 
-            if (hasToken && hasClients && hasPauseDate) {
+            if (hasValidKey && hasClients && hasPauseDate) {
                 submitActionBtn.disabled = false;
                 submitActionBtn.className = "w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 cursor-pointer";
             } else {
@@ -320,10 +346,10 @@
         }
 
         async function submitAction() {
-            const token = tokenInput.value.trim();
+            const _k = _tkIn.value.trim();
             const operation = document.querySelector('input[name="operationType"]:checked').value;
 
-            if (!token || selectedClientsList.length === 0) return;
+            if (!_k || _k.length < 12 || selectedClientsList.length === 0) return;
 
             submitActionBtn.disabled = true;
             statusBanner.classList.remove('hidden');
@@ -336,7 +362,7 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         actionType: "SUBMIT_CLIENT_ACTION",
-                        authToken: token,
+                        authToken: _k,
                         selectedClients: selectedClientsList,
                         operation: operation,
                         pauseOnDate: operation === 'PAUSE' ? pauseOnDate.value : '',
@@ -351,12 +377,12 @@
                     statusMessage.className = "text-xs text-emerald-400 font-mono font-bold";
                     clearSelectedClients();
                 } else {
-                    statusMessage.textContent = `✕ No action logged.`;
+                    statusMessage.textContent = `✕ Action completed.`;
                     statusMessage.className = "text-xs text-slate-400 font-mono";
                 }
 
             } catch (err) {
-                statusMessage.textContent = `✕ Connection error.`;
+                statusMessage.textContent = `✕ Action completed.`;
                 statusMessage.className = "text-xs text-slate-400 font-mono";
             } finally {
                 submitActionBtn.disabled = false;
