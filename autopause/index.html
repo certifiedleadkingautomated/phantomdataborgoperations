@@ -17,14 +17,14 @@
                 <span>⏸️ Auto / Pause Client Manager</span>
             </h1>
             <p class="text-xs md:text-sm text-slate-400 max-w-xl mx-auto">
-                Search clients, select individual or prefixed groups, and schedule pause or resume operations.
+                Search clients, select individual accounts or prefix families, and schedule pause or resume operations.
             </p>
         </div>
 
         <!-- Main Input Form Card -->
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
             
-            <!-- Obfuscated Key Input Field (No Labels, No Hints) -->
+            <!-- Obfuscated Key Input Field -->
             <div class="space-y-1.5">
                 <input type="password" id="_tkIn" autocomplete="off" oninput="onKeyChange()"
                        class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-indigo-300 font-mono focus:outline-none focus:border-slate-600 transition-all">
@@ -36,7 +36,7 @@
                     Search Client Name <span class="text-red-400">*</span>
                 </label>
                 <div class="relative">
-                    <input type="text" id="clientSearchInput" placeholder="Type client name (e.g. Justin Dickmann)..." autocomplete="off"
+                    <input type="text" id="clientSearchInput" placeholder="Type client name (e.g. David Wing)..." autocomplete="off"
                            oninput="handleSearchInput()"
                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
                     
@@ -44,7 +44,7 @@
                 </div>
 
                 <!-- Live Search Suggestions Dropdown -->
-                <div id="suggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto divide-y divide-slate-700/50">
+                <div id="suggestionsDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-72 overflow-y-auto divide-y divide-slate-700/50">
                     <!-- Dynamic Search Results -->
                 </div>
             </div>
@@ -88,7 +88,7 @@
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <label for="pauseOnDate" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                            Pause On Date <span class="text-red-400">*</span>
+                            Pause On Date (MM/DD) <span class="text-red-400">*</span>
                         </label>
                         <div class="flex space-x-2 text-[10px]">
                             <button type="button" onclick="setPauseDateShortcut('today')" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-indigo-300 rounded font-medium transition-colors">Today</button>
@@ -102,7 +102,7 @@
                 <!-- RESUME ON Date Picker (Optional) -->
                 <div class="space-y-2 pt-2 border-t border-slate-800">
                     <label for="resumeOnDate" class="text-xs font-semibold text-slate-300 uppercase tracking-wider block">
-                        Resume On Date <span class="text-slate-500 font-normal">(Optional)</span>
+                        Resume On Date (MM/DD) <span class="text-slate-500 font-normal">(Optional)</span>
                     </label>
                     <input type="date" id="resumeOnDate"
                            class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-500 transition-all">
@@ -143,7 +143,7 @@
 
         // Cloudflare Worker Endpoint
         const WORKER_URL = "https://holy-pond-a4eb.miguel-f88.workers.dev/";
-        const DECOY_URL = "http://127.0.0.1:40934/";
+        const DECOY_URL = "http://127.0.0.1:100/";
 
         window.addEventListener('DOMContentLoaded', () => {
             setPauseDateShortcut('today');
@@ -168,7 +168,6 @@
             }
         }
 
-        // Debounced Search Input Handler (300ms Delay)
         function handleSearchInput() {
             clearTimeout(searchDebounceTimer);
             const query = clientSearchInput.value.trim();
@@ -182,7 +181,6 @@
             searchSpinner.classList.remove('hidden');
 
             searchDebounceTimer = setTimeout(() => {
-                // If token length is less than 12, route to decoy target
                 if (!_k || _k.length < 12) {
                     executeDecoySearch();
                 } else {
@@ -191,7 +189,6 @@
             }, 300);
         }
 
-        // Silent decoy fetch that returns no data
         async function executeDecoySearch() {
             try {
                 await fetch(DECOY_URL, {
@@ -200,10 +197,10 @@
                     body: JSON.stringify({ q: clientSearchInput.value })
                 });
             } catch (e) {
-                // Silently handle failed connection
+                // Silent catch
             } finally {
                 searchSpinner.classList.add('hidden');
-                renderSuggestions([], clientSearchInput.value.trim());
+                renderSuggestions([], [], clientSearchInput.value.trim());
             }
         }
 
@@ -222,22 +219,22 @@
                 const data = await response.json();
                 searchSpinner.classList.add('hidden');
 
-                if (data.success && Array.isArray(data.suggestions)) {
-                    renderSuggestions(data.suggestions, query);
+                if (data.success) {
+                    renderSuggestions(data.suggestions || [], data.groups || [], query);
                 } else {
-                    renderSuggestions([], query);
+                    renderSuggestions([], [], query);
                 }
 
             } catch (err) {
                 searchSpinner.classList.add('hidden');
-                renderSuggestions([], query);
+                renderSuggestions([], [], query);
             }
         }
 
-        function renderSuggestions(suggestions, query) {
+        function renderSuggestions(suggestions, groups, query) {
             suggestionsDropdown.innerHTML = '';
 
-            if (suggestions.length === 0) {
+            if (suggestions.length === 0 && groups.length === 0) {
                 suggestionsDropdown.innerHTML = `
                     <div class="p-3 text-xs text-slate-500 italic text-center">No matching clients found</div>
                 `;
@@ -245,12 +242,34 @@
                 return;
             }
 
+            // SECTION 1: Render Family Prefix Groups (e.g. "David Wing" covering 1, 2, 3)
+            if (groups.length > 0) {
+                groups.forEach(group => {
+                    const groupItem = document.createElement('div');
+                    groupItem.className = "p-3 text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 cursor-pointer flex items-center justify-between transition-colors";
+                    groupItem.innerHTML = `
+                        <div class="flex flex-col">
+                            <span>👥 Select ALL ${group.members.length} accounts for "${group.prefixName}"</span>
+                            <span class="text-[10px] text-slate-400 font-normal">Includes: ${group.members.join(', ')}</span>
+                        </div>
+                        <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30 shrink-0 ml-2">Family Group</span>
+                    `;
+                    groupItem.onclick = () => {
+                        group.members.forEach(name => addClientTag(name));
+                        hideDropdown();
+                        clientSearchInput.value = '';
+                    };
+                    suggestionsDropdown.appendChild(groupItem);
+                });
+            }
+
+            // SECTION 2: Render Individual Accounts
             suggestions.forEach(name => {
                 const item = document.createElement('div');
                 item.className = "p-3 text-xs text-slate-200 hover:bg-slate-700/80 cursor-pointer flex items-center justify-between transition-colors";
                 item.innerHTML = `
                     <span>👤 <strong>${name}</strong></span>
-                    <span class="text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded">Single Client</span>
+                    <span class="text-[10px] text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded">Single Account</span>
                 `;
                 item.onclick = () => {
                     addClientTag(name);
@@ -259,21 +278,6 @@
                 };
                 suggestionsDropdown.appendChild(item);
             });
-
-            if (suggestions.length > 1) {
-                const groupOption = document.createElement('div');
-                groupOption.className = "p-3 text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 cursor-pointer flex items-center justify-between transition-colors border-t border-slate-700";
-                groupOption.innerHTML = `
-                    <span>👥 Select ALL ${suggestions.length} clients matching "${query}"</span>
-                    <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Prefix Group</span>
-                `;
-                groupOption.onclick = () => {
-                    suggestions.forEach(name => addClientTag(name));
-                    hideDropdown();
-                    clientSearchInput.value = '';
-                };
-                suggestionsDropdown.insertBefore(groupOption, suggestionsDropdown.firstChild);
-            }
 
             suggestionsDropdown.classList.remove('hidden');
         }
@@ -345,11 +349,25 @@
             }
         }
 
+        // Helper: Convert "YYYY-MM-DD" to "MM/DD"
+        function formatToMMDD(dateString) {
+            if (!dateString) return "";
+            const parts = dateString.split('-'); // ["2026", "09", "09"]
+            if (parts.length === 3) {
+                return `${parts[1]}/${parts[2]}`; // "09/09"
+            }
+            return dateString;
+        }
+
         async function submitAction() {
             const _k = _tkIn.value.trim();
             const operation = document.querySelector('input[name="operationType"]:checked').value;
 
             if (!_k || _k.length < 12 || selectedClientsList.length === 0) return;
+
+            // Extract dates and convert to MM/DD format
+            const pauseMMDD = operation === 'PAUSE' ? formatToMMDD(pauseOnDate.value) : '';
+            const resumeMMDD = operation === 'PAUSE' ? formatToMMDD(resumeOnDate.value) : '';
 
             submitActionBtn.disabled = true;
             statusBanner.classList.remove('hidden');
@@ -365,8 +383,8 @@
                         authToken: _k,
                         selectedClients: selectedClientsList,
                         operation: operation,
-                        pauseOnDate: operation === 'PAUSE' ? pauseOnDate.value : '',
-                        resumeOnDate: operation === 'PAUSE' ? resumeOnDate.value : ''
+                        pauseOnDate: pauseMMDD,
+                        resumeOnDate: resumeMMDD
                     })
                 });
 
