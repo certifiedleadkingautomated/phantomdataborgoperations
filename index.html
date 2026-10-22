@@ -31,7 +31,7 @@
                 <div id="placeholder1" class="text-center space-y-2 pointer-events-none">
                     <svg class="w-10 h-10 mx-auto text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                     <p class="text-sm font-medium text-slate-300">Drop CSV files here or <span class="text-indigo-400 underline">browse</span></p>
-                    <p class="text-xs text-slate-500">Supports Phantom, Databorg, or Go High Level CSVs</p>
+                    <p class="text-xs text-slate-500">Supports Phantom, Databorg, Database, or Go High Level CSVs</p>
                 </div>
                 <div id="fileGrid1" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
                     <button id="addMoreBtn1" type="button" class="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
@@ -96,6 +96,33 @@
             </div>
         </div>
 
+        <!-- GRID 4 CONTAINER (Hidden initially) -->
+        <div id="grid4Wrapper" class="hidden space-y-3 pt-2">
+            <div id="sourceBadge4" class="flex items-center justify-between px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span class="text-xs text-slate-400">Grid 4 Source:</span>
+                    <span id="sourceName4" class="text-xs font-bold px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 uppercase tracking-wider">Locked</span>
+                </div>
+                <button onclick="resetGrid(4)" class="text-xs text-slate-400 hover:text-red-400 transition-colors">Clear Grid 4</button>
+            </div>
+
+            <div id="dropZone4" class="drop-zone relative border-2 border-dashed border-slate-700 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-500 transition-all rounded-2xl p-6 min-h-[160px] flex flex-col items-center justify-center cursor-pointer group">
+                <input type="file" id="fileInput4" accept=".csv" multiple class="hidden">
+                <div id="placeholder4" class="text-center space-y-2 pointer-events-none">
+                    <svg class="w-10 h-10 mx-auto text-slate-500 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                    <p class="text-sm font-medium text-slate-300">Drop quaternary source files here</p>
+                    <p id="grid4RequirementText" class="text-xs text-cyan-400 font-mono"></p>
+                </div>
+                <div id="fileGrid4" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 hidden">
+                    <button id="addMoreBtn4" type="button" class="flex flex-col items-center justify-center h-28 rounded-xl border border-dashed border-slate-600 hover:border-indigo-400 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition-all">
+                        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span class="text-xs font-medium">Add Files</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Initial Process Action Panel -->
         <div id="actionPanel" class="hidden flex items-center justify-between p-4 bg-slate-800 border border-slate-700 rounded-xl">
             <span id="recordStatus" class="text-xs text-slate-400">Ready to process...</span>
@@ -126,26 +153,23 @@
                         <span id="copyZipText">📋 Copy Clean Zip String</span>
                     </button>
                 </div>
-                <!-- Vertically Expandable Textarea (resize-y) -->
                 <textarea id="postalCodesOutput" readonly rows="3" 
                           placeholder="Unique zip codes with contact counts will appear here..." 
                           class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500 transition-all resize-y min-h-[70px] max-h-[400px] cursor-pointer"
                           onclick="this.select()"></textarea>
 
-                <!-- State-by-State Zip Code Distribution Summary (Expandable Rectangles) -->
+                <!-- State-by-State Zip Code Distribution Summary -->
                 <div id="stateSummaryContainer" class="pt-2 border-t border-slate-800 space-y-2">
                     <div class="flex items-center justify-between text-[11px]">
                         <span class="font-semibold text-slate-300 uppercase tracking-wider">🗺️ State Distribution Summary</span>
                         <span id="uszipsStatusBadge" class="font-mono text-[10px] text-slate-400">Loading uszips.csv...</span>
                     </div>
 
-                    <!-- Hidden Manual File Input fallback if GitHub fetch fails -->
                     <div id="manualUszipsUpload" class="hidden flex items-center space-x-2 bg-slate-800/80 p-2 rounded-lg border border-slate-700">
                         <span class="text-[11px] text-amber-300">Upload uszips.csv:</span>
                         <input type="file" id="uszipsFileInput" accept=".csv" class="text-[10px] text-slate-300 file:bg-slate-700 file:border-0 file:rounded file:px-2 file:py-1 file:text-[10px] file:text-slate-200 hover:file:bg-slate-600">
                     </div>
 
-                    <!-- Expandable State Accordion Cards Stack -->
                     <div id="stateBadgeGrid" class="space-y-2 pt-1">
                         <p class="text-[11px] text-slate-500 italic">Process files to generate state summary.</p>
                     </div>
@@ -242,25 +266,23 @@
         const gridState = {
             1: { files: [], source: null },
             2: { files: [], source: null },
-            3: { files: [], source: null }
+            3: { files: [], source: null },
+            4: { files: [], source: null }
         };
         let processedMasterData = [];
 
-        // Map storing: zip -> state_name
         let zipToStateMap = {};
         let uszipsLoaded = false;
         let cleanZipListOnly = [];
-        let zipToContactCountMap = {}; // Global zip -> count map
+        let zipToContactCountMap = {};
 
-        // Path to uszips.csv
         const GITHUB_USZIPS_URL = "./uszips.csv";
 
-        // Initialize SQLite Wasm Engine
         initSqlJs({ locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` })
             .then(SQL => { db = new SQL.Database(); })
             .catch(err => showError("Failed to initialize SQLite Wasm: " + err.message));
 
-        [1, 2, 3].forEach(setupGridListeners);
+        [1, 2, 3, 4].forEach(setupGridListeners);
 
         window.addEventListener('DOMContentLoaded', loadUszipsDatabase);
 
@@ -438,9 +460,16 @@
                     complete: () => {
                         const clean = headers.map(h => h.trim().toLowerCase());
                         let source = null;
-                        if (clean.includes('contact id')) source = 'GHL';
-                        else if (clean.includes('best_mobile')) source = 'Phantom';
-                        else if (clean.includes('additional_phones') || clean.includes('quality') || (clean.includes('phone') && clean.includes('postal_code'))) source = 'Databorg';
+
+                        if (clean.includes('contact id')) {
+                            source = 'GHL';
+                        } else if (clean.includes('best_mobile')) {
+                            source = 'Phantom';
+                        } else if (clean.includes('street') && clean.includes('zip') && clean.includes('zip4') && clean.includes('status')) {
+                            source = 'Database';
+                        } else if (clean.includes('additional_phones') || clean.includes('quality') || (clean.includes('phone') && clean.includes('postal_code'))) {
+                            source = 'Databorg';
+                        }
                         
                         resolve({ headers, source, recordCount });
                     },
@@ -455,18 +484,26 @@
             } else {
                 document.getElementById('grid2Wrapper').classList.add('hidden');
                 document.getElementById('grid3Wrapper').classList.add('hidden');
+                document.getElementById('grid4Wrapper').classList.add('hidden');
             }
 
             if (gridState[2].files.length > 0) {
                 document.getElementById('grid3Wrapper').classList.remove('hidden');
             } else {
                 document.getElementById('grid3Wrapper').classList.add('hidden');
+                document.getElementById('grid4Wrapper').classList.add('hidden');
+            }
+
+            if (gridState[3].files.length > 0) {
+                document.getElementById('grid4Wrapper').classList.remove('hidden');
+            } else {
+                document.getElementById('grid4Wrapper').classList.add('hidden');
             }
 
             const usedSources = Object.values(gridState).map(g => g.source).filter(Boolean);
-            const allSources = ['Phantom', 'Databorg', 'GHL'];
+            const allSources = ['Phantom', 'Databorg', 'Database', 'GHL'];
 
-            [2, 3].forEach(gNum => {
+            [2, 3, 4].forEach(gNum => {
                 const allowed = allSources.filter(s => !usedSources.includes(s) || gridState[gNum].source === s);
                 const textEl = document.getElementById(`grid${gNum}RequirementText`);
                 const nameEl = document.getElementById(`sourceName${gNum}`);
@@ -475,7 +512,7 @@
                     nameEl.textContent = gridState[gNum].source;
                 } else {
                     nameEl.textContent = "Locked";
-                    textEl.textContent = `Accepts: ${allowed.join(' or ')}`;
+                    if (textEl) textEl.textContent = `Accepts: ${allowed.join(' or ')}`;
                 }
             });
         }
@@ -601,26 +638,25 @@
 
         async function processAllGrids() {
             if (!db) return;
-        
+
             const processBtn = document.getElementById('processBtn');
             const processBtnText = document.getElementById('processBtnText');
             const originalBtnText = processBtnText.textContent;
-        
+
             try {
-                // 1. Disable button & update UI state
                 processBtn.disabled = true;
                 processBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 processBtnText.textContent = "⏳ Processing...";
                 recordStatus.textContent = "Processing and building SQLite tables...";
-        
+
                 const activeGrids = Object.values(gridState).filter(g => g.files.length > 0);
                 const hasGhl = activeGrids.some(g => g.source === 'GHL');
                 const nonGhlGrids = activeGrids.filter(g => g.source !== 'GHL');
-        
+
                 for (let i = 0; i < nonGhlGrids.length; i++) {
                     await buildSourceMasterTable(nonGhlGrids[i].source, nonGhlGrids[i].files, `master_non_ghl_${i + 1}`);
                 }
-        
+
                 if (nonGhlGrids.length > 1) {
                     for (let i = 1; i < nonGhlGrids.length; i++) {
                         const mergeSql = `
@@ -633,14 +669,14 @@
                         db.run(mergeSql);
                     }
                 }
-        
+
                 if (hasGhl) {
                     const ghlGrid = activeGrids.find(g => g.source === 'GHL');
                     await buildSourceMasterTable('GHL', ghlGrid.files, 'master_ghl');
                 }
-        
+
                 let finalQuery = "";
-        
+
                 if (hasGhl && nonGhlGrids.length > 0) {
                     finalQuery = `
                         SELECT 
@@ -665,39 +701,38 @@
                 } else {
                     finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_non_ghl_1;";
                 }
-        
+
                 const result = db.exec(finalQuery);
-        
+
                 if (result.length === 0 || !result[0].values.length) {
                     showError("Resulting dataset is empty.");
                     return;
                 }
-        
+
                 const columns = result[0].columns;
                 processedMasterData = result[0].values.map(val => {
                     const obj = {};
                     columns.forEach((col, idx) => { obj[col] = val[idx]; });
                     return obj;
                 });
-        
+
                 document.getElementById('totalRecordsBadge').textContent = `${processedMasterData.length.toLocaleString()} Unique Records Ready`;
                 actionPanel.classList.add('hidden');
                 document.getElementById('splitPanel').classList.remove('hidden');
                 
                 document.getElementById('customFilenameInput').value = "";
                 validateFilenameInput();
-        
+
                 extractUniquePostalCodes();
-        
+
                 updateEvenEstimate();
                 updateZipBalanceEstimate();
                 setupManualDefaultRows();
-        
+
             } catch (err) {
                 console.error(err);
                 showError("Processing Error: " + err.message);
             } finally {
-                // 2. Re-enable button & restore UI state
                 processBtn.disabled = false;
                 processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 processBtnText.textContent = originalBtnText;
@@ -732,7 +767,6 @@
             updateZipBalanceEstimate();
         }
 
-        // Render State Summary as Expandable Accordion Cards (One-At-A-Time)
         function renderStateSummary(uniqueZips) {
             const gridEl = document.getElementById('stateBadgeGrid');
             gridEl.innerHTML = '';
@@ -742,7 +776,6 @@
                 return;
             }
 
-            // Group unique zips and sum total contacts per state
             const stateGroups = {};
             let unmappedZips = [];
 
@@ -780,7 +813,6 @@
                 card.className = "state-accordion-card bg-slate-800/90 border border-slate-700/80 rounded-xl overflow-hidden shadow-sm transition-all";
 
                 card.innerHTML = `
-                    <!-- Accordion Rectangle Header -->
                     <button onclick="toggleStateAccordion('state-acc-${index}')" 
                             class="w-full px-3.5 py-2.5 bg-slate-800/80 hover:bg-slate-750 flex items-center justify-between text-left transition-colors font-medium border-b border-slate-700/40 focus:outline-none">
                         <div class="flex items-center space-x-2">
@@ -795,7 +827,6 @@
                         <span id="icon-state-acc-${index}" class="text-xs text-slate-400 transform transition-transform">▼</span>
                     </button>
 
-                    <!-- Expandable Grid Content for Zips -->
                     <div id="state-acc-${index}" class="state-acc-body hidden p-3 bg-slate-900/90 border-t border-slate-800">
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 font-mono text-xs">
                             ${data.zips.map(item => `
@@ -846,18 +877,15 @@
             }
         }
 
-        // One-At-A-Time State Accordion Toggle Handler
         function toggleStateAccordion(id) {
             const targetBody = document.getElementById(id);
             const targetIcon = document.getElementById(`icon-${id}`);
 
             const isOpen = !targetBody.classList.contains('hidden');
 
-            // Close all open state accordions
             document.querySelectorAll('.state-acc-body').forEach(b => b.classList.add('hidden'));
             document.querySelectorAll('[id^="icon-state-acc-"]').forEach(i => i.classList.remove('rotate-180'));
 
-            // Toggle target accordion if it was closed
             if (!isOpen) {
                 targetBody.classList.remove('hidden');
                 if (targetIcon) targetIcon.classList.add('rotate-180');
@@ -927,6 +955,41 @@
                         WHERE phone IS NOT NULL AND TRIM(phone) != '' AND postal_code IS NOT NULL AND TRIM(postal_code) != ''
                     `);
 
+                } else if (sourceType === 'Database') {
+                    // email, zip4, and status are discarded
+                    const columnsSchema = ["first_name", "last_name", "phone", "street", "city", "state", "zip"].map(c => `"${c}" TEXT`).join(", ");
+                    db.run(`CREATE TABLE ${tableName} (${columnsSchema});`);
+
+                    const insertSql = `INSERT INTO ${tableName} (first_name, last_name, phone, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?);`;
+                    db.run("BEGIN TRANSACTION;");
+                    parsedData.forEach(row => {
+                        db.run(insertSql, [
+                            row.first_name || null,
+                            row.last_name || null,
+                            row.phone || null,
+                            row.street || null,
+                            row.city || null,
+                            row.state || null,
+                            row.zip || null
+                        ]);
+                    });
+                    db.run("COMMIT;");
+
+                    unionQueries.push(`
+                        SELECT 
+                            first_name, 
+                            last_name, 
+                            phone, 
+                            '' AS email, 
+                            street AS street_address, 
+                            city, 
+                            state, 
+                            zip AS postal_code, 
+                            '' AS tags 
+                        FROM ${tableName} 
+                        WHERE phone IS NOT NULL AND TRIM(phone) != '' AND zip IS NOT NULL AND TRIM(zip) != ''
+                    `);
+
                 } else if (sourceType === 'GHL') {
                     const columnsSchema = ["first_name", "last_name", "phone", "email", "street_address", "city", "state", "postal_code", "tags"].map(c => `"${c}" TEXT`).join(", ");
                     db.run(`CREATE TABLE ${tableName} (${columnsSchema});`);
@@ -938,7 +1001,7 @@
                             row["First Name"] || row.first_name || null,
                             row["Last Name"] || row.last_name || null,
                             row["Phone"] || row.phone || null,
-                            "", 
+                            row["Email"] || row.email || "", 
                             row["Street Address"] || row.street_address || null,
                             row["City"] || row.city || null,
                             row["State"] || row.state || null,
