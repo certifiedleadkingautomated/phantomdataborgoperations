@@ -601,18 +601,26 @@
 
         async function processAllGrids() {
             if (!db) return;
-
+        
+            const processBtn = document.getElementById('processBtn');
+            const processBtnText = document.getElementById('processBtnText');
+            const originalBtnText = processBtnText.textContent;
+        
             try {
+                // 1. Disable button & update UI state
+                processBtn.disabled = true;
+                processBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                processBtnText.textContent = "⏳ Processing...";
                 recordStatus.textContent = "Processing and building SQLite tables...";
-
+        
                 const activeGrids = Object.values(gridState).filter(g => g.files.length > 0);
                 const hasGhl = activeGrids.some(g => g.source === 'GHL');
                 const nonGhlGrids = activeGrids.filter(g => g.source !== 'GHL');
-
+        
                 for (let i = 0; i < nonGhlGrids.length; i++) {
                     await buildSourceMasterTable(nonGhlGrids[i].source, nonGhlGrids[i].files, `master_non_ghl_${i + 1}`);
                 }
-
+        
                 if (nonGhlGrids.length > 1) {
                     for (let i = 1; i < nonGhlGrids.length; i++) {
                         const mergeSql = `
@@ -625,14 +633,14 @@
                         db.run(mergeSql);
                     }
                 }
-
+        
                 if (hasGhl) {
                     const ghlGrid = activeGrids.find(g => g.source === 'GHL');
                     await buildSourceMasterTable('GHL', ghlGrid.files, 'master_ghl');
                 }
-
+        
                 let finalQuery = "";
-
+        
                 if (hasGhl && nonGhlGrids.length > 0) {
                     finalQuery = `
                         SELECT 
@@ -657,37 +665,42 @@
                 } else {
                     finalQuery = "SELECT first_name, last_name, phone, email, street_address, city, state, postal_code FROM master_non_ghl_1;";
                 }
-
+        
                 const result = db.exec(finalQuery);
-
+        
                 if (result.length === 0 || !result[0].values.length) {
                     showError("Resulting dataset is empty.");
                     return;
                 }
-
+        
                 const columns = result[0].columns;
                 processedMasterData = result[0].values.map(val => {
                     const obj = {};
                     columns.forEach((col, idx) => { obj[col] = val[idx]; });
                     return obj;
                 });
-
+        
                 document.getElementById('totalRecordsBadge').textContent = `${processedMasterData.length.toLocaleString()} Unique Records Ready`;
                 actionPanel.classList.add('hidden');
                 document.getElementById('splitPanel').classList.remove('hidden');
                 
                 document.getElementById('customFilenameInput').value = "";
                 validateFilenameInput();
-
+        
                 extractUniquePostalCodes();
-
+        
                 updateEvenEstimate();
                 updateZipBalanceEstimate();
                 setupManualDefaultRows();
-
+        
             } catch (err) {
                 console.error(err);
                 showError("Processing Error: " + err.message);
+            } finally {
+                // 2. Re-enable button & restore UI state
+                processBtn.disabled = false;
+                processBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                processBtnText.textContent = originalBtnText;
             }
         }
 
