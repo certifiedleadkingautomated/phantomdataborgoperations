@@ -3457,6 +3457,61 @@
         }
       }
     .zl-fresh-actions{display:flex;justify-content:flex-end;padding-top:8px}.zl-fresh-actions:has(button[hidden]){display:none}.zl-fresh-actions .zl-button{font-size:11px}
+
+      /* One compact, selectable text surface per New entry. */
+      .zl-new-textbox {
+        display: grid;
+        grid-template-columns: max-content auto;
+        column-gap: 12px;
+        align-items: center;
+        padding: 6px 8px;
+        border: 1px solid #dce4ee;
+        border-radius: 6px;
+        background: #fff;
+        max-height: 230px;
+        overflow: auto;
+        scrollbar-width: thin;
+      }
+      .zl-new-textbox .zl-new-batch,
+      .zl-new-textbox .zl-new-batch + .zl-new-batch {
+        display: contents;
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+      .zl-new-line {
+        display: block;
+        font: 10px/23px ui-monospace, SFMono-Regular, Consolas, monospace;
+        color: #4d6481;
+        white-space: nowrap;
+        user-select: text;
+      }
+      .zl-inline-copy {
+        justify-self: end;
+        align-self: center;
+        border: 0;
+        border-radius: 3px;
+        background: transparent;
+        color: #7b8da4;
+        padding: 3px 4px;
+        margin: 0;
+        font: 9px/17px inherit;
+        font-family: inherit;
+        font-size: 9px;
+        line-height: 17px;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .zl-inline-copy:hover:not(:disabled),
+      .zl-inline-copy:focus-visible {
+        background: #eef3f9;
+        color: #2d527e;
+      }
+      .zl-inline-copy:focus-visible { outline: 2px solid #95b1ea; outline-offset: 1px; }
+      @media (max-width: 600px) {
+        .zl-copy-context { display: none; }
+        .zl-new-textbox { column-gap: 8px; }
+      }
 </style>
   </head>
   <body>
@@ -5526,36 +5581,24 @@
             );
             if (row.comment)
               body.append(el("p", { class: "zl-row-note" }, row.comment));
+            const textBox = el("div", { class: "zl-new-textbox", role: "group", "aria-label": "New ZIPs in batches of ten" });
             for (let i = 0; i < row.zips.length; i += 10) {
               const batch = row.zips.slice(i, i + 10);
-              body.append(
-                el(
-                  "div",
-                  { class: "zl-new-batch" },
-                  el(
-                    "div",
-                    { class: "zl-ten-zips" },
-                    batch.map((zip) =>
-                      el("span", { class: "zl-history-chip" }, zip),
-                    ),
-                  ),
-                  el(
-                    "div",
-                    { class: "zl-batch-actions" },
-                    el(
-                      "button",
-                      {
-                        type: "button",
-                        class: "zl-button",
-                        disabled: model.busy,
-                        onclick: () => void copyBatch(row, batch),
-                      },
-                      `Copy ${batch.length} to request contacts`,
-                    ),
-                  ),
+              textBox.append(
+                el("div", { class: "zl-new-batch" },
+                  el("code", { class: "zl-new-line" }, batch.join(",")),
+                  el("button", {
+                    type: "button",
+                    class: "zl-inline-copy",
+                    title: `Copy ${batch.length} to request contacts`,
+                    "aria-label": `Copy ${batch.length} to request contacts`,
+                    disabled: model.busy,
+                    onclick: () => void copyBatch(row, batch),
+                  }, `Copy ${batch.length}`, el("span", { class: "zl-copy-context" }, " to request contacts")),
                 ),
               );
             }
+            body.append(textBox);
             target.append(
               el(
                 "article",
