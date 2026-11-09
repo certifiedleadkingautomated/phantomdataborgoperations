@@ -2484,6 +2484,377 @@
           max-height: 300px;
         }
       }
+      /* Compact, quiet surfaces; preserve the spreadsheet's familiar colour cues. */
+      .zip-lab,
+      .zl-dialog {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .zip-lab {
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: none;
+      }
+      .zip-lab button,
+      .zip-lab select,
+      .zl-dialog button,
+      .zl-dialog input,
+      .zl-dialog select {
+        font-family: inherit;
+      }
+      .zl-toolbar {
+        margin-bottom: 8px;
+        align-items: center;
+      }
+      .zl-toolbar h2 {
+        font-size: 15px;
+        letter-spacing: -0.2px;
+      }
+      .zl-toolbar p {
+        margin-top: 3px;
+      }
+      .zl-status {
+        margin-bottom: 12px;
+        font-size: 10px;
+      }
+      .zl-columns {
+        gap: 20px;
+      }
+      .zl-left,
+      .zl-right {
+        gap: 16px;
+      }
+      .zl-section {
+        border-color: #e1e4e9;
+        border-radius: 8px;
+      }
+      .zl-section-head {
+        min-height: 34px;
+        background: #f4f5f7;
+        border-color: #e5e7eb;
+        padding: 7px 11px;
+      }
+      .zl-section-head h3 {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .zl-button {
+        border-radius: 6px;
+        box-shadow: none;
+        min-height: 29px;
+        padding: 5px 9px;
+      }
+      .zl-used-tools {
+        padding: 8px 10px;
+        background: #fff;
+        border-color: #f0e5df;
+      }
+      .zl-used-list {
+        min-height: 76px;
+        background: #fff4ef;
+        padding: 10px;
+      }
+      .zl-selection {
+        background: #fff;
+        border-color: #f0e5df;
+        padding: 8px 10px;
+      }
+      .zl-chip {
+        border-color: #e8cfc4;
+        color: #7f4635;
+        padding: 3px 6px;
+        background: #fffcfa;
+      }
+      .zl-chip-list {
+        gap: 5px;
+      }
+      .zl-history-help {
+        padding: 9px 10px 3px;
+        font-size: 10px;
+      }
+      .zl-legend {
+        padding: 3px 10px 8px;
+        font-size: 9px;
+        gap: 12px;
+      }
+      .zl-history-row {
+        min-height: 70px;
+        grid-template-columns: 28px minmax(0, 1fr);
+      }
+      .zl-row-index {
+        background: #f7f8fa;
+        font-size: 10px;
+      }
+      .zl-row-body {
+        background: #fafcf8;
+        padding: 9px 10px;
+      }
+      .zl-row-meta {
+        margin-bottom: 6px;
+        line-height: 1.5;
+      }
+      .zl-history-chip {
+        font-size: 10px;
+        padding: 2px 5px;
+      }
+      .zl-history-chip.deleted {
+        color: #8b929c;
+      }
+      .zl-row-note {
+        font-size: 10px;
+        margin-top: 5px;
+      }
+      .zl-check-input {
+        background: #e5f1f3;
+        padding: 9px;
+      }
+      .zl-check-input textarea {
+        background: #f4fafb;
+        border-color: #c9dfe2;
+        min-height: 78px;
+      }
+      .zl-feedback {
+        font-size: 10px;
+        margin: 4px 0;
+      }
+      .zl-result {
+        min-height: 60px;
+        padding: 9px 10px;
+      }
+      .zl-result-red {
+        background: #fbe4dc;
+        border-color: #edd4ca;
+      }
+      .zl-result-remaining {
+        background: #fbefea;
+      }
+      .zl-result-green {
+        background: #e4efdb;
+        min-height: 85px;
+      }
+      .zl-result-heading {
+        margin-bottom: 6px;
+      }
+      .zl-zip-text {
+        font-size: 11px;
+      }
+      .zl-audit summary {
+        background: #f8f9fb;
+        padding: 9px 10px;
+      }
+      .zl-footer {
+        font-size: 9px;
+        margin-top: 14px;
+        padding-top: 10px;
+      }
+      .zl-empty {
+        padding: 12px 8px;
+      }
+      .zl-history-section .zl-empty {
+        padding: 18px 12px;
+      }
+      .zl-text-button:hover {
+        text-decoration: underline;
+      }
+      .zl-dialog {
+        border-radius: 12px;
+      }
+      .zl-dialog form {
+        padding: 20px;
+      }
+      .zl-dialog-head {
+        margin-bottom: 8px;
+      }
+      .zl-dialog-description {
+        font-size: 11px;
+        margin-bottom: 14px;
+      }
+      .zl-mode-switch {
+        display: inline-flex;
+        background: #f0f1f4;
+        padding: 3px;
+        border-radius: 7px;
+        margin-bottom: 14px;
+        gap: 2px;
+      }
+      .zl-mode-switch button {
+        border: 0;
+        background: transparent;
+        padding: 6px 12px;
+        font-size: 12px;
+        color: #697386;
+        border-radius: 5px;
+      }
+      .zl-mode-switch button[aria-pressed="true"] {
+        background: white;
+        color: #17243b;
+        box-shadow: 0 1px 3px #00000012;
+      }
+      .zl-paste-hint {
+        font-size: 10px;
+        line-height: 1.6;
+        color: #7a8596;
+        margin: 8px 0;
+      }
+      .zl-dialog.zl-bulk-mode {
+        max-width: 850px;
+      }
+      .zl-bulk-mode .zl-form-grid {
+        grid-template-columns: 1fr 1.4fr;
+        max-width: 480px;
+      }
+      .zl-bulk-paste-label {
+        font-size: 11px !important;
+      }
+      .zl-bulk-mode #zl-bulk-paste {
+        min-height: 70px;
+        font-size: 11px;
+        background: #f9fafc;
+      }
+      .zl-bulk-guide {
+        color: #7b8797;
+        font-size: 10px;
+        line-height: 1.6;
+        margin-top: 6px;
+      }
+      .zl-bulk-review {
+        max-height: 380px;
+        overflow: auto;
+        border-radius: 7px;
+        margin-top: 10px;
+      }
+      .zl-bulk-review:empty {
+        display: none;
+      }
+      .zl-bulk-table-head,
+      .zl-bulk-row {
+        display: grid;
+        grid-template-columns: 20px 123px minmax(105px, 1fr) minmax(
+            180px,
+            1.65fr
+          ) 22px;
+        gap: 9px;
+        align-items: start;
+        padding: 9px 10px;
+      }
+      .zl-bulk-table-head {
+        background: #f4f5f7;
+        color: #738094;
+        font-size: 10px;
+        border: 1px solid #e5e8ee;
+        border-bottom: 0;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      .zl-bulk-row {
+        border: 1px solid #e5e8ee;
+        border-top: 0;
+        background: white;
+      }
+      .zl-bulk-row textarea,
+      .zl-bulk-row input {
+        font-size: 11px;
+        padding: 6px;
+        margin: 0;
+        min-height: 31px;
+        border-color: #dce1e9;
+      }
+      .zl-bulk-row textarea {
+        min-height: 52px;
+        line-height: 1.55;
+      }
+      .zl-bulk-row textarea[aria-label^="Comment"] {
+        font-family: inherit;
+      }
+      .zl-bulk-row input[type="date"] {
+        font-size: 10px;
+        padding: 5px;
+        width: 100%;
+      }
+      .zl-bulk-number {
+        font-size: 10px;
+        color: #97a0af;
+        padding-top: 8px;
+      }
+      .zl-bulk-row-feedback {
+        font-size: 9px;
+        color: #748197;
+        margin: 4px 0;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+      }
+      .zl-bulk-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px;
+      }
+      .zl-bulk-chips .zl-history-chip {
+        font-size: 9px;
+        padding: 1px 3px;
+      }
+      .zl-bulk-more {
+        font-size: 9px;
+        color: #8a94a3;
+        padding: 2px;
+      }
+      .zl-bulk-remove {
+        border: 0;
+        background: none;
+        color: #939daf;
+        font-size: 18px;
+        padding: 5px 0;
+        line-height: 1;
+      }
+      .zl-bulk-remove:hover {
+        color: #b64636;
+      }
+      .zl-bulk-invalid {
+        background: #fff9f7;
+      }
+      .zl-bulk-invalid .zl-bulk-row-feedback,
+      .zl-feedback.zl-invalid {
+        color: #b54434;
+      }
+      .zl-bulk-summary {
+        font-size: 11px;
+        margin-top: 9px;
+        line-height: 1.6;
+      }
+      @media (max-width: 850px) {
+        .zl-columns {
+          gap: 16px;
+        }
+        .zl-toolbar {
+          align-items: flex-start;
+        }
+        .zl-bulk-table-head {
+          display: none;
+        }
+        .zl-bulk-row {
+          grid-template-columns: 18px 120px minmax(0, 1fr) 20px;
+          border-top: 1px solid #e5e8ee;
+          margin-bottom: 8px;
+          border-radius: 7px;
+        }
+        .zl-bulk-row > textarea {
+          grid-column: 2/4;
+          grid-row: 2;
+        }
+        .zl-bulk-zip-cell {
+          grid-column: 2/4;
+          grid-row: 3;
+        }
+        .zl-bulk-remove {
+          grid-column: 4;
+          grid-row: 1;
+        }
+        .zl-bulk-mode .zl-form-grid {
+          grid-template-columns: 1fr 1fr;
+          max-width: none;
+        }
+      }
     </style>
   </head>
   <body>
@@ -2929,7 +3300,7 @@
         >
           <form id="zl-add-form">
             <header class="zl-dialog-head">
-              <h2 id="zl-add-title">Add ZIP Used History row</h2>
+              <h2 id="zl-add-title">Add Used ZIP history</h2>
               <button
                 type="button"
                 class="zl-close"
@@ -2943,8 +3314,17 @@
               For James Clement only. All valid ZIPs are recorded; existing Used
               ZIPs are highlighted.
             </p>
+            <div class="zl-mode-switch" aria-label="History entry mode">
+              <button type="button" id="zl-mode-single" aria-pressed="true">
+                Single entry</button
+              ><button type="button" id="zl-mode-bulk" aria-pressed="false">
+                Spreadsheet rows
+              </button>
+            </div>
             <div class="zl-form-grid">
-              <label>Date<input id="zl-date" type="date" required /></label
+              <label
+                ><span id="zl-date-label">Date</span
+                ><input id="zl-date" type="date" required /></label
               ><label
                 >Source<select id="zl-source">
                   <option value="contacts">Contacts requested</option>
@@ -2952,33 +3332,59 @@
                 </select></label
               >
             </div>
-            <label
-              >ZIP list<textarea
-                id="zl-add-zips"
-                rows="5"
-                required
-                placeholder="35801,35802,35803&#10;35741,35748"
-              ></textarea>
-            </label>
-            <div
-              id="zl-add-feedback"
-              class="zl-feedback"
-              aria-live="polite"
-            ></div>
-            <div id="zl-add-preview" class="zl-preview"></div>
-            <p class="zl-helper">
-              Commas, spaces, semicolons and new lines are accepted. Short
-              numeric ZIPs get leading zeros. ZIP+4 and other invalid entries
-              must be corrected.
-            </p>
-            <label
-              >Comment / order number <span class="zl-optional">optional</span
-              ><textarea
-                id="zl-add-comment"
-                rows="2"
-                maxlength="3000"
-              ></textarea>
-            </label>
+            <div id="zl-single-entry">
+              <label
+                >ZIP list<textarea
+                  id="zl-add-zips"
+                  rows="4"
+                  required
+                  placeholder="35801,35802,35803"
+                ></textarea>
+              </label>
+              <div
+                id="zl-add-feedback"
+                class="zl-feedback"
+                aria-live="polite"
+              ></div>
+              <div id="zl-add-preview" class="zl-preview"></div>
+              <label
+                >Comment / order number <span class="zl-optional">optional</span
+                ><textarea
+                  id="zl-add-comment"
+                  rows="2"
+                  maxlength="3000"
+                ></textarea>
+              </label>
+              <p class="zl-paste-hint">
+                Pasting spreadsheet cells switches to multiple rows
+                automatically. Plain ZIP lists stay in one entry.
+              </p>
+            </div>
+            <div id="zl-bulk-entry" hidden>
+              <label class="zl-bulk-paste-label"
+                >Paste spreadsheet rows<textarea
+                  id="zl-bulk-paste"
+                  rows="3"
+                  placeholder="Copy Comment + ZIPs columns from your spreadsheet and paste here."
+                ></textarea>
+              </label>
+              <p class="zl-bulk-guide">
+                Column 1: comment · Column 2: ZIPs. A ZIP-only column also
+                works. Each row gets its own date, comment and ZIP list. Review
+                and edit below; pasting again replaces this preview. Up to 500
+                rows / 50,000 ZIP entries.
+              </p>
+              <div
+                id="zl-bulk-feedback"
+                class="zl-feedback zl-bulk-summary"
+                aria-live="polite"
+              ></div>
+              <div
+                id="zl-bulk-review"
+                class="zl-bulk-review"
+                aria-label="History rows to import"
+              ></div>
+            </div>
             <p id="zl-add-error" class="zl-form-error" role="alert"></p>
             <footer class="zl-dialog-actions">
               <button type="button" class="zl-button" data-close>Cancel</button
@@ -3216,7 +3622,7 @@
               ])?.revision || 0;
             const rows = query(
               db,
-              "SELECT * FROM history_rows WHERE subaccount_id=? ORDER BY created_at DESC,id DESC",
+              "SELECT * FROM history_rows WHERE subaccount_id=? ORDER BY created_at DESC,rowid DESC",
               [account.id],
             );
             const members = query(
@@ -3231,7 +3637,7 @@
             }
             const events = query(
               db,
-              "SELECT * FROM deletion_events WHERE subaccount_id=? ORDER BY created_at DESC,id DESC",
+              "SELECT * FROM deletion_events WHERE subaccount_id=? ORDER BY created_at DESC,rowid DESC",
               [account.id],
             );
             const deleted = query(
@@ -3277,35 +3683,53 @@
               ]).revision === revision,
               "This subaccount changed in another tab. Refresh and review before saving.",
             );
-            if (action === "add") {
-              checkZips(payload.zips);
-              const note = comment(payload.comment),
-                date = payload.date;
+            if (action === "add" || action === "bulk_add") {
+              const incoming = action === "bulk_add" ? payload.rows : [payload];
               assert(
-                /^\d{4}-\d{2}-\d{2}$/.test(date) &&
-                  Number.isFinite(Date.parse(date)) &&
-                  new Date(date).toISOString().slice(0, 10) === date,
-                "Choose a valid date.",
+                Array.isArray(incoming) &&
+                  incoming.length > 0 &&
+                  incoming.length <= 500,
+                "Add 1–500 history rows at a time.",
               );
               assert(
-                ["contacts", "ghl"].includes(payload.source),
-                "Choose a valid source.",
+                incoming.reduce(
+                  (n, r) => n + (Array.isArray(r.zips) ? r.zips.length : 0),
+                  0,
+                ) <= 50000,
+                "Add at most 50,000 ZIP entries at a time.",
               );
-              const used = new Set(active(db, account.id).map((z) => z.zip)),
-                row = id();
-              db.run("INSERT INTO history_rows VALUES (?,?,?,?,?,?)", [
-                row,
-                account.id,
-                date,
-                payload.source,
-                note,
-                now(),
-              ]);
-              for (const z of payload.zips)
-                db.run(
-                  "INSERT INTO history_zips(row_id,zip,already_used) VALUES (?,?,?)",
-                  [row, z, used.has(z) ? 1 : 0],
+              const used = new Set(active(db, account.id).map((z) => z.zip));
+              for (const entry of incoming) {
+                checkZips(entry.zips);
+                const note = comment(entry.comment),
+                  date = entry.date;
+                assert(
+                  /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+                    Number.isFinite(Date.parse(date)) &&
+                    new Date(date).toISOString().slice(0, 10) === date,
+                  "Choose a valid date for every row.",
                 );
+                assert(
+                  ["contacts", "ghl"].includes(entry.source),
+                  "Choose a valid source.",
+                );
+                const row = id();
+                db.run("INSERT INTO history_rows VALUES (?,?,?,?,?,?)", [
+                  row,
+                  account.id,
+                  date,
+                  entry.source,
+                  note,
+                  now(),
+                ]);
+                for (const z of entry.zips) {
+                  db.run(
+                    "INSERT INTO history_zips(row_id,zip,already_used) VALUES (?,?,?)",
+                    [row, z, used.has(z) ? 1 : 0],
+                  );
+                }
+                entry.zips.forEach((z) => used.add(z));
+              }
             } else if (action === "delete") {
               assert(
                 ["individual", "state", "city"].includes(payload.mode),
@@ -3450,6 +3874,52 @@
       })();
     </script>
     <script>
+      // Spreadsheet cells use TSV: commas inside a ZIP cell are not column separators.
+      window.ZipPaste = {
+        spreadsheet(text) {
+          if (text.length > 1500000)
+            throw Error("Paste is too large (1.5 million characters maximum).");
+          const result = Papa.parse(text, {
+            delimiter: "\t",
+            skipEmptyLines: "greedy",
+          });
+          if (result.errors.length)
+            throw Error(
+              "Could not read spreadsheet cells: " + result.errors[0].message,
+            );
+          let rows = result.data;
+          const heading = (s) =>
+            String(s || "")
+              .toLowerCase()
+              .replace(/[^a-z]/g, "");
+          if (
+            rows.length &&
+            ((rows[0].length === 2 &&
+              /^(comment|comments|note|notes|ordernumber)$/.test(
+                heading(rows[0][0]),
+              ) &&
+              /^(zip|zips|zipcode|zipcodes)$/.test(heading(rows[0][1]))) ||
+              (rows[0].length === 1 &&
+                /^(zip|zips|zipcode|zipcodes)$/.test(heading(rows[0][0]))))
+          )
+            rows = rows.slice(1);
+          if (rows.length > 500)
+            throw Error("Paste up to 500 history rows at a time.");
+          return rows.map((cells, i) => {
+            if (cells.length > 2)
+              throw Error(
+                "Spreadsheet row " +
+                  (i + 1) +
+                  " has more than two columns. Copy Comment + ZIPs, or the ZIP column alone.",
+              );
+            return {
+              comment: cells.length === 2 ? cells[0] : "",
+              raw: cells.length === 2 ? cells[1] : cells[0],
+            };
+          });
+        },
+      };
+
       (() => {
         // Fixed to the subaccount currently represented by the page. No cross-account selector.
         const ACCOUNT = { id: "james-clement", name: "James Clement" };
@@ -3904,8 +4374,224 @@
           $("zl-status").textContent =
             `Saved in this browser · ${ACCOUNT.name} only`;
         }
+        function setAddMode(mode) {
+          model.addMode = mode;
+          const bulk = mode === "bulk";
+          $("zl-single-entry").hidden = bulk;
+          $("zl-bulk-entry").hidden = !bulk;
+          $("zl-add-zips").required = !bulk;
+          $("zl-add-dialog").classList.toggle("zl-bulk-mode", bulk);
+          $("zl-mode-single").setAttribute("aria-pressed", String(!bulk));
+          $("zl-mode-bulk").setAttribute("aria-pressed", String(bulk));
+          $("zl-date-label").textContent = bulk
+            ? "Default date for pasted rows"
+            : "Date";
+          document
+            .querySelectorAll('#zl-bulk-review input[type="date"]')
+            .forEach((e) => (e.required = bulk));
+          validateAdd();
+        }
+        function readBulkPaste() {
+          model.bulkError = "";
+          try {
+            model.bulkRows = ZipPaste.spreadsheet($("zl-bulk-paste").value).map(
+              (row) => ({ ...row, date: $("zl-date").value || date() }),
+            );
+          } catch (e) {
+            model.bulkRows = [];
+            model.bulkError = e.message;
+          }
+          renderBulkReview();
+          validateBulk();
+        }
+        function renderBulkReview() {
+          const target = $("zl-bulk-review");
+          target.replaceChildren();
+          if (!model.bulkRows?.length) return;
+          target.append(
+            el(
+              "div",
+              { class: "zl-bulk-table-head", "aria-hidden": "true" },
+              el("span", {}, "#"),
+              el("span", {}, "Date"),
+              el("span", {}, "Comment"),
+              el("span", {}, "ZIPs"),
+              el("span"),
+            ),
+          );
+          model.bulkRows.forEach((row, i) => {
+            row.feedback = el("div", { class: "zl-bulk-row-feedback" });
+            row.preview = el("div", { class: "zl-bulk-chips" });
+            const dateInput = el("input", {
+              type: "date",
+              value: row.date,
+              required: true,
+              "aria-label": "Date for row " + (i + 1),
+              oninput: (e) => {
+                row.date = e.target.value;
+                validateBulk();
+              },
+            });
+            const commentInput = el("textarea", {
+              rows: "2",
+              maxlength: "3000",
+              "aria-label": "Comment for row " + (i + 1),
+              oninput: (e) => {
+                row.comment = e.target.value;
+                validateBulk();
+              },
+            });
+            commentInput.value = row.comment;
+            const zipInput = el("textarea", {
+              rows: "2",
+              "aria-label": "ZIPs for row " + (i + 1),
+              oninput: (e) => {
+                row.raw = e.target.value;
+                validateBulk();
+              },
+            });
+            zipInput.value = row.raw;
+            row.element = el(
+              "div",
+              { class: "zl-bulk-row" },
+              el("span", { class: "zl-bulk-number" }, i + 1),
+              dateInput,
+              commentInput,
+              el(
+                "div",
+                { class: "zl-bulk-zip-cell" },
+                zipInput,
+                row.feedback,
+                row.preview,
+              ),
+              el(
+                "button",
+                {
+                  type: "button",
+                  class: "zl-bulk-remove",
+                  "aria-label": "Remove row " + (i + 1),
+                  onclick: () => {
+                    model.bulkRows.splice(i, 1);
+                    renderBulkReview();
+                    validateBulk();
+                  },
+                },
+                "×",
+              ),
+            );
+            target.append(row.element);
+          });
+        }
+        function validateBulk() {
+          const seen = usedSet();
+          let invalid = 0,
+            total = 0,
+            overlap = 0;
+          const rows = (model.bulkRows || []).map((row) => {
+            const p = parse(row.raw);
+            const validDate =
+              /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
+              Number.isFinite(Date.parse(row.date)) &&
+              new Date(row.date).toISOString().slice(0, 10) === row.date;
+            const bad =
+              p.invalid.length > 0 ||
+              !p.zips.length ||
+              !validDate ||
+              row.comment.length > 3000;
+            const matches = new Set(p.zips.filter((z) => seen.has(z)));
+            overlap += matches.size;
+            total += p.zips.length;
+            if (bad) invalid++;
+            if (row.feedback) {
+              row.element.classList.toggle("zl-bulk-invalid", bad);
+              row.feedback.textContent = p.invalid.length
+                ? "Invalid: " + p.invalid.slice(0, 5).join(", ")
+                : !p.zips.length
+                  ? "Add at least one ZIP."
+                  : !validDate
+                    ? "Choose a valid date."
+                    : row.comment.length > 3000
+                      ? "Comment exceeds 3,000 characters."
+                      : `${p.zips.length} ZIPs${matches.size ? " · " + matches.size + " already used" : ""}${p.duplicates ? " · " + p.duplicates + " repeats removed" : ""}${p.padded ? " · " + p.padded + " padded" : ""}`;
+              row.preview.replaceChildren(
+                ...p.zips
+                  .slice(0, 24)
+                  .map((z) =>
+                    el(
+                      "span",
+                      {
+                        class:
+                          "zl-history-chip" +
+                          (matches.has(z) ? " duplicate" : ""),
+                      },
+                      z,
+                    ),
+                  ),
+              );
+              if (p.zips.length > 24)
+                row.preview.append(
+                  el(
+                    "span",
+                    { class: "zl-bulk-more" },
+                    "+" + (p.zips.length - 24) + " more",
+                  ),
+                );
+            }
+            p.zips.forEach((z) => seen.add(z));
+            return {
+              date: row.date,
+              comment: row.comment,
+              zips: p.zips,
+              source: $("zl-source").value,
+            };
+          });
+          const tooMany = total > 50000;
+          $("zl-bulk-feedback").textContent =
+            model.bulkError ||
+            (rows.length
+              ? `${rows.length} history rows · ${total.toLocaleString()} ZIP entries${overlap ? " · " + overlap + " already used or repeated in earlier rows" : ""}${invalid ? " · " + invalid + " rows need correction" : ""}${tooMany ? " · Maximum 50,000 ZIP entries per import" : ""}`
+              : "Paste one or two columns. Each spreadsheet row becomes a separate history entry.");
+          $("zl-bulk-feedback").classList.toggle(
+            "zl-invalid",
+            !!model.bulkError || invalid > 0 || tooMany,
+          );
+          $("zl-save-row").textContent =
+            "Add " +
+            (rows.length || "") +
+            (rows.length === 1 ? " history row" : " history rows");
+          $("zl-save-row").disabled =
+            model.busy ||
+            !!model.bulkError ||
+            !rows.length ||
+            invalid > 0 ||
+            tooMany;
+          return {
+            rows,
+            valid: !model.bulkError && rows.length > 0 && !invalid && !tooMany,
+          };
+        }
+        function handleHistoryPaste(event) {
+          const text = event.clipboardData?.getData("text/plain") || "";
+          const html = event.clipboardData?.getData("text/html") || "";
+          const spreadsheetRows = html
+            ? new DOMParser()
+                .parseFromString(html, "text/html")
+                .querySelectorAll("table tr").length
+            : 0;
+          if (!text.includes("\t") && spreadsheetRows < 2) return;
+          event.preventDefault();
+          $("zl-bulk-paste").value = text;
+          setAddMode("bulk");
+          readBulkPaste();
+        }
+
         function validateAdd() {
           if (!$("zl-add-dialog").open) return;
+          if (model.addMode === "bulk") {
+            validateBulk();
+            return;
+          }
+          $("zl-save-row").textContent = "Add history row";
           const p = parse($("zl-add-zips").value);
           feedback($("zl-add-feedback"), p);
           const used = usedSet(),
@@ -3920,18 +4606,15 @@
               ),
             );
           $("zl-add-preview").replaceChildren(
-            ...p.zips
-              .slice(0, 200)
-              .map((z) =>
-                el(
-                  "span",
-                  {
-                    class:
-                      "zl-history-chip" + (used.has(z) ? " duplicate" : ""),
-                  },
-                  z,
-                ),
+            ...p.zips.slice(0, 200).map((z) =>
+              el(
+                "span",
+                {
+                  class: "zl-history-chip" + (used.has(z) ? " duplicate" : ""),
+                },
+                z,
               ),
+            ),
           );
           if (p.zips.length > 200)
             $("zl-add-preview").append(
@@ -3952,8 +4635,11 @@
           $("zl-add-form").reset();
           $("zl-date").value = date();
           $("zl-add-error").textContent = "";
+          model.bulkRows = [];
+          model.bulkError = "";
+          $("zl-bulk-review").replaceChildren();
           $("zl-add-dialog").showModal();
-          validateAdd();
+          setAddMode("single");
         }
         function openDelete(options) {
           if (model.busy) return;
@@ -4005,10 +4691,28 @@
             );
           }
         }
+        $("zl-mode-single").addEventListener("click", () =>
+          setAddMode("single"),
+        );
+        $("zl-mode-bulk").addEventListener("click", () => setAddMode("bulk"));
+        $("zl-bulk-paste").addEventListener("input", readBulkPaste);
+        $("zl-add-zips").addEventListener("paste", handleHistoryPaste);
+        $("zl-source").addEventListener("change", validateAdd);
         $("zl-add").addEventListener("click", openAdd);
         $("zl-add-zips").addEventListener("input", validateAdd);
         $("zl-add-form").addEventListener("submit", (e) => {
           e.preventDefault();
+          if (model.addMode === "bulk") {
+            const result = validateBulk();
+            if (model.busy || !result.valid) return;
+            void change(
+              "bulk_add",
+              { rows: result.rows },
+              "zl-add-error",
+              result.rows.length + " history rows added. Used ZIPs updated.",
+            );
+            return;
+          }
           const p = parse($("zl-add-zips").value);
           if (model.busy || p.invalid.length || !p.zips.length) return;
           void change(
