@@ -5,1828 +5,2494 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>James Clement · ZIP prototype</title>
     <style>
-:root {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-  color: #17243b;
-  background: #f5f6f9;
-  font-size: 14px;
-  --blue: #1948d1;
-  --border: #dfe4ed;
-  --muted: #66758d;
-  --light: #f8f9fc;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-}
-button,
-input,
-select,
-textarea {
-  font: inherit;
-}
-button {
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-button,
-input,
-textarea,
-select {
-  outline-offset: 3px;
-}
-input:focus,
-textarea:focus,
-select:focus {
-  outline: 2px solid #91acf3;
-}
-input[type="checkbox"] {
-  accent-color: var(--blue);
-  width: 15px;
-  height: 15px;
-  flex: none;
-  margin: 1px 0;
-}
-textarea {
-  resize: vertical;
-  min-height: 65px;
-  line-height: 1.6;
-}
-input:not([type="checkbox"]),
-select,
-textarea {
-  width: 100%;
-  border: 1px solid #d3dbe8;
-  border-radius: 6px;
-  padding: 9px 11px;
-  color: #17243b;
-  background: white;
-}
-textarea {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 13px;
-}
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
-h1 {
-  font-size: 21px;
-  letter-spacing: -0.45px;
-  font-weight: 650;
-}
-h2 {
-  font-size: 17px;
-  letter-spacing: -0.25px;
-  font-weight: 650;
-}
-h3 {
-  font-size: 14px;
-  font-weight: 650;
-}
-label {
-  cursor: pointer;
-}
-fieldset {
-  margin: 0;
-  border: 0;
-  padding: 0;
-}
-legend {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-.muted,
-.small-muted {
-  color: var(--muted);
-}
-.small-muted {
-  font-size: 11px;
-}
-.lab-strip {
-  background: #172c53;
-  color: #dce6fb;
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  padding: 7px 24px;
-  font-size: 11px;
-  letter-spacing: 0.2px;
-}
-.lab-strip strong {
-  font-size: 10px;
-  letter-spacing: 1px;
-}
-.lab-dot,
-.db-dot {
-  display: inline-block;
-  border-radius: 50%;
-  width: 6px;
-  height: 6px;
-  background: #80caa1;
-}
-.topbar {
-  min-height: 55px;
-  padding: 9px 24px;
-  background: white;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-.breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  font-size: 12px;
-  color: #34517e;
-}
-.breadcrumbs label {
-  white-space: nowrap;
-  color: #23334d;
-}
-.breadcrumbs select {
-  font-size: 12px;
-  max-width: 270px;
-  padding: 7px 9px;
-}
-.top-right {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-main {
-  max-width: 1500px;
-  margin: auto;
-  padding: 18px 24px 28px;
-}
-.back-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 12px;
-  color: #426089;
-  margin-bottom: 20px;
-}
-.outline-label {
-  border: 1px solid var(--border);
-  padding: 6px 10px;
-  border-radius: 5px;
-  background: white;
-  color: #293c5a;
-}
-.account-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 13px;
-}
-.heading-actions,
-.button-row,
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.status-badge {
-  background: #a9edbd;
-  color: #154d2a;
-  border: 1px solid #8fd8a5;
-  border-radius: 4px;
-  padding: 3px 9px;
-  font-size: 12px;
-}
-.flow-label {
-  font-size: 11px;
-  color: var(--muted);
-}
-.flow-label strong {
-  font-weight: 500;
-}
-.identity-card {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 13px;
-  margin-bottom: 15px;
-  font-size: 12px;
-}
-.eyebrow {
-  font-size: 10px;
-  letter-spacing: 0.65px;
-  color: #566982;
-  margin-bottom: 6px;
-}
-.demo-badge {
-  display: inline-block;
-  color: #4f627d;
-  background: #f2f5fa;
-  border: 1px solid #dae2ee;
-  border-radius: 5px;
-  padding: 3px 7px;
-  font-size: 11px;
-}
-.account-tabs {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  width: fit-content;
-  background: #edf0f5;
-  padding: 3px;
-  border-radius: 7px;
-  margin-bottom: 9px;
-}
-.account-tabs button {
-  border: 0;
-  background: transparent;
-  padding: 7px 12px;
-  color: #52627d;
-  font-size: 12px;
-  border-radius: 5px;
-}
-.account-tabs button:disabled {
-  opacity: 0.7;
-  cursor: default;
-}
-.account-tabs .active {
-  background: white;
-  box-shadow: 0 1px 3px #162a481c;
-  color: #16243a;
-  font-weight: 550;
-}
-.workspace {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px #17335208;
-  overflow: hidden;
-}
-.workspace-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: center;
-  padding: 20px 22px 17px;
-}
-.workspace-heading p {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-  margin-top: 5px;
-}
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 100%;
-  border-radius: 5px;
-  border: 1px solid #dce3ed;
-  padding: 3px 7px;
-  background: #f6f8fb;
-  color: #52637b;
-  font-size: 10px;
-  line-height: 1.4;
-}
-.tag.blue {
-  background: #f0f5ff;
-  border-color: #d5e2ff;
-  color: #355bb2;
-}
-.tag.green {
-  background: #edf8f1;
-  border-color: #cfe7d7;
-  color: #32724a;
-}
-.tag.gray {
-  background: #f5f6f8;
-  color: #788497;
-}
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  min-height: 35px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 550;
-  white-space: nowrap;
-  transition:
-    background 0.12s,
-    box-shadow 0.12s;
-}
-.button.primary {
-  background: var(--blue);
-  border-color: var(--blue);
-  color: white;
-  box-shadow: 0 1px 2px #1733521a;
-}
-.button.primary:hover:not(:disabled) {
-  background: #163eb1;
-}
-.button.secondary {
-  background: white;
-  border-color: #d4dce9;
-  color: #263d60;
-  box-shadow: 0 1px 2px #1733520a;
-}
-.button.secondary:hover:not(:disabled) {
-  background: #f7f9fd;
-}
-.button.ghost {
-  background: transparent;
-  color: #526887;
-}
-.button.ghost:hover {
-  background: #f3f6fb;
-}
-.button.small {
-  min-height: 30px;
-  font-size: 11px;
-  padding: 6px 9px;
-}
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  padding: 0 22px 18px;
-}
-.stat {
-  border: 1px solid #e4e8ef;
-  border-radius: 7px;
-  padding: 13px 15px;
-  background: #fbfcfe;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 35px;
-  height: 35px;
-  background: #edf3ff;
-  color: #4168bd;
-  border-radius: 7px;
-  font-size: 16px;
-}
-.stat:nth-child(2) .stat-icon {
-  background: #fff5eb;
-  color: #b98043;
-}
-.stat:nth-child(3) .stat-icon {
-  background: #edf7f1;
-  color: #52836b;
-}
-.stat strong {
-  font-size: 23px;
-  font-weight: 600;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-}
-.stat p {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 3px;
-}
-.workspace-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 22px;
-  border-top: 1px solid #edf0f5;
-  border-bottom: 1px solid var(--border);
-}
-.inner-tabs {
-  display: flex;
-  gap: 24px;
-}
-.inner-tabs button {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  padding: 14px 0 12px;
-  font-size: 12px;
-  color: #64728a;
-  white-space: nowrap;
-}
-.inner-tabs button[aria-selected="true"] {
-  border-bottom-color: var(--blue);
-  color: #244fba;
-  font-weight: 600;
-}
-.inner-tabs span {
-  padding: 1px 5px;
-  background: #eef1f7;
-  border-radius: 4px;
-  font-size: 10px;
-  margin-left: 4px;
-}
-.section-toolbar {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 22px;
-  border-bottom: 1px solid #edf0f5;
-}
-.filter-field {
-  display: flex;
-  align-items: center;
-  border: 1px solid #dce2ed;
-  border-radius: 6px;
-  padding: 0 9px;
-  max-width: 330px;
-  width: 100%;
-  color: #788aa3;
-}
-.filter-field input {
-  border: 0;
-  font-size: 12px;
-  padding: 8px;
-  background: transparent;
-}
-.select-all {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  white-space: nowrap;
-  color: #5f6e84;
-}
-.arrival {
-  padding: 18px 22px;
-  border-bottom: 1px solid #edf0f5;
-}
-.arrival-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 11px;
-}
-.arrival-date {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.arrival-date .count {
-  font-size: 10px;
-  font-weight: 400;
-  color: #7c879a;
-}
-.arrival-notes {
-  color: #67768d;
-  font-size: 12px;
-  line-height: 1.6;
-  margin-top: 5px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.destination-tags {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 5px;
-  max-width: 52%;
-}
-.zip-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-.zip-chip {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid #dbe2ef;
-  border-radius: 5px;
-  background: #fbfcff;
-  padding: 6px 8px;
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 12px;
-  transition: background 0.12s;
-}
-.zip-chip:has(input:checked) {
-  border-color: #8aa7ed;
-  background: #eff4ff;
-  color: #1843a2;
-}
-.zip-chip:hover {
-  border-color: #9aaed4;
-}
-.selection-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 15px 22px;
-  background: #fafbfe;
-}
-.selection-bar strong {
-  font-size: 12px;
-  font-weight: 600;
-}
-.selection-bar p {
-  font-size: 11px;
-  color: #78869b;
-  margin-top: 4px;
-}
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 20px;
-  min-height: 230px;
-  text-align: center;
-}
-.empty-symbol {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 45px;
-  height: 45px;
-  background: #f0f4fb;
-  border: 1px solid #e2e8f2;
-  border-radius: 12px;
-  font-size: 21px;
-  color: #6e86b0;
-  margin-bottom: 13px;
-}
-.empty-state h3 {
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-.empty-state p {
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--muted);
-  max-width: 440px;
-}
-.empty-state .button {
-  margin-top: 15px;
-}
-.page-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: #7d8ba1;
-  font-size: 10px;
-  padding: 13px 1px;
-  line-height: 1.6;
-}
-code {
-  font-size: 10px;
-}
-.history-intro {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 19px 22px 12px;
-  align-items: flex-start;
-}
-.history-intro p {
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--muted);
-  margin-top: 5px;
-  max-width: 650px;
-}
-.used-summary {
-  padding: 0 22px;
-}
-.used-summary details {
-  background: #f9fafc;
-  border: 1px solid #e2e7ef;
-  border-radius: 6px;
-  padding: 10px 12px;
-  margin-bottom: 16px;
-}
-.used-summary summary {
-  font-size: 11px;
-  cursor: pointer;
-  color: #5e6c82;
-}
-.zip-text {
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.8;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.request-card {
-  margin: 0 22px 14px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  overflow: hidden;
-}
-.request-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #edf0f5;
-  background: #fafbfe;
-}
-.request-card header strong {
-  font-size: 12px;
-}
-.request-card header span {
-  color: var(--muted);
-  font-size: 11px;
-}
-.request-card .request-body {
-  padding: 14px;
-  display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 18px;
-}
-.request-body h4 {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #718098;
-  margin: 0 0 7px;
-}
-.request-body .destination-tags {
-  max-width: 100%;
-  justify-content: flex-start;
-}
-.request-comments {
-  font-size: 12px;
-  line-height: 1.7;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  margin-top: 12px;
-}
-.request-card details {
-  margin-top: 12px;
-  font-size: 11px;
-  color: #718098;
-}
-.request-card summary {
-  cursor: pointer;
-}
-.source-note {
-  padding: 6px 0;
-  white-space: pre-wrap;
-  line-height: 1.6;
-}
-.checker {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  padding: 24px;
-}
-.checker-input > p {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
-  margin: 7px 0 18px;
-}
-.checker-input > label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 7px;
-}
-.check-results {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.check-card {
-  border: 1px solid #dde4ee;
-  border-radius: 7px;
-  overflow: hidden;
-}
-.check-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: #f8fafd;
-  border-bottom: 1px solid #e6ebf2;
-}
-.check-card h4 {
-  font-size: 12px;
-  font-weight: 600;
-  margin: 0;
-}
-.check-card p {
-  padding: 12px;
-  font-family: ui-monospace, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-  max-height: 150px;
-  overflow: auto;
-}
-.check-card.used {
-  border-color: #efd9c8;
-}
-.check-card.used header {
-  background: #fff7f0;
-  border-color: #f2e3d8;
-}
-.check-card.fresh {
-  border-color: #cce4d5;
-}
-.check-card.fresh header {
-  background: #f1faf4;
-  border-color: #dcece2;
-}
-.check-card footer {
-  padding: 0 12px 12px;
-}
-.notice {
-  padding: 12px 15px;
-  border: 1px solid;
-  border-radius: 7px;
-  font-size: 12px;
-  margin: 12px 0;
-  line-height: 1.6;
-}
-.notice p {
-  margin-top: 4px;
-}
-.notice.error {
-  border-color: #f0c4c1;
-  background: #fff5f4;
-  color: #9b3931;
-}
-.notice.warning {
-  border-color: #e8d3a4;
-  background: #fffbf0;
-  color: #806128;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-.notice[hidden] {
-  display: none;
-}
-dialog {
-  border: 1px solid #d5ddea;
-  border-radius: 12px;
-  padding: 0;
-  max-width: 590px;
-  width: calc(100% - 28px);
-  max-height: 92vh;
-  color: #17243b;
-  box-shadow: 0 20px 80px #071c4a40;
-}
-dialog::backdrop {
-  background: #14233a80;
-  backdrop-filter: blur(2px);
-}
-dialog form {
-  padding: 24px;
-  overflow: auto;
-}
-.dialog-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 10px;
-}
-.dialog-heading h2 {
-  font-size: 21px;
-  letter-spacing: -0.5px;
-}
-.dialog-heading .eyebrow {
-  font-size: 9px;
-  color: #5577b2;
-  letter-spacing: 1px;
-}
-.icon-button {
-  border: 0;
-  background: transparent;
-  font-size: 25px;
-  color: #77869c;
-  padding: 0 2px;
-  line-height: 1;
-}
-.dialog-description {
-  font-size: 12px;
-  color: #687891;
-  line-height: 1.7;
-  margin-bottom: 19px;
-}
-.form-field {
-  margin-bottom: 15px;
-}
-.form-field label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 13px;
-}
-.required {
-  color: #b15d58;
-  font-weight: 400;
-}
-.optional {
-  font-weight: 400;
-  color: #8190a5;
-  font-size: 11px;
-  margin-left: 5px;
-}
-.helper {
-  font-size: 11px !important;
-  color: #7b889d !important;
-  line-height: 1.65 !important;
-  margin: 6px 0 !important;
-}
-.input-feedback {
-  font-size: 11px;
-  line-height: 1.7;
-  color: #718299;
-  overflow-wrap: anywhere;
-}
-.input-feedback .invalid {
-  color: #b0443d;
-}
-.input-feedback .positive {
-  color: #427b59;
-}
-.destinations {
-  margin: 0 0 16px;
-}
-.destinations legend {
-  font-size: 12px;
-}
-.account-actions {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin: 9px 0;
-}
-.text-button {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: #3c64b5;
-  font-size: 11px;
-}
-.account-options {
-  border: 1px solid #dfe5ef;
-  border-radius: 7px;
-  overflow: auto;
-  max-height: 180px;
-}
-.account-option {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 12px;
-  font-size: 12px;
-  border-bottom: 1px solid #edf0f5;
-}
-.account-option:last-child {
-  border: 0;
-}
-.account-option .industry {
-  margin-left: auto;
-  color: #8a96a8;
-  font-size: 10px;
-}
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  border-top: 1px solid #e8edf4;
-  padding-top: 15px;
-  margin-top: 17px;
-}
-.selected-review {
-  background: #f5f8ff;
-  border: 1px solid #dce5f9;
-  border-radius: 7px;
-  padding: 12px;
-  margin: 0 0 16px;
-}
-.selected-review > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  font-size: 12px;
-  margin-bottom: 5px;
-}
-.selected-review .zip-text {
-  max-height: 95px;
-  overflow: auto;
-}
-.destination-review {
-  background: #fffaf0;
-  border: 1px solid #eee0bd;
-  border-radius: 6px;
-  padding: 10px;
-  margin-top: 10px;
-  color: #8a6b2f;
-  font-size: 11px;
-  line-height: 1.7;
-}
-.acknowledgement {
-  display: flex;
-  gap: 7px;
-  align-items: flex-start;
-  margin-top: 9px;
-}
-.form-error {
-  color: #aa3731;
-  font-size: 12px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-#toast {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 9;
-  padding: 12px 17px;
-  background: #173757;
-  color: white;
-  border: 1px solid #3c5773;
-  border-radius: 8px;
-  box-shadow: 0 4px 18px #14263b20;
-  max-width: 400px;
-  font-size: 12px;
-  line-height: 1.6;
-}
-[hidden] {
-  display: none !important;
-}
-@media (max-width: 760px) {
-  .topbar {
-    align-items: flex-start;
-    padding: 10px 15px;
-  }
-  .breadcrumbs {
-    flex-wrap: wrap;
-    gap: 7px;
-  }
-  .breadcrumbs select {
-    max-width: 240px;
-  }
-  .top-right {
-    display: none;
-  }
-  main {
-    padding: 15px 12px;
-  }
-  .lab-strip {
-    padding: 7px 14px;
-  }
-  .lab-strip > span:last-child {
-    font-size: 10px;
-  }
-  .account-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .identity-card {
-    padding: 12px;
-    font-size: 11px;
-  }
-  .account-tabs {
-    width: 100%;
-    flex-wrap: nowrap;
-    overflow: auto;
-  }
-  .account-tabs button {
-    padding: 8px 11px;
-  }
-  .workspace-heading {
-    padding: 17px 15px;
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .title-row {
-    flex-wrap: wrap;
-  }
-  .stats {
-    padding: 0 15px 15px;
-    gap: 7px;
-  }
-  .stat {
-    padding: 10px;
-    gap: 0;
-  }
-  .stat-icon {
-    display: none;
-  }
-  .stat strong {
-    font-size: 21px;
-  }
-  .stat p {
-    font-size: 10px;
-  }
-  .workspace-nav {
-    padding: 0 15px;
-  }
-  .workspace-nav > .small-muted {
-    display: none;
-  }
-  .inner-tabs {
-    gap: 20px;
-  }
-  .inner-tabs button {
-    font-size: 11px;
-  }
-  .section-toolbar {
-    padding: 12px 15px;
-    flex-wrap: wrap;
-  }
-  .filter-field {
-    max-width: none;
-  }
-  .arrival {
-    padding: 15px;
-  }
-  .arrival-top {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .destination-tags {
-    max-width: 100%;
-    justify-content: flex-start;
-  }
-  .selection-bar {
-    padding: 13px 15px;
-    align-items: flex-start;
-    flex-direction: column;
-  }
-  .selection-bar p {
-    line-height: 1.7;
-  }
-  .selection-bar > .button-row {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  .history-intro {
-    padding: 17px 15px;
-    flex-direction: column;
-  }
-  .used-summary {
-    padding: 0 15px;
-  }
-  .request-card {
-    margin: 0 15px 12px;
-  }
-  .request-card .request-body {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  .checker {
-    grid-template-columns: 1fr;
-    padding: 17px 15px;
-    gap: 20px;
-  }
-  .page-footer {
-    flex-direction: column;
-    gap: 3px;
-    font-size: 9px;
-  }
-  .notice.warning {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .form-grid {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  dialog form {
-    padding: 20px;
-  }
-  .dialog-heading h2 {
-    font-size: 19px;
-  }
-  .dialog-footer {
-    flex-wrap: wrap;
-  }
-  .heading-actions {
-    flex-wrap: wrap;
-  }
-}
-#new-scope {
-  width: auto;
-  font-size: 11px;
-  max-width: 190px;
-  padding: 8px;
-}
-.clipboard-helper {
-  position: fixed;
-  left: -10000px;
-  top: 0;
-  width: 1px;
-  height: 1px;
-}
+      :root {
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        color: #17243b;
+        background: #f5f6f9;
+        font-size: 14px;
+        --blue: #1948d1;
+        --border: #dfe4ed;
+        --muted: #66758d;
+        --light: #f8f9fc;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      button,
+      input,
+      textarea,
+      select {
+        outline-offset: 3px;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: 2px solid #91acf3;
+      }
+      input[type="checkbox"] {
+        accent-color: var(--blue);
+        width: 15px;
+        height: 15px;
+        flex: none;
+        margin: 1px 0;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 65px;
+        line-height: 1.6;
+      }
+      input:not([type="checkbox"]),
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #d3dbe8;
+        border-radius: 6px;
+        padding: 9px 11px;
+        color: #17243b;
+        background: white;
+      }
+      textarea {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 13px;
+      }
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+      h1 {
+        font-size: 21px;
+        letter-spacing: -0.45px;
+        font-weight: 650;
+      }
+      h2 {
+        font-size: 17px;
+        letter-spacing: -0.25px;
+        font-weight: 650;
+      }
+      h3 {
+        font-size: 14px;
+        font-weight: 650;
+      }
+      label {
+        cursor: pointer;
+      }
+      fieldset {
+        margin: 0;
+        border: 0;
+        padding: 0;
+      }
+      legend {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .muted,
+      .small-muted {
+        color: var(--muted);
+      }
+      .small-muted {
+        font-size: 11px;
+      }
+      .lab-strip {
+        background: #172c53;
+        color: #dce6fb;
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        padding: 7px 24px;
+        font-size: 11px;
+        letter-spacing: 0.2px;
+      }
+      .lab-strip strong {
+        font-size: 10px;
+        letter-spacing: 1px;
+      }
+      .lab-dot,
+      .db-dot {
+        display: inline-block;
+        border-radius: 50%;
+        width: 6px;
+        height: 6px;
+        background: #80caa1;
+      }
+      .topbar {
+        min-height: 55px;
+        padding: 9px 24px;
+        background: white;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .breadcrumbs {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        font-size: 12px;
+        color: #34517e;
+      }
+      .breadcrumbs label {
+        white-space: nowrap;
+        color: #23334d;
+      }
+      .breadcrumbs select {
+        font-size: 12px;
+        max-width: 270px;
+        padding: 7px 9px;
+      }
+      .top-right {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      main {
+        max-width: 1500px;
+        margin: auto;
+        padding: 18px 24px 28px;
+      }
+      .back-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 12px;
+        color: #426089;
+        margin-bottom: 20px;
+      }
+      .outline-label {
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        border-radius: 5px;
+        background: white;
+        color: #293c5a;
+      }
+      .account-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 13px;
+      }
+      .heading-actions,
+      .button-row,
+      .title-row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .status-badge {
+        background: #a9edbd;
+        color: #154d2a;
+        border: 1px solid #8fd8a5;
+        border-radius: 4px;
+        padding: 3px 9px;
+        font-size: 12px;
+      }
+      .flow-label {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .flow-label strong {
+        font-weight: 500;
+      }
+      .identity-card {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 13px;
+        margin-bottom: 15px;
+        font-size: 12px;
+      }
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.65px;
+        color: #566982;
+        margin-bottom: 6px;
+      }
+      .demo-badge {
+        display: inline-block;
+        color: #4f627d;
+        background: #f2f5fa;
+        border: 1px solid #dae2ee;
+        border-radius: 5px;
+        padding: 3px 7px;
+        font-size: 11px;
+      }
+      .account-tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        width: fit-content;
+        background: #edf0f5;
+        padding: 3px;
+        border-radius: 7px;
+        margin-bottom: 9px;
+      }
+      .account-tabs button {
+        border: 0;
+        background: transparent;
+        padding: 7px 12px;
+        color: #52627d;
+        font-size: 12px;
+        border-radius: 5px;
+      }
+      .account-tabs button:disabled {
+        opacity: 0.7;
+        cursor: default;
+      }
+      .account-tabs .active {
+        background: white;
+        box-shadow: 0 1px 3px #162a481c;
+        color: #16243a;
+        font-weight: 550;
+      }
+      .workspace {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 1px 2px #17335208;
+        overflow: hidden;
+      }
+      .workspace-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: center;
+        padding: 20px 22px 17px;
+      }
+      .workspace-heading p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.6;
+        margin-top: 5px;
+      }
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        max-width: 100%;
+        border-radius: 5px;
+        border: 1px solid #dce3ed;
+        padding: 3px 7px;
+        background: #f6f8fb;
+        color: #52637b;
+        font-size: 10px;
+        line-height: 1.4;
+      }
+      .tag.blue {
+        background: #f0f5ff;
+        border-color: #d5e2ff;
+        color: #355bb2;
+      }
+      .tag.green {
+        background: #edf8f1;
+        border-color: #cfe7d7;
+        color: #32724a;
+      }
+      .tag.gray {
+        background: #f5f6f8;
+        color: #788497;
+      }
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        min-height: 35px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 550;
+        white-space: nowrap;
+        transition:
+          background 0.12s,
+          box-shadow 0.12s;
+      }
+      .button.primary {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: white;
+        box-shadow: 0 1px 2px #1733521a;
+      }
+      .button.primary:hover:not(:disabled) {
+        background: #163eb1;
+      }
+      .button.secondary {
+        background: white;
+        border-color: #d4dce9;
+        color: #263d60;
+        box-shadow: 0 1px 2px #1733520a;
+      }
+      .button.secondary:hover:not(:disabled) {
+        background: #f7f9fd;
+      }
+      .button.ghost {
+        background: transparent;
+        color: #526887;
+      }
+      .button.ghost:hover {
+        background: #f3f6fb;
+      }
+      .button.small {
+        min-height: 30px;
+        font-size: 11px;
+        padding: 6px 9px;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        padding: 0 22px 18px;
+      }
+      .stat {
+        border: 1px solid #e4e8ef;
+        border-radius: 7px;
+        padding: 13px 15px;
+        background: #fbfcfe;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+      .stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        background: #edf3ff;
+        color: #4168bd;
+        border-radius: 7px;
+        font-size: 16px;
+      }
+      .stat:nth-child(2) .stat-icon {
+        background: #fff5eb;
+        color: #b98043;
+      }
+      .stat:nth-child(3) .stat-icon {
+        background: #edf7f1;
+        color: #52836b;
+      }
+      .stat strong {
+        font-size: 23px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+      }
+      .stat p {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+      .workspace-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 22px;
+        border-top: 1px solid #edf0f5;
+        border-bottom: 1px solid var(--border);
+      }
+      .inner-tabs {
+        display: flex;
+        gap: 24px;
+      }
+      .inner-tabs button {
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        padding: 14px 0 12px;
+        font-size: 12px;
+        color: #64728a;
+        white-space: nowrap;
+      }
+      .inner-tabs button[aria-selected="true"] {
+        border-bottom-color: var(--blue);
+        color: #244fba;
+        font-weight: 600;
+      }
+      .inner-tabs span {
+        padding: 1px 5px;
+        background: #eef1f7;
+        border-radius: 4px;
+        font-size: 10px;
+        margin-left: 4px;
+      }
+      .section-toolbar {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 22px;
+        border-bottom: 1px solid #edf0f5;
+      }
+      .filter-field {
+        display: flex;
+        align-items: center;
+        border: 1px solid #dce2ed;
+        border-radius: 6px;
+        padding: 0 9px;
+        max-width: 330px;
+        width: 100%;
+        color: #788aa3;
+      }
+      .filter-field input {
+        border: 0;
+        font-size: 12px;
+        padding: 8px;
+        background: transparent;
+      }
+      .select-all {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11px;
+        white-space: nowrap;
+        color: #5f6e84;
+      }
+      .arrival {
+        padding: 18px 22px;
+        border-bottom: 1px solid #edf0f5;
+      }
+      .arrival-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 11px;
+      }
+      .arrival-date {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .arrival-date .count {
+        font-size: 10px;
+        font-weight: 400;
+        color: #7c879a;
+      }
+      .arrival-notes {
+        color: #67768d;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-top: 5px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .destination-tags {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 5px;
+        max-width: 52%;
+      }
+      .zip-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .zip-chip {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid #dbe2ef;
+        border-radius: 5px;
+        background: #fbfcff;
+        padding: 6px 8px;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        transition: background 0.12s;
+      }
+      .zip-chip:has(input:checked) {
+        border-color: #8aa7ed;
+        background: #eff4ff;
+        color: #1843a2;
+      }
+      .zip-chip:hover {
+        border-color: #9aaed4;
+      }
+      .selection-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 15px 22px;
+        background: #fafbfe;
+      }
+      .selection-bar strong {
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .selection-bar p {
+        font-size: 11px;
+        color: #78869b;
+        margin-top: 4px;
+      }
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 20px;
+        min-height: 230px;
+        text-align: center;
+      }
+      .empty-symbol {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        background: #f0f4fb;
+        border: 1px solid #e2e8f2;
+        border-radius: 12px;
+        font-size: 21px;
+        color: #6e86b0;
+        margin-bottom: 13px;
+      }
+      .empty-state h3 {
+        font-size: 14px;
+        margin-bottom: 6px;
+      }
+      .empty-state p {
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--muted);
+        max-width: 440px;
+      }
+      .empty-state .button {
+        margin-top: 15px;
+      }
+      .page-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: #7d8ba1;
+        font-size: 10px;
+        padding: 13px 1px;
+        line-height: 1.6;
+      }
+      code {
+        font-size: 10px;
+      }
+      .history-intro {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 19px 22px 12px;
+        align-items: flex-start;
+      }
+      .history-intro p {
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--muted);
+        margin-top: 5px;
+        max-width: 650px;
+      }
+      .used-summary {
+        padding: 0 22px;
+      }
+      .used-summary details {
+        background: #f9fafc;
+        border: 1px solid #e2e7ef;
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin-bottom: 16px;
+      }
+      .used-summary summary {
+        font-size: 11px;
+        cursor: pointer;
+        color: #5e6c82;
+      }
+      .zip-text {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .request-card {
+        margin: 0 22px 14px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        overflow: hidden;
+      }
+      .request-card header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #edf0f5;
+        background: #fafbfe;
+      }
+      .request-card header strong {
+        font-size: 12px;
+      }
+      .request-card header span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .request-card .request-body {
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 1.25fr 1fr;
+        gap: 18px;
+      }
+      .request-body h4 {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #718098;
+        margin: 0 0 7px;
+      }
+      .request-body .destination-tags {
+        max-width: 100%;
+        justify-content: flex-start;
+      }
+      .request-comments {
+        font-size: 12px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        margin-top: 12px;
+      }
+      .request-card details {
+        margin-top: 12px;
+        font-size: 11px;
+        color: #718098;
+      }
+      .request-card summary {
+        cursor: pointer;
+      }
+      .source-note {
+        padding: 6px 0;
+        white-space: pre-wrap;
+        line-height: 1.6;
+      }
+      .checker {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+        padding: 24px;
+      }
+      .checker-input > p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+        margin: 7px 0 18px;
+      }
+      .checker-input > label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 7px;
+      }
+      .check-results {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .check-card {
+        border: 1px solid #dde4ee;
+        border-radius: 7px;
+        overflow: hidden;
+      }
+      .check-card header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: #f8fafd;
+        border-bottom: 1px solid #e6ebf2;
+      }
+      .check-card h4 {
+        font-size: 12px;
+        font-weight: 600;
+        margin: 0;
+      }
+      .check-card p {
+        padding: 12px;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+        max-height: 150px;
+        overflow: auto;
+      }
+      .check-card.used {
+        border-color: #efd9c8;
+      }
+      .check-card.used header {
+        background: #fff7f0;
+        border-color: #f2e3d8;
+      }
+      .check-card.fresh {
+        border-color: #cce4d5;
+      }
+      .check-card.fresh header {
+        background: #f1faf4;
+        border-color: #dcece2;
+      }
+      .check-card footer {
+        padding: 0 12px 12px;
+      }
+      .notice {
+        padding: 12px 15px;
+        border: 1px solid;
+        border-radius: 7px;
+        font-size: 12px;
+        margin: 12px 0;
+        line-height: 1.6;
+      }
+      .notice p {
+        margin-top: 4px;
+      }
+      .notice.error {
+        border-color: #f0c4c1;
+        background: #fff5f4;
+        color: #9b3931;
+      }
+      .notice.warning {
+        border-color: #e8d3a4;
+        background: #fffbf0;
+        color: #806128;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+      }
+      .notice[hidden] {
+        display: none;
+      }
+      dialog {
+        border: 1px solid #d5ddea;
+        border-radius: 12px;
+        padding: 0;
+        max-width: 590px;
+        width: calc(100% - 28px);
+        max-height: 92vh;
+        color: #17243b;
+        box-shadow: 0 20px 80px #071c4a40;
+      }
+      dialog::backdrop {
+        background: #14233a80;
+        backdrop-filter: blur(2px);
+      }
+      dialog form {
+        padding: 24px;
+        overflow: auto;
+      }
+      .dialog-heading {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 10px;
+      }
+      .dialog-heading h2 {
+        font-size: 21px;
+        letter-spacing: -0.5px;
+      }
+      .dialog-heading .eyebrow {
+        font-size: 9px;
+        color: #5577b2;
+        letter-spacing: 1px;
+      }
+      .icon-button {
+        border: 0;
+        background: transparent;
+        font-size: 25px;
+        color: #77869c;
+        padding: 0 2px;
+        line-height: 1;
+      }
+      .dialog-description {
+        font-size: 12px;
+        color: #687891;
+        line-height: 1.7;
+        margin-bottom: 19px;
+      }
+      .form-field {
+        margin-bottom: 15px;
+      }
+      .form-field label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 13px;
+      }
+      .required {
+        color: #b15d58;
+        font-weight: 400;
+      }
+      .optional {
+        font-weight: 400;
+        color: #8190a5;
+        font-size: 11px;
+        margin-left: 5px;
+      }
+      .helper {
+        font-size: 11px !important;
+        color: #7b889d !important;
+        line-height: 1.65 !important;
+        margin: 6px 0 !important;
+      }
+      .input-feedback {
+        font-size: 11px;
+        line-height: 1.7;
+        color: #718299;
+        overflow-wrap: anywhere;
+      }
+      .input-feedback .invalid {
+        color: #b0443d;
+      }
+      .input-feedback .positive {
+        color: #427b59;
+      }
+      .destinations {
+        margin: 0 0 16px;
+      }
+      .destinations legend {
+        font-size: 12px;
+      }
+      .account-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin: 9px 0;
+      }
+      .text-button {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #3c64b5;
+        font-size: 11px;
+      }
+      .account-options {
+        border: 1px solid #dfe5ef;
+        border-radius: 7px;
+        overflow: auto;
+        max-height: 180px;
+      }
+      .account-option {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 12px;
+        font-size: 12px;
+        border-bottom: 1px solid #edf0f5;
+      }
+      .account-option:last-child {
+        border: 0;
+      }
+      .account-option .industry {
+        margin-left: auto;
+        color: #8a96a8;
+        font-size: 10px;
+      }
+      .dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        border-top: 1px solid #e8edf4;
+        padding-top: 15px;
+        margin-top: 17px;
+      }
+      .selected-review {
+        background: #f5f8ff;
+        border: 1px solid #dce5f9;
+        border-radius: 7px;
+        padding: 12px;
+        margin: 0 0 16px;
+      }
+      .selected-review > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+      .selected-review .zip-text {
+        max-height: 95px;
+        overflow: auto;
+      }
+      .destination-review {
+        background: #fffaf0;
+        border: 1px solid #eee0bd;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 10px;
+        color: #8a6b2f;
+        font-size: 11px;
+        line-height: 1.7;
+      }
+      .acknowledgement {
+        display: flex;
+        gap: 7px;
+        align-items: flex-start;
+        margin-top: 9px;
+      }
+      .form-error {
+        color: #aa3731;
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+      #toast {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 9;
+        padding: 12px 17px;
+        background: #173757;
+        color: white;
+        border: 1px solid #3c5773;
+        border-radius: 8px;
+        box-shadow: 0 4px 18px #14263b20;
+        max-width: 400px;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      @media (max-width: 760px) {
+        .topbar {
+          align-items: flex-start;
+          padding: 10px 15px;
+        }
+        .breadcrumbs {
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .breadcrumbs select {
+          max-width: 240px;
+        }
+        .top-right {
+          display: none;
+        }
+        main {
+          padding: 15px 12px;
+        }
+        .lab-strip {
+          padding: 7px 14px;
+        }
+        .lab-strip > span:last-child {
+          font-size: 10px;
+        }
+        .account-heading {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .identity-card {
+          padding: 12px;
+          font-size: 11px;
+        }
+        .account-tabs {
+          width: 100%;
+          flex-wrap: nowrap;
+          overflow: auto;
+        }
+        .account-tabs button {
+          padding: 8px 11px;
+        }
+        .workspace-heading {
+          padding: 17px 15px;
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .title-row {
+          flex-wrap: wrap;
+        }
+        .stats {
+          padding: 0 15px 15px;
+          gap: 7px;
+        }
+        .stat {
+          padding: 10px;
+          gap: 0;
+        }
+        .stat-icon {
+          display: none;
+        }
+        .stat strong {
+          font-size: 21px;
+        }
+        .stat p {
+          font-size: 10px;
+        }
+        .workspace-nav {
+          padding: 0 15px;
+        }
+        .workspace-nav > .small-muted {
+          display: none;
+        }
+        .inner-tabs {
+          gap: 20px;
+        }
+        .inner-tabs button {
+          font-size: 11px;
+        }
+        .section-toolbar {
+          padding: 12px 15px;
+          flex-wrap: wrap;
+        }
+        .filter-field {
+          max-width: none;
+        }
+        .arrival {
+          padding: 15px;
+        }
+        .arrival-top {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .destination-tags {
+          max-width: 100%;
+          justify-content: flex-start;
+        }
+        .selection-bar {
+          padding: 13px 15px;
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .selection-bar p {
+          line-height: 1.7;
+        }
+        .selection-bar > .button-row {
+          width: 100%;
+          justify-content: flex-end;
+        }
+        .history-intro {
+          padding: 17px 15px;
+          flex-direction: column;
+        }
+        .used-summary {
+          padding: 0 15px;
+        }
+        .request-card {
+          margin: 0 15px 12px;
+        }
+        .request-card .request-body {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+        .checker {
+          grid-template-columns: 1fr;
+          padding: 17px 15px;
+          gap: 20px;
+        }
+        .page-footer {
+          flex-direction: column;
+          gap: 3px;
+          font-size: 9px;
+        }
+        .notice.warning {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+          gap: 0;
+        }
+        dialog form {
+          padding: 20px;
+        }
+        .dialog-heading h2 {
+          font-size: 19px;
+        }
+        .dialog-footer {
+          flex-wrap: wrap;
+        }
+        .heading-actions {
+          flex-wrap: wrap;
+        }
+      }
+      #new-scope {
+        width: auto;
+        font-size: 11px;
+        max-width: 190px;
+        padding: 8px;
+      }
+      .clipboard-helper {
+        position: fixed;
+        left: -10000px;
+        top: 0;
+        width: 1px;
+        height: 1px;
+      }
 
-/* Portal shell matches the supplied 1439 × 739 reference. It is decorative. */
-:root {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  color: #020817;
-  background: #f5f6f8;
-  --blue: #1d4ed8;
-  --border: #dce1eb;
-  --muted: #5f6e86;
-}
-.sidebar {
-  position: fixed;
-  inset: 0 auto 0 0;
-  width: 224px;
-  background: #08091e;
-  color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-}
-.brand {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  gap: 8px;
-  font-size: 14px;
-}
-.brand img {
-  width: 39px;
-  height: 44px;
-  object-fit: contain;
-}
-.brand strong {
-  font-size: 14px;
-}
-.collapse-chevron {
-  margin-left: auto;
-  margin-right: 12px;
-  color: #d0d3de;
-  font-size: 24px;
-  font-weight: 300;
-}
-.sidebar-content {
-  padding: 0 8px;
-  flex: 1;
-  overflow: auto;
-}
-.sidebar-label {
-  font-size: 12px;
-  color: #9195aa;
-  margin: 2px 12px 7px;
-  line-height: 18px;
-}
-.sidebar-label:not(:first-child) {
-  margin-top: 18px;
-}
-.sidebar-item {
-  height: 40px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 14px;
-  border-radius: 6px;
-  font-size: 14px;
-}
-.sidebar-item svg {
-  width: 18px;
-  height: 18px;
-  color: #d4d5e1;
-  flex-shrink: 0;
-}
-.sidebar-item.selected {
-  height: 36px;
-  background: #1b1c36;
-  border-left: 2px solid #4780ff;
-  padding-left: 12px;
-  font-weight: 600;
-  margin: 2px 0;
-}
-.nav-badge {
-  margin-left: auto;
-  font-size: 12px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #1e1f39;
-}
-.sidebar-user {
-  height: 61px;
-  flex-shrink: 0;
-  border-top: 1px solid #28293c;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  font-size: 12px;
-}
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #20213b;
-  display: grid;
-  place-items: center;
-  font-weight: bold;
-}
-.sidebar-user p {
-  font-size: 12px;
-  color: #9296a7;
-  margin-top: 2px;
-}
-.user-chevron {
-  margin-left: auto;
-  color: #cdd1de;
-}
-.portal-page {
-  margin-left: 224px;
-  min-height: 100vh;
-}
-.portal-topbar {
-  height: 48px;
-  border-bottom: 1px solid #dce1eb;
-  background: #fff;
-  padding: 0 35px 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.portal-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: #506285;
-}
-.crumb-arrow {
-  color: #8992a4;
-}
-.switch-design {
-  color: #020817;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  margin-left: 8px;
-}
-.switch-design svg {
-  width: 16px;
-  height: 16px;
-}
-.search-design {
-  width: 224px;
-  height: 36px;
-  border: 1px solid #cfd5e0;
-  box-shadow: 0 1px 2px #0002;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  font-size: 12px;
-  color: #52617c;
-  background: #f6f7f9;
-}
-.search-design svg {
-  width: 16px;
-  height: 16px;
-}
-.search-design kbd {
-  font-size: 9px;
-  border: 1px solid #e0e4eb;
-  border-radius: 3px;
-  background: white;
-  padding: 1px 5px;
-  margin-left: auto;
-  color: #67748b;
-}
-main {
-  padding: 16px 20px 28px;
-  max-width: none;
-  margin: 0;
-}
-.portal-back {
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-  color: #516581;
-  margin-bottom: 32px;
-  padding-left: 12px;
-}
-.shell-button {
-  height: 32px;
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 12px;
-  border: 1px solid #cfd5e0;
-  border-radius: 6px;
-  background: #f7f8fa;
-  box-shadow: 0 1px 2px #0002;
-  color: #020817;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-.shell-button:disabled {
-  opacity: 1;
-  cursor: default;
-}
-.portal-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 32px;
-  margin-bottom: 12px;
-  gap: 12px;
-}
-.portal-title {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-.portal-title h1 {
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.4px;
-}
-.industry-badge {
-  width: 27px;
-  height: 27px;
-  border: 1px solid #dce1eb;
-  border-radius: 4px;
-  display: grid;
-  place-items: center;
-  background: #fff;
-  font-size: 16px;
-}
-.portal-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.status-control {
-  height: 32px;
-  border: 1px solid #cfd5e0;
-  border-radius: 6px;
-  background: #f7f8fa;
-  box-shadow: 0 1px 2px #0002;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  color: #788192;
-}
-.status-control span:first-child {
-  background: #98edba;
-  color: #07542c;
-  padding: 3px 9px;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.flow-design,
-.verified-design {
-  font-size: 12px;
-  color: #586b87;
-}
-.shell-primary {
-  background: #1c46c8;
-  border-color: #1c46c8;
-  color: #fff;
-  font-weight: 600;
-}
-.manage-design {
-  gap: 16px;
-}
-.portal-identity {
-  height: 64px;
-  border: 1px solid #dce1eb;
-  border-radius: 8px;
-  background: #fff;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 14px 12px;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-.portal-identity p {
-  font-size: 10px;
-  color: #52617c;
-  margin-bottom: 5px;
-}
-.portal-identity > div:nth-child(2) {
-  padding-left: 17px;
-}
-.verified-pill {
-  color: #008044;
-  background: #e8f5ec;
-  border: 1px solid #a0d7b6;
-  border-radius: 5px;
-  padding: 3px 8px;
-  font-size: 12px;
-}
-.portal-tabs {
-  height: 36px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: fit-content;
-  max-width: 100%;
-  background: #f0f1f4;
-  border-radius: 8px;
-  padding: 4px;
-  margin-bottom: 8px;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-.portal-tabs span {
-  font-size: 14px;
-  color: #4c5e79;
-  padding: 6px 12px;
-  border-radius: 6px;
-}
-.portal-tabs .active {
-  background: #f8f9fb;
-  color: #020817;
-  box-shadow: 0 1px 3px #0002;
-}
-.workspace {
-  border-radius: 8px;
-  border-color: #dce1eb;
-  box-shadow: 0 1px 2px #00000008;
-}
-.zip-card-header {
-  height: 53px;
-  border-bottom: 1px solid #dce1eb;
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.zip-card-header h2 {
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-.zip-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.shell-text-button {
-  border: 0;
-  background: transparent;
-  font-size: 12px;
-  color: #020817;
-  padding: 4px 0;
-}
-.assignment-overview {
-  min-height: 192px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px;
-  text-align: center;
-}
-.inbox-icon {
-  width: 24px;
-  height: 24px;
-  color: #596079;
-}
-.assignment-overview strong {
-  font-size: 14px;
-  font-weight: 500;
-}
-.assignment-overview p {
-  color: #64748b;
-  font-size: 14px;
-}
-.planner-context {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 20px 20px 12px;
-}
-.planner-context strong {
-  font-size: 14px;
-  font-weight: 600;
-}
-.planner-context p {
-  font-size: 12px;
-  color: #64748b;
-  margin-top: 6px;
-  line-height: 1.5;
-}
-.workspace-switch {
-  font-size: 11px;
-  color: #64748b;
-  min-width: 220px;
-}
-.workspace-switch select {
-  display: block;
-  margin-top: 5px;
-  font-size: 12px;
-}
-.planner-tools {
-  padding: 0 20px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.storage-label {
-  font-size: 11px;
-  color: #64748b;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.stats {
-  padding: 0 20px 18px;
-}
-.stat {
-  padding: 10px 12px;
-}
-.stat strong {
-  font-size: 20px;
-}
-.page-footer {
-  font-size: 11px;
-  padding: 0 2px;
-  line-height: 1.5;
-}
-.button.small {
-  font-size: 11px;
-}
-.empty-state {
-  min-height: 210px;
-}
-.notice {
-  margin-top: 0;
-}
-.workspace input,
-.workspace select,
-.workspace textarea,
-dialog input,
-dialog select,
-dialog textarea {
-  color: #17243b;
-}
-.workspace .button-row {
-  flex-wrap: wrap;
-}
-.workspace,
-.planner-context > div,
-.selection-bar > div {
-  min-width: 0;
-}
-.portal-title,
-.portal-actions {
-  flex-shrink: 0;
-}
-@media (max-width: 1100px) {
-  .sidebar {
-    width: 200px;
-  }
-  .portal-page {
-    margin-left: 200px;
-  }
-  .portal-actions {
-    gap: 6px;
-  }
-  .flow-design,
-  .verified-design {
-    display: none;
-  }
-  .portal-tabs span {
-    padding: 6px 9px;
-  }
-  .planner-context {
-    align-items: flex-start;
-  }
-  .planner-tools .button-row {
-    gap: 6px;
-  }
-  .portal-topbar {
-    padding-right: 20px;
-  }
-}
-@media (max-width: 760px) {
-  .sidebar {
-    width: 60px;
-  }
-  .brand {
-    padding: 10px;
-  }
-  .brand img {
-    width: 40px;
-  }
-  .brand strong,
-  .collapse-chevron,
-  .sidebar-label,
-  .sidebar-item span,
-  .sidebar-user > div,
-  .sidebar-user > .user-chevron {
-    display: none;
-  }
-  .sidebar-item {
-    padding: 0;
-    justify-content: center;
-  }
-  .sidebar-item.selected {
-    padding: 0;
-  }
-  .sidebar-item svg {
-    width: 19px;
-    height: 19px;
-  }
-  .sidebar-content {
-    padding: 8px;
-  }
-  .sidebar-user {
-    padding: 12px 16px;
-  }
-  .portal-page {
-    margin-left: 60px;
-  }
-  .portal-topbar {
-    padding: 0 14px;
-  }
-  .search-design {
-    display: none;
-  }
-  main {
-    padding: 16px 12px;
-  }
-  .portal-back {
-    margin-bottom: 24px;
-    padding: 0;
-  }
-  .portal-heading {
-    height: auto;
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .portal-title h1 {
-    font-size: 19px;
-  }
-  .portal-actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  .portal-identity {
-    height: auto;
-    min-height: 64px;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .portal-identity > div:nth-child(2) {
-    padding: 0;
-  }
-  .portal-tabs {
-    width: 100%;
-  }
-  .portal-tabs span {
-    font-size: 12px;
-    padding: 6px 9px;
-  }
-  .zip-card-header {
-    height: auto;
-    min-height: 53px;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    padding: 12px;
-  }
-  .zip-header-actions {
-    gap: 12px;
-  }
-  .planner-context {
-    flex-direction: column;
-    padding: 16px 12px;
-  }
-  .workspace-switch {
-    width: 100%;
-    min-width: 0;
-  }
-  .planner-tools {
-    padding: 0 12px 16px;
-  }
-  .stats {
-    padding: 0 12px 12px;
-    grid-template-columns: 1fr;
-  }
-  .planner-tools .button-row {
-    width: 100%;
-  }
-  .assignment-overview {
-    padding: 28px 16px;
-  }
-  .page-footer {
-    flex-direction: column;
-    gap: 6px;
-  }
-  .portal-breadcrumb {
-    gap: 8px;
-  }
-  .switch-design {
-    margin-left: 0;
-  }
-  .workspace-nav {
-    padding: 0 12px;
-  }
-  .inner-tabs {
-    gap: 14px;
-  }
-  .section-toolbar {
-    flex-wrap: wrap;
-    padding: 12px;
-  }
-  .section-toolbar select {
-    max-width: 100%;
-  }
-  .destination-tags {
-    max-width: 100%;
-  }
-  .selection-bar {
-    padding: 12px;
-  }
-  .selection-bar .button-row {
-    width: 100%;
-  }
-  .selection-bar .button.primary {
-    white-space: normal;
-  }
-}
+      /* Portal shell matches the supplied 1439 × 739 reference. It is decorative. */
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 14px;
+        color: #020817;
+        background: #f5f6f8;
+        --blue: #1d4ed8;
+        --border: #dce1eb;
+        --muted: #5f6e86;
+      }
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 224px;
+        background: #08091e;
+        color: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+      }
+      .brand {
+        height: 64px;
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .brand img {
+        width: 39px;
+        height: 44px;
+        object-fit: contain;
+      }
+      .brand strong {
+        font-size: 14px;
+      }
+      .collapse-chevron {
+        margin-left: auto;
+        margin-right: 12px;
+        color: #d0d3de;
+        font-size: 24px;
+        font-weight: 300;
+      }
+      .sidebar-content {
+        padding: 0 8px;
+        flex: 1;
+        overflow: auto;
+      }
+      .sidebar-label {
+        font-size: 12px;
+        color: #9195aa;
+        margin: 2px 12px 7px;
+        line-height: 18px;
+      }
+      .sidebar-label:not(:first-child) {
+        margin-top: 18px;
+      }
+      .sidebar-item {
+        height: 40px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      .sidebar-item svg {
+        width: 18px;
+        height: 18px;
+        color: #d4d5e1;
+        flex-shrink: 0;
+      }
+      .sidebar-item.selected {
+        height: 36px;
+        background: #1b1c36;
+        border-left: 2px solid #4780ff;
+        padding-left: 12px;
+        font-weight: 600;
+        margin: 2px 0;
+      }
+      .nav-badge {
+        margin-left: auto;
+        font-size: 12px;
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: #1e1f39;
+      }
+      .sidebar-user {
+        height: 61px;
+        flex-shrink: 0;
+        border-top: 1px solid #28293c;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        font-size: 12px;
+      }
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #20213b;
+        display: grid;
+        place-items: center;
+        font-weight: bold;
+      }
+      .sidebar-user p {
+        font-size: 12px;
+        color: #9296a7;
+        margin-top: 2px;
+      }
+      .user-chevron {
+        margin-left: auto;
+        color: #cdd1de;
+      }
+      .portal-page {
+        margin-left: 224px;
+        min-height: 100vh;
+      }
+      .portal-topbar {
+        height: 48px;
+        border-bottom: 1px solid #dce1eb;
+        background: #fff;
+        padding: 0 35px 0 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .portal-breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        color: #506285;
+      }
+      .crumb-arrow {
+        color: #8992a4;
+      }
+      .switch-design {
+        color: #020817;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        margin-left: 8px;
+      }
+      .switch-design svg {
+        width: 16px;
+        height: 16px;
+      }
+      .search-design {
+        width: 224px;
+        height: 36px;
+        border: 1px solid #cfd5e0;
+        box-shadow: 0 1px 2px #0002;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        font-size: 12px;
+        color: #52617c;
+        background: #f6f7f9;
+      }
+      .search-design svg {
+        width: 16px;
+        height: 16px;
+      }
+      .search-design kbd {
+        font-size: 9px;
+        border: 1px solid #e0e4eb;
+        border-radius: 3px;
+        background: white;
+        padding: 1px 5px;
+        margin-left: auto;
+        color: #67748b;
+      }
+      main {
+        padding: 16px 20px 28px;
+        max-width: none;
+        margin: 0;
+      }
+      .portal-back {
+        height: 32px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        color: #516581;
+        margin-bottom: 32px;
+        padding-left: 12px;
+      }
+      .shell-button {
+        height: 32px;
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 12px;
+        border: 1px solid #cfd5e0;
+        border-radius: 6px;
+        background: #f7f8fa;
+        box-shadow: 0 1px 2px #0002;
+        color: #020817;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .shell-button:disabled {
+        opacity: 1;
+        cursor: default;
+      }
+      .portal-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 32px;
+        margin-bottom: 12px;
+        gap: 12px;
+      }
+      .portal-title {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .portal-title h1 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.4px;
+      }
+      .industry-badge {
+        width: 27px;
+        height: 27px;
+        border: 1px solid #dce1eb;
+        border-radius: 4px;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        font-size: 16px;
+      }
+      .portal-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .status-control {
+        height: 32px;
+        border: 1px solid #cfd5e0;
+        border-radius: 6px;
+        background: #f7f8fa;
+        box-shadow: 0 1px 2px #0002;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        color: #788192;
+      }
+      .status-control span:first-child {
+        background: #98edba;
+        color: #07542c;
+        padding: 3px 9px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .flow-design,
+      .verified-design {
+        font-size: 12px;
+        color: #586b87;
+      }
+      .shell-primary {
+        background: #1c46c8;
+        border-color: #1c46c8;
+        color: #fff;
+        font-weight: 600;
+      }
+      .manage-design {
+        gap: 16px;
+      }
+      .portal-identity {
+        height: 64px;
+        border: 1px solid #dce1eb;
+        border-radius: 8px;
+        background: #fff;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        padding: 14px 12px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+      .portal-identity p {
+        font-size: 10px;
+        color: #52617c;
+        margin-bottom: 5px;
+      }
+      .portal-identity > div:nth-child(2) {
+        padding-left: 17px;
+      }
+      .verified-pill {
+        color: #008044;
+        background: #e8f5ec;
+        border: 1px solid #a0d7b6;
+        border-radius: 5px;
+        padding: 3px 8px;
+        font-size: 12px;
+      }
+      .portal-tabs {
+        height: 36px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        width: fit-content;
+        max-width: 100%;
+        background: #f0f1f4;
+        border-radius: 8px;
+        padding: 4px;
+        margin-bottom: 8px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      .portal-tabs span {
+        font-size: 14px;
+        color: #4c5e79;
+        padding: 6px 12px;
+        border-radius: 6px;
+      }
+      .portal-tabs .active {
+        background: #f8f9fb;
+        color: #020817;
+        box-shadow: 0 1px 3px #0002;
+      }
+      .workspace {
+        border-radius: 8px;
+        border-color: #dce1eb;
+        box-shadow: 0 1px 2px #00000008;
+      }
+      .zip-card-header {
+        height: 53px;
+        border-bottom: 1px solid #dce1eb;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .zip-card-header h2 {
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0;
+      }
+      .zip-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .shell-text-button {
+        border: 0;
+        background: transparent;
+        font-size: 12px;
+        color: #020817;
+        padding: 4px 0;
+      }
+      .assignment-overview {
+        min-height: 192px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 12px;
+        padding: 24px;
+        text-align: center;
+      }
+      .inbox-icon {
+        width: 24px;
+        height: 24px;
+        color: #596079;
+      }
+      .assignment-overview strong {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .assignment-overview p {
+        color: #64748b;
+        font-size: 14px;
+      }
+      .planner-context {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 20px 20px 12px;
+      }
+      .planner-context strong {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .planner-context p {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 6px;
+        line-height: 1.5;
+      }
+      .workspace-switch {
+        font-size: 11px;
+        color: #64748b;
+        min-width: 220px;
+      }
+      .workspace-switch select {
+        display: block;
+        margin-top: 5px;
+        font-size: 12px;
+      }
+      .planner-tools {
+        padding: 0 20px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .storage-label {
+        font-size: 11px;
+        color: #64748b;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .stats {
+        padding: 0 20px 18px;
+      }
+      .stat {
+        padding: 10px 12px;
+      }
+      .stat strong {
+        font-size: 20px;
+      }
+      .page-footer {
+        font-size: 11px;
+        padding: 0 2px;
+        line-height: 1.5;
+      }
+      .button.small {
+        font-size: 11px;
+      }
+      .empty-state {
+        min-height: 210px;
+      }
+      .notice {
+        margin-top: 0;
+      }
+      .workspace input,
+      .workspace select,
+      .workspace textarea,
+      dialog input,
+      dialog select,
+      dialog textarea {
+        color: #17243b;
+      }
+      .workspace .button-row {
+        flex-wrap: wrap;
+      }
+      .workspace,
+      .planner-context > div,
+      .selection-bar > div {
+        min-width: 0;
+      }
+      .portal-title,
+      .portal-actions {
+        flex-shrink: 0;
+      }
+      @media (max-width: 1100px) {
+        .sidebar {
+          width: 200px;
+        }
+        .portal-page {
+          margin-left: 200px;
+        }
+        .portal-actions {
+          gap: 6px;
+        }
+        .flow-design,
+        .verified-design {
+          display: none;
+        }
+        .portal-tabs span {
+          padding: 6px 9px;
+        }
+        .planner-context {
+          align-items: flex-start;
+        }
+        .planner-tools .button-row {
+          gap: 6px;
+        }
+        .portal-topbar {
+          padding-right: 20px;
+        }
+      }
+      @media (max-width: 760px) {
+        .sidebar {
+          width: 60px;
+        }
+        .brand {
+          padding: 10px;
+        }
+        .brand img {
+          width: 40px;
+        }
+        .brand strong,
+        .collapse-chevron,
+        .sidebar-label,
+        .sidebar-item span,
+        .sidebar-user > div,
+        .sidebar-user > .user-chevron {
+          display: none;
+        }
+        .sidebar-item {
+          padding: 0;
+          justify-content: center;
+        }
+        .sidebar-item.selected {
+          padding: 0;
+        }
+        .sidebar-item svg {
+          width: 19px;
+          height: 19px;
+        }
+        .sidebar-content {
+          padding: 8px;
+        }
+        .sidebar-user {
+          padding: 12px 16px;
+        }
+        .portal-page {
+          margin-left: 60px;
+        }
+        .portal-topbar {
+          padding: 0 14px;
+        }
+        .search-design {
+          display: none;
+        }
+        main {
+          padding: 16px 12px;
+        }
+        .portal-back {
+          margin-bottom: 24px;
+          padding: 0;
+        }
+        .portal-heading {
+          height: auto;
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+        .portal-title h1 {
+          font-size: 19px;
+        }
+        .portal-actions {
+          width: 100%;
+          flex-wrap: wrap;
+        }
+        .portal-identity {
+          height: auto;
+          min-height: 64px;
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+        .portal-identity > div:nth-child(2) {
+          padding: 0;
+        }
+        .portal-tabs {
+          width: 100%;
+        }
+        .portal-tabs span {
+          font-size: 12px;
+          padding: 6px 9px;
+        }
+        .zip-card-header {
+          height: auto;
+          min-height: 53px;
+          align-items: flex-start;
+          flex-wrap: wrap;
+          padding: 12px;
+        }
+        .zip-header-actions {
+          gap: 12px;
+        }
+        .planner-context {
+          flex-direction: column;
+          padding: 16px 12px;
+        }
+        .workspace-switch {
+          width: 100%;
+          min-width: 0;
+        }
+        .planner-tools {
+          padding: 0 12px 16px;
+        }
+        .stats {
+          padding: 0 12px 12px;
+          grid-template-columns: 1fr;
+        }
+        .planner-tools .button-row {
+          width: 100%;
+        }
+        .assignment-overview {
+          padding: 28px 16px;
+        }
+        .page-footer {
+          flex-direction: column;
+          gap: 6px;
+        }
+        .portal-breadcrumb {
+          gap: 8px;
+        }
+        .switch-design {
+          margin-left: 0;
+        }
+        .workspace-nav {
+          padding: 0 12px;
+        }
+        .inner-tabs {
+          gap: 14px;
+        }
+        .section-toolbar {
+          flex-wrap: wrap;
+          padding: 12px;
+        }
+        .section-toolbar select {
+          max-width: 100%;
+        }
+        .destination-tags {
+          max-width: 100%;
+        }
+        .selection-bar {
+          padding: 12px;
+        }
+        .selection-bar .button-row {
+          width: 100%;
+        }
+        .selection-bar .button.primary {
+          white-space: normal;
+        }
+      }
 
-@media (min-width: 761px) {
-  .portal-back {
-    margin-bottom: 16px;
-  }
-}
-.sidebar-label {
-  margin-bottom: 0;
-}
-.sidebar-label:not(:first-child) {
-  margin-top: 14px;
-}
-.industry-badge img {
-  width: 21px;
-  height: 22px;
-  object-fit: contain;
-}
+      @media (min-width: 761px) {
+        .portal-back {
+          margin-bottom: 16px;
+        }
+      }
+      .sidebar-label {
+        margin-bottom: 0;
+      }
+      .sidebar-label:not(:first-child) {
+        margin-top: 14px;
+      }
+      .industry-badge img {
+        width: 21px;
+        height: 22px;
+        object-fit: contain;
+      }
 
-</style>
-    </head>
+      /* ZIP working area only. Portal layout above remains decorative. */
+      .zip-lab {
+        margin-top: 0;
+        background: #fff;
+        border: 1px solid #dce1eb;
+        border-radius: 8px;
+        padding: 18px 16px;
+        color: #152033;
+        box-shadow: 0 1px 2px #00000008;
+      }
+      .zip-lab *,
+      .zl-dialog * {
+        box-sizing: border-box;
+      }
+      .zl-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .zl-toolbar h2 {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0;
+      }
+      .zl-toolbar p {
+        font-size: 11px;
+        color: #68758b;
+        margin-top: 5px;
+      }
+      .zl-tools,
+      .zl-head-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .zl-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 30px;
+        border: 1px solid #d0d7e3;
+        border-radius: 5px;
+        padding: 6px 10px;
+        background: #fff;
+        color: #233755;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 1px 2px #00000006;
+        line-height: 1.4;
+        white-space: nowrap;
+      }
+      .zl-button:hover:not(:disabled) {
+        background: #f4f6fa;
+      }
+      .zl-button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .zl-primary {
+        background: #1c46c8;
+        border-color: #1c46c8;
+        color: white;
+      }
+      .zl-primary:hover:not(:disabled) {
+        background: #163bab;
+      }
+      .zl-danger-outline {
+        color: #ad3e32;
+        border-color: #e7c7c2;
+        background: #fffdfc;
+      }
+      .zl-danger {
+        color: #fff;
+        background: #bd4435;
+        border-color: #bd4435;
+      }
+      .zl-danger:hover:not(:disabled) {
+        background: #a8392d;
+      }
+      .zl-text-button {
+        border: 0;
+        background: none;
+        color: #3d587f;
+        font-size: 11px;
+        padding: 2px 0;
+        cursor: pointer;
+      }
+      .zl-status {
+        font-size: 11px;
+        color: #718098;
+        margin-bottom: 16px;
+      }
+      .zl-columns {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+      }
+      .zl-left,
+      .zl-right {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 0;
+      }
+      .zl-section {
+        border: 1px solid #d9dde4;
+        border-radius: 5px;
+        overflow: hidden;
+        background: #fff;
+        min-width: 0;
+      }
+      .zl-section-head {
+        min-height: 33px;
+        padding: 7px 10px;
+        background: #e5e5e5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid #d4d7dd;
+      }
+      .zl-section-head h3 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0;
+        color: #101b2d;
+      }
+      .zl-count {
+        font-size: 11px;
+        white-space: nowrap;
+        font-weight: 600;
+        color: #334155;
+      }
+      .zl-used-tools {
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: #fffafa;
+        border-bottom: 1px solid #efdad6;
+      }
+      .zl-used-tools label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: #57657a;
+      }
+      .zl-used-tools select {
+        padding: 5px 7px;
+        font-size: 11px;
+        width: auto;
+        max-width: 220px;
+        border-radius: 4px;
+      }
+      .zl-used-list {
+        padding: 12px 10px;
+        background: #fff0eb;
+        min-height: 125px;
+        max-height: 390px;
+        overflow: auto;
+      }
+      .zl-chip-list {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .zl-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        background: #fff;
+        border: 1px solid #e5beb4;
+        font-size: 11px;
+        line-height: 1.5;
+        font-family: ui-monospace, Consolas, monospace;
+        color: #843424;
+      }
+      .zl-chip label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .zl-chip input {
+        width: 12px;
+        height: 12px;
+        margin: 0;
+      }
+      .zl-chip button {
+        padding: 0 1px;
+        border: 0;
+        background: transparent;
+        color: #a66a5a;
+        font: 16px/1 Arial;
+        cursor: pointer;
+      }
+      .zl-chip:has(input:checked) {
+        outline: 1px solid #b75038;
+        background: #ffe0d5;
+      }
+      .zl-selection {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 9px 10px;
+        border-top: 1px solid #ead3cc;
+        background: #fffafa;
+        flex-wrap: wrap;
+      }
+      .zl-selection label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: #67748b;
+      }
+      .zl-selection input {
+        width: 13px;
+        height: 13px;
+        margin: 0;
+      }
+      .zip-lab .zl-helper {
+        padding: 8px 10px;
+        margin: 0 !important;
+      }
+      .zl-helper {
+        font-size: 10px !important;
+        color: #748096 !important;
+        line-height: 1.6 !important;
+      }
+      .zl-history-help {
+        padding: 10px 10px 5px;
+        font-size: 11px;
+        color: #67748b;
+        line-height: 1.6;
+      }
+      .zl-legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        padding: 4px 10px 10px;
+        font-size: 10px;
+        color: #758097;
+      }
+      .zl-legend span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .zl-key {
+        width: 10px;
+        height: 10px;
+        border: 1px solid;
+        border-radius: 2px;
+      }
+      .zl-key.duplicate {
+        background: #ffedba;
+        border-color: #e2c264;
+      }
+      .zl-key.removed {
+        background: #e5e7eb;
+        border-color: #a9b0ba;
+      }
+      .zl-history-row {
+        display: grid;
+        grid-template-columns: 35px minmax(0, 1fr);
+        border-top: 1px solid #dfe4e7;
+        min-height: 83px;
+      }
+      .zl-row-index {
+        background: #f0f1f2;
+        border-right: 1px solid #dfe4e7;
+        color: #7a8594;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 12px;
+        font-size: 11px;
+      }
+      .zl-row-body {
+        padding: 10px;
+        background: #f7fbf4;
+        min-width: 0;
+      }
+      .zl-row-meta {
+        display: flex;
+        align-items: center;
+        gap: 5px 10px;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        font-size: 10px;
+        color: #64748b;
+        margin-bottom: 8px;
+      }
+      .zl-row-meta > span {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .zl-row-meta strong {
+        color: #4a5c4c;
+        font-weight: 600;
+      }
+      .zl-history-chip {
+        display: inline-block;
+        border-radius: 3px;
+        padding: 2px 5px;
+        border: 1px solid #d4dfcb;
+        background: #edf5e7;
+        color: #234423;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .zl-history-chip.duplicate {
+        background: #ffedba;
+        border-color: #e2c264;
+        color: #805b12;
+      }
+      .zl-history-chip.deleted {
+        background: #eceef1;
+        border-color: #c8cdd6;
+        color: #89909b;
+        text-decoration: line-through;
+      }
+      .zl-history-chip.deleted::after {
+        content: " ×";
+        display: inline-block;
+        color: #8d6260;
+        text-decoration: none;
+        margin-left: 3px;
+      }
+      .zl-row-note {
+        font-size: 11px;
+        color: #647468;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        line-height: 1.6;
+        margin-top: 7px;
+      }
+      .zl-empty {
+        font-size: 11px;
+        color: #8c736d;
+        line-height: 1.7;
+        padding: 16px 8px;
+        text-align: center;
+      }
+      .zl-history-section .zl-empty,
+      .zl-audit .zl-empty {
+        color: #7b8899;
+        padding: 24px 14px;
+      }
+      .zl-group {
+        margin: 0 0 14px;
+      }
+      .zl-group:last-child {
+        margin-bottom: 0;
+      }
+      .zl-group-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #e9cfc6;
+        padding-bottom: 5px;
+      }
+      .zl-group-heading h4 {
+        font:
+          600 11px Arial,
+          sans-serif;
+        margin: 0;
+        color: #7e4437;
+      }
+      .zl-city {
+        margin: 10px 0 0;
+        padding-left: 8px;
+        border-left: 2px solid #e7c7bb;
+      }
+      .zl-city .zl-group-heading {
+        border: 0;
+        margin-bottom: 5px;
+      }
+      .zl-city .zl-group-heading h4 {
+        font-weight: 400;
+        color: #896657;
+      }
+      .zl-check-input {
+        padding: 10px;
+        background: #d5eaec;
+      }
+      .zl-check-input textarea {
+        border: 1px solid #b4d0d5;
+        background: #edf7f8;
+        min-height: 90px;
+        line-height: 1.6;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .zl-feedback {
+        font-size: 11px;
+        color: #627187;
+        line-height: 1.7;
+        margin: 5px 0;
+        overflow-wrap: anywhere;
+      }
+      .zl-feedback .zl-invalid {
+        display: block;
+        color: #ad3e32;
+      }
+      .zl-feedback .zl-warning {
+        display: block;
+        color: #936608;
+      }
+      .zl-result {
+        padding: 10px;
+        min-height: 74px;
+      }
+      .zl-result-red {
+        background: #f8d5c9;
+        border-bottom: 1px solid #e5b9ab;
+      }
+      .zl-result-remaining {
+        background: #f3e4df;
+      }
+      .zl-result-green {
+        background: #d2e6c4;
+        min-height: 120px;
+      }
+      .zl-result-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 10px;
+        color: #6b5a56;
+        margin-bottom: 8px;
+      }
+      .zl-result-heading b {
+        font-weight: 500;
+        margin-left: 5px;
+      }
+      .zl-zip-text {
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+        max-height: 240px;
+        overflow: auto;
+      }
+      .zl-audit summary {
+        font-size: 11px;
+        color: #536378;
+        padding: 10px;
+        cursor: pointer;
+        background: #f5f6f8;
+      }
+      .zl-audit summary .zl-count {
+        margin-left: 6px;
+      }
+      .zl-log-item {
+        padding: 12px 10px;
+        border-top: 1px solid #e3e6eb;
+        font-size: 11px;
+        line-height: 1.7;
+        color: #607084;
+      }
+      .zl-log-item strong {
+        color: #35445c;
+      }
+      .zl-log-item p {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .zl-log-item .zl-zip-text {
+        font-size: 10px;
+        margin-top: 5px;
+      }
+      .zl-footer {
+        border-top: 1px solid #eef0f4;
+        margin-top: 18px;
+        padding-top: 12px;
+        font-size: 10px;
+        color: #8290a3;
+        line-height: 1.6;
+      }
+      .zl-error {
+        padding: 10px 12px;
+        background: #fff0ec;
+        color: #ad3e32;
+        border: 1px solid #edc2b8;
+        border-radius: 5px;
+        font-size: 12px;
+        line-height: 1.6;
+        margin-bottom: 12px;
+      }
+      .zl-dialog {
+        width: calc(100% - 32px);
+        max-width: 560px;
+        padding: 0;
+        border: 1px solid #d7dce7;
+        border-radius: 8px;
+        color: #17243b;
+        max-height: 90vh;
+      }
+      .zl-dialog form {
+        padding: 20px;
+      }
+      .zl-dialog-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .zl-dialog-head h2 {
+        font-size: 17px;
+      }
+      .zl-close {
+        border: 0;
+        background: none;
+        color: #64748b;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+      }
+      .zl-dialog-description {
+        font-size: 12px;
+        line-height: 1.7;
+        color: #66748a;
+        margin-bottom: 16px;
+      }
+      .zl-dialog label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        margin: 12px 0 0;
+      }
+      .zl-dialog input,
+      .zl-dialog textarea,
+      .zl-dialog select {
+        display: block;
+        margin-top: 6px;
+        padding: 8px;
+        font-size: 12px;
+      }
+      .zl-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 12px;
+      }
+      .zl-form-grid label {
+        margin: 0;
+      }
+      .zl-optional {
+        color: #8a94a3;
+        font-weight: 400;
+        font-size: 10px;
+        margin-left: 4px;
+      }
+      .zl-preview {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        max-height: 160px;
+        overflow: auto;
+        margin: 10px 0;
+      }
+      .zl-form-error {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #ad3e32;
+        margin-top: 12px;
+      }
+      .zl-dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        border-top: 1px solid #e3e7ee;
+        padding-top: 14px;
+        margin-top: 18px;
+      }
+      .zl-sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+      #zl-toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        max-width: 400px;
+        padding: 10px 16px;
+        background: #233c59;
+        color: #fff;
+        font-size: 12px;
+        border-radius: 6px;
+        z-index: 40;
+        box-shadow: 0 3px 14px #0002;
+        line-height: 1.6;
+      }
+      .zl-disabled {
+        pointer-events: none;
+        opacity: 0.65;
+      }
+      @media (max-width: 1050px) {
+        .zl-columns {
+          gap: 18px;
+        }
+        .zl-toolbar {
+          flex-direction: column;
+        }
+        .zl-section-head {
+          flex-wrap: wrap;
+        }
+        .zl-head-actions {
+          gap: 6px;
+        }
+        .zl-used-tools {
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+      }
+      @media (max-width: 850px) {
+        .zl-columns {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .zl-toolbar {
+          gap: 12px;
+        }
+        .zip-lab {
+          padding: 14px 12px;
+        }
+        .zl-tools {
+          gap: 6px;
+        }
+        .zl-form-grid {
+          grid-template-columns: 1fr;
+        }
+        .zl-selection {
+          gap: 10px;
+        }
+        .zl-used-tools select {
+          max-width: 100%;
+        }
+        .zl-used-list {
+          max-height: 300px;
+        }
+      }
+    </style>
+  </head>
   <body>
     <aside class="sidebar" aria-label="Portal sidebar (design only)">
       <div class="brand">
-        <img src="data:image/png;base64,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" alt="CLK" /><strong>CLK Portal</strong
-        ><span class="collapse-chevron">‹</span>
+        <img
+          src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAsCAYAAADmZKH2AAAK6UlEQVR4nM2Ze2xc1Z3HP+fce2dsz9gzY8/4VdsTe8JEcYLJq6FZQkiCIKS0JIESQUH0sbAR2i3VUgGrXSK60W60aoVUUDertoKW1ZbSFgK0hJYGyjMNuywESJPUOPhF/BiPH2N77Hnde3/7x5AJKU4Im7TlJ90/7tXM93zO7/zO95xzr/KWRYVPaCjgEwunz6ma8pxTuXMKZzZ8Hm1VnzO9cwanlEYvuhNjwZ3nNINytpcyykRpj1iRS8T83Hti1FwioM5a9+wzpzRGw5UY9RuwR/ehhn+F0bED5Q2ftTScZe+MqnbxXHFIrM/2iK5oEe1pEGPdK2LGvyEo8y+XOWX60fG/Q1KdyEwvesGdiJ1Cd/8A5n0JXb2Solv9/8I80ZJGGxWIk0HE+WgwZWA0X42EVsBrXwfTQF30JEbiWZzBX2LUXISO3YpM/QEpjJ8BikabflxnBt5v/0TmlIkOLsVo2gq67KOlAh0QuwX6f4qTPogzth/p+i5q4XYwynG7/wNV3ozRvBWljNN3FIXRsBEdXo3S3g/gHg8RxPCjYtsw/PNRqFOKKrMK2r4CqSM4fQ9jRtZjBM/H6bwXKaTQ829DZnpg8AlU83UYwQuYc3iVRqFRnmpU298g3jCCOxecjcx2gzOLqlmFKqvFrF2H9p93sp4yMKJfQAcWIv0Po7UJC26HRTtQkoXOf4Oma9CR1TgDTyDTXdByA8r0n5z5imasT21B+9vQNcvBqsKdPAJufg44BMmPIxNv4waXgLIg9GlUw+dQHzBVI3QBqulq3IGncCcPoeK3AS46tBRr/u04yVeg/z9h/q3g5pHBJyDQgW7cBOp4cwpVexmEL0a0F2ougukuyA2CzJU5QOxpZPJttC+GMny4+UlUaDnKN6/4YysIzdcj0324g3sw6tZC40aczm8jb/0jzvzb0L55SP9/oZQX3XYrknodRp5DNVyF9sdP6ISW4+bGUPYMVLYjE29AYfLk7J505+SQdBdKbFRwCTJzFKW9qEAHSlnopqtRgXbcoT1osaHtJuj5CW5yH86xxzCSL6A6voVkRnC7dqHqNqD8i5ChX6PdLKrpWpThQ1UtRJfVwUw32t+GMgPI1BHEyZwGDkGyQ8hUJxLogPS7MPY7cGYxgotRDRtwE8+hJl5Hx/8WLeAeewwzuATRJs7h7RBcjNn2ZdzRl5CRZyH2VcglcUf2omsuRNeuA3sWRvfBdGfRitL9kBkoWcgp4IDCBJLuRFXGUW4O572HYeoQNH0BClMw9Bt0eDVSsxrn6PchN4J0/DOe8BrsmR7UwbtxW25BWZXI0G6MslrUvBtwR15AJt9CNWxEnFmc/h8jM71I5UJk+iCST34I5UNw4mSQmS6UpwwCHUhuAhVejQ4tQ4Z+A04aab4ONfA0jP4PZvvtmFaIQuo1lDKxh/agM70Yi3Yi0+/g9DwEkcvQ5U1I4llUWSOqbgNiT6Mq56PLa5F0F2KnPxoOcZGZPmSqF4JL0YE4NFyOk9yHm3wRFfsq2irDHd6D4WvBrd9E4Y3bITeO9zM/Q9lZ7N9vR0LtGI1XImP7UOl3kXlfQaYO4SZ/i667BCO0DGouRDKDyGzvh4Z0bjiA/CjMdENwCarliyjDixreg6peCjWfwe7+IZLuxj3/XzBGXoDUAczodeQaN2At/IfiRHr3e7jRr4GTxR78OSoQRzVugaE9SD4FjVvQ1asg3YVkh+bEmBNOCmnc9NEiTP2VuIO/QrJJVMv1MPo6jL2GOf8WtFVFofM7YHhwzt+J5/C/Umi9FV3eijvwS0xnAmPhdtTEm/De46jI5Yguh6E9EPkrpHYNku4u1vKZwoGLpI8io7/DTexFhp9BRa9He8LI0NOosjqc+iuxj3wbyY1iLr0fa7KT/B92YiV+gV7xA8ROY3d+CzewGFWzEkm+hJYCuuWLyOg+GHoGNboPSXcjHzDeM4ADsoPQ8yM49hjKrESZVTg9DxXXzAVfx5j6PYy/jtlwOU7gfPKvfRkRl/xbdyKWB6N1GzLdiR55DuZtQwoTOP0PoZWBKm9CBnYjXd9FZvs41QHw9EdDZRZ3CcoqLj1KYURvQDVcjnPwmyh7GnXRzzH6f0b+6C5wCyjlwfjURtz4P6H+90u4Thbd/k0k9Tby7r8j2CACYhdNX+xTIphzPj3OZgXQNReCb16xH0YFNFyG0/cTmO3FWLwd1wjhiINuub70P7EqUZ5yVPzv4Y2vIX0/RrX9NUpyiP1+fWUHcEf3QzZxyvZPC4fSUF4P1RcgolACavQVSL4EWuHmJmD4aVxfKwpB9PvbIleQwWfQ+QTK8iMT/40aaUIC7cVOKmDcRWGc9kRfGlatNcFgkLq6OmZnZ0mlUlRU+DBNExGXbDaPaWo8lkU2m2NyapJQMITlsUpi+Xwej+Uhl88B4PWWAYJI8crn8ziOg8/nAyCdTmNZFl6vl0KhwNTUFJlMBhE5kTmtNa2trdx4443EYjH6+vp48803WbJkCZWVlUxNTdHb20tdXR2RSITZ2VmOHDnCeeedRygUwuPxkM/nOXDgAMuXL6enpweAWCxGJpMhny/u0QYGBpienmbFihXk83lefvllWltbaWtrI5PJMDAwwOOPP86xY8cQkeJs9Xg8bN26lW3btjE8PEwikaC5uZlrr72WZcuWYds2jY2NbN68mWg0ypYtW9ixYweRSIRoNMpNN92E67qkUiluvvlmNm3axFVXXcXmzZtxHIdQKMTWrVu54oorWLt2LWvWrKGiooJCocD69etZt24d9fX13HXXXVxzzTV4PJ4TmbMsi9WrV5NIJNixYwfpdJpLL70UANu2SSaTGEZxy57NZrFtm/Hxce6//36WLVvGxRdfzD333MPU1AkzFRFc12VsbIzR0VFEBKWKNem6LrlcjvHxcbLZLIcOHeLee++lo6ODtWvX8sADD5DL5U74nOM4KKWwLAvDMNBal57n83lct2iUixYtIhKJsHv3bhKJRKk+5grDMPD5fHi93pOeu65LoVAoaR5PkNYaxzmxxurjhfziiy9SX1/Pzp07ufvuu1m/fj1KKbxeLy0tLYTDYRzH4amnnqKrq4t4PF4q7D8GPH4/PDzMrl27ePXVV0uTQkSwLAu/309jYyM+n4/Fixdzxx13EA6H2bt3b6lGzeNwjz76KF6vl3g8jtfr5eDBg6TTaSorK7Ftm76+Ph555BH279/P4cOHaW1tBeCdd95h165dJcH77ruP/v5+RASv18vExATd3d08+OCDJJNJ0uk0yWQSx3FKnY1Go6UEPfnkkyWtkpUopQgEAoTDYTKZzPtWUoHWumQDhmEwMzODaZqUl5eTSqUwTZPKykqSySQiQm1tLbZtc1xzfHwcy7KoqqrCtm1EhLKy4rk4k8lgmiaWZeE4Dul0mlwuV8r8J/rN5ulXiD+KWCxGLpejoqKCVCpFe3s7Bw4cIB6P4/f7ef7559m4cWNp1o6Pj5NIJKiuriYQCDAwMMDw8PAZt/exXuREIhFCoRDhcBiv14vruvj9fjKZDG1tbQAsWLCAXC5HNBolFouxatWq0uxvbGws2cmZxMfKnM/nIxgMYts2kUiEoaEhVq5ciVKKmZkZAGZnZ4lEIhQKBSYmJhgbGyMQCBCNRhkZGfk4zX28misrKzvJ/2zbxuPxoLXGtu3SkNu2jWEYpRlpGAamaeI4Drlc7k8D9+cO01sW/UsznDLO7XeIcxyfaLj/AwYfH+cZk5zbAAAAAElFTkSuQmCC"
+          alt="CLK"
+        /><strong>CLK Portal</strong><span class="collapse-chevron">‹</span>
       </div>
       <div class="sidebar-content">
         <p class="sidebar-label">WORKSPACE</p>
@@ -2022,7 +2688,9 @@ dialog textarea {
           <div class="portal-title">
             <h1>James Clement</h1>
             <span class="industry-badge" aria-label="Industry"
-              ><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAWCAYAAAAvg9c4AAACaElEQVR4nK2UzUtUYRSHn/PeO/fO+K2pkZCRCgmFBEZgZfQnRNCiRbmIahXkroVF7VoF4a7aWC0iiGhXFBFa0CajKBBCQ1uY+DV+jc5473tajI0MM1dT/K0O573nec/93XOuHD99ST9/G2In1N7WyocX95F4U6fuCHFNy8P9mGIHqhAEElloA2CDVgqhAjGF+vJVJCwEayh45ZqFRtybBxVAkx43zv3mY98XOlsWsWlnvcO0ULF/lVPPJjlweZEwaYqC16EKnhV6rvyiu2uUvek0vbeHOLZvCQ0MGkBFY8CRO7PYAJq7Fjh4bR7CQityUGuF6qoM6ZQwMFDFSkp496aGEx1T+MaCKLUnVxh/H8dbqWDqbQ3pBfDrQjTMh7o5uqNMzMW4+6gZczGk/dA8T17vYXC0HCpdXNdjpM+homWVprNJ5r/X8/NhiFsFEsvvNs9TBQIT4LkWKqEkYQnsNLvP9NBw/hZoEnGUUALsrlkQs14Y9aHypGCNpeHCPcpaOvBrD9N49QES99fOo0cuGhoI0ngUtQHp2QXSM0ky00kSTZ1oZjmybGOoCzryifHH3Rh3jtXUJH+eXif14xXil2wTqgCCuB6C4lcnwHFQNdmV2xZU1oPs8kguGe3mZtBi/MhEvtyCjIJxgbhiJJuQmAFjsrEIjq+Y2P9CBaQk5PlAHV/HShmaSiCeMPGyFyTr7/IMDN6sYnHMxSnVol0X/k8FbEaQjEFKQjCCXUkBiomXglXCJUF8MJ4WDP7ycH/E68cUYmsLrYrxE7kYAadMc88Wk2lva402Z4v6xxLVTYZuG/qvkdqq/gJibOB5XygeQwAAAABJRU5ErkJggg==" alt=""
+              ><img
+                src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAWCAYAAAAvg9c4AAACaElEQVR4nK2UzUtUYRSHn/PeO/fO+K2pkZCRCgmFBEZgZfQnRNCiRbmIahXkroVF7VoF4a7aWC0iiGhXFBFa0CajKBBCQ1uY+DV+jc5473tajI0MM1dT/K0O573nec/93XOuHD99ST9/G2In1N7WyocX95F4U6fuCHFNy8P9mGIHqhAEElloA2CDVgqhAjGF+vJVJCwEayh45ZqFRtybBxVAkx43zv3mY98XOlsWsWlnvcO0ULF/lVPPJjlweZEwaYqC16EKnhV6rvyiu2uUvek0vbeHOLZvCQ0MGkBFY8CRO7PYAJq7Fjh4bR7CQityUGuF6qoM6ZQwMFDFSkp496aGEx1T+MaCKLUnVxh/H8dbqWDqbQ3pBfDrQjTMh7o5uqNMzMW4+6gZczGk/dA8T17vYXC0HCpdXNdjpM+homWVprNJ5r/X8/NhiFsFEsvvNs9TBQIT4LkWKqEkYQnsNLvP9NBw/hZoEnGUUALsrlkQs14Y9aHypGCNpeHCPcpaOvBrD9N49QES99fOo0cuGhoI0ngUtQHp2QXSM0ky00kSTZ1oZjmybGOoCzryifHH3Rh3jtXUJH+eXif14xXil2wTqgCCuB6C4lcnwHFQNdmV2xZU1oPs8kguGe3mZtBi/MhEvtyCjIJxgbhiJJuQmAFjsrEIjq+Y2P9CBaQk5PlAHV/HShmaSiCeMPGyFyTr7/IMDN6sYnHMxSnVol0X/k8FbEaQjEFKQjCCXUkBiomXglXCJUF8MJ4WDP7ycH/E68cUYmsLrYrxE7kYAadMc88Wk2lva402Z4v6xxLVTYZuG/qvkdqq/gJibOB5XygeQwAAAABJRU5ErkJggg=="
+                alt=""
             /></span>
           </div>
           <div class="portal-actions">
@@ -2052,9 +2720,1444 @@ dialog textarea {
           ><span>Contacts</span><span>Conversations</span><span>Activity</span
           ><span>Preferences</span><span>Snapshots</span>
         </nav>
-        <!-- ZIP working area: intentionally blank. Future features apply only to this subaccount. -->
-        <section id="zip-workspace" aria-label="ZIPs for James Clement"></section>
+        <section
+          id="zip-workspace"
+          class="zip-lab"
+          aria-label="ZIPs for James Clement"
+          aria-busy="true"
+        >
+          <header class="zl-toolbar">
+            <div>
+              <h2>ZIP management</h2>
+              <p>
+                James Clement <span aria-hidden="true">·</span> Current
+                subaccount only
+              </p>
+            </div>
+            <div class="zl-tools">
+              <label class="zl-button" for="zl-csv">Upload uszips.csv</label
+              ><input
+                id="zl-csv"
+                type="file"
+                accept=".csv,text/csv"
+                hidden
+              /><button type="button" class="zl-button" id="zl-refresh">
+                Refresh</button
+              ><button
+                type="button"
+                class="zl-button zl-danger-outline"
+                id="zl-reset"
+              >
+                Reset ZIP data (test)
+              </button>
+            </div>
+          </header>
+          <p id="zl-error" class="zl-error" role="alert" hidden></p>
+          <p id="zl-status" class="zl-status" role="status">Opening SQLite…</p>
+          <div class="zl-columns">
+            <div class="zl-left">
+              <section class="zl-section" aria-labelledby="zl-used-heading">
+                <header class="zl-section-head">
+                  <h3 id="zl-used-heading">ZIP Used</h3>
+                  <span id="zl-used-count" class="zl-count">0</span>
+                </header>
+                <div class="zl-used-tools">
+                  <label
+                    >Display<select id="zl-group">
+                      <option value="list">Unique, sorted ZIP list</option>
+                      <option value="state">By state</option>
+                      <option value="city">By state and city</option>
+                    </select></label
+                  ><button
+                    type="button"
+                    class="zl-text-button"
+                    id="zl-copy-used"
+                  >
+                    Copy ZIPs
+                  </button>
+                </div>
+                <div id="zl-used" class="zl-used-list"></div>
+                <div class="zl-selection">
+                  <label
+                    ><input type="checkbox" id="zl-select-all" />Select all used
+                    ZIPs</label
+                  ><button
+                    type="button"
+                    id="zl-delete-selected"
+                    class="zl-button zl-danger-outline"
+                    disabled
+                  >
+                    Delete selected (0)
+                  </button>
+                </div>
+                <p class="zl-helper" id="zl-geo-status">
+                  Upload a CSV with zip, city and state_name to group ZIPs by
+                  location.
+                </p>
+              </section>
+              <section
+                class="zl-section zl-history-section"
+                aria-labelledby="zl-history-heading"
+              >
+                <header class="zl-section-head">
+                  <h3 id="zl-history-heading">ZIP Used History</h3>
+                  <div class="zl-head-actions">
+                    <span id="zl-history-count" class="zl-count">0 rows</span
+                    ><button
+                      type="button"
+                      class="zl-button zl-primary"
+                      id="zl-add"
+                    >
+                      + Add history row
+                    </button>
+                  </div>
+                </header>
+                <p class="zl-history-help">
+                  Paste one list per row. Used ZIPs above are the unique, sorted
+                  ZIPs still active in these records.
+                </p>
+                <div class="zl-legend">
+                  <span
+                    ><i class="zl-key duplicate"></i>Already used when
+                    added</span
+                  ><span
+                    ><i class="zl-key removed"></i>Deleted from Used ZIPs</span
+                  >
+                </div>
+                <div id="zl-history"></div>
+              </section>
+              <details class="zl-section zl-audit">
+                <summary>
+                  ZIP deletion records
+                  <span id="zl-log-count" class="zl-count">0</span>
+                </summary>
+                <div id="zl-log"></div>
+              </details>
+            </div>
+            <aside class="zl-right" aria-label="ZIP checker">
+              <section class="zl-section">
+                <header class="zl-section-head">
+                  <h3>ZIP Check</h3>
+                  <span id="zl-check-count" class="zl-count">0</span>
+                </header>
+                <div class="zl-check-input">
+                  <label class="zl-sr-only" for="zl-check"
+                    >ZIP list to check</label
+                  ><textarea
+                    id="zl-check"
+                    rows="5"
+                    placeholder="Paste ZIPs to check…&#10;35741, 35748, 35801"
+                  ></textarea>
+                  <div id="zl-check-feedback" class="zl-feedback"></div>
+                  <button
+                    type="button"
+                    class="zl-text-button"
+                    id="zl-clear-check"
+                  >
+                    Clear list
+                  </button>
+                </div>
+              </section>
+              <section class="zl-section">
+                <header class="zl-section-head">
+                  <h3>ZIP Check: Already Used</h3>
+                  <span id="zl-match-count" class="zl-count">0</span>
+                </header>
+                <div class="zl-result zl-result-red">
+                  <div class="zl-result-heading">
+                    <span>From the pasted list</span
+                    ><button
+                      type="button"
+                      class="zl-text-button"
+                      id="zl-copy-matches"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p id="zl-matches" class="zl-zip-text">
+                    Paste a list above to check.
+                  </p>
+                </div>
+                <div class="zl-result zl-result-remaining">
+                  <div class="zl-result-heading">
+                    <span>Other used ZIPs <b id="zl-other-count">0</b></span
+                    ><button
+                      type="button"
+                      class="zl-text-button"
+                      id="zl-copy-other"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p id="zl-other" class="zl-zip-text">
+                    The full Used list, excluding matches above.
+                  </p>
+                </div>
+              </section>
+              <section class="zl-section">
+                <header class="zl-section-head">
+                  <h3>ZIP Check: Not Used</h3>
+                  <span id="zl-fresh-count" class="zl-count">0</span>
+                </header>
+                <div class="zl-result zl-result-green">
+                  <div class="zl-result-heading">
+                    <span>Unused ZIPs from the pasted list</span
+                    ><button
+                      type="button"
+                      class="zl-text-button"
+                      id="zl-copy-fresh"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p id="zl-fresh" class="zl-zip-text">
+                    Paste a list above to check.
+                  </p>
+                </div>
+              </section>
+            </aside>
+          </div>
+          <footer class="zl-footer">
+            SQLite is saved in this browser. Data is not shared across devices.
+            GHL lists are pasted manually.
+          </footer>
+        </section>
+        <dialog
+          id="zl-add-dialog"
+          class="zl-dialog"
+          aria-labelledby="zl-add-title"
+        >
+          <form id="zl-add-form">
+            <header class="zl-dialog-head">
+              <h2 id="zl-add-title">Add ZIP Used History row</h2>
+              <button
+                type="button"
+                class="zl-close"
+                data-close
+                aria-label="Close history form"
+              >
+                ×
+              </button>
+            </header>
+            <p class="zl-dialog-description">
+              For James Clement only. All valid ZIPs are recorded; existing Used
+              ZIPs are highlighted.
+            </p>
+            <div class="zl-form-grid">
+              <label>Date<input id="zl-date" type="date" required /></label
+              ><label
+                >Source<select id="zl-source">
+                  <option value="contacts">Contacts requested</option>
+                  <option value="ghl">GHL contact ZIP list (manual)</option>
+                </select></label
+              >
+            </div>
+            <label
+              >ZIP list<textarea
+                id="zl-add-zips"
+                rows="5"
+                required
+                placeholder="35801,35802,35803&#10;35741,35748"
+              ></textarea>
+            </label>
+            <div
+              id="zl-add-feedback"
+              class="zl-feedback"
+              aria-live="polite"
+            ></div>
+            <div id="zl-add-preview" class="zl-preview"></div>
+            <p class="zl-helper">
+              Commas, spaces, semicolons and new lines are accepted. Short
+              numeric ZIPs get leading zeros. ZIP+4 and other invalid entries
+              must be corrected.
+            </p>
+            <label
+              >Comment / order number <span class="zl-optional">optional</span
+              ><textarea
+                id="zl-add-comment"
+                rows="2"
+                maxlength="3000"
+              ></textarea>
+            </label>
+            <p id="zl-add-error" class="zl-form-error" role="alert"></p>
+            <footer class="zl-dialog-actions">
+              <button type="button" class="zl-button" data-close>Cancel</button
+              ><button
+                type="submit"
+                id="zl-save-row"
+                class="zl-button zl-primary"
+              >
+                Add history row
+              </button>
+            </footer>
+          </form>
+        </dialog>
+        <dialog
+          id="zl-delete-dialog"
+          class="zl-dialog"
+          aria-labelledby="zl-delete-title"
+        >
+          <form id="zl-delete-form">
+            <header class="zl-dialog-head">
+              <h2 id="zl-delete-title">Delete Used ZIPs</h2>
+              <button
+                type="button"
+                class="zl-close"
+                data-close
+                aria-label="Close deletion form"
+              >
+                ×
+              </button>
+            </header>
+            <p id="zl-delete-description" class="zl-dialog-description"></p>
+            <div id="zl-delete-preview" class="zl-preview"></div>
+            <p class="zl-helper">
+              These ZIPs will leave the active Used list. Their existing history
+              entries will remain visible with a deletion mark.
+            </p>
+            <label
+              >Deletion comment <span class="zl-optional">optional</span
+              ><textarea
+                id="zl-delete-comment"
+                rows="3"
+                maxlength="3000"
+                placeholder="Why are these ZIPs being removed?"
+              ></textarea>
+            </label>
+            <p id="zl-delete-error" class="zl-form-error" role="alert"></p>
+            <footer class="zl-dialog-actions">
+              <button type="button" class="zl-button" data-close>Cancel</button
+              ><button
+                type="submit"
+                id="zl-confirm-delete"
+                class="zl-button zl-danger"
+              >
+                Confirm deletion
+              </button>
+            </footer>
+          </form>
+        </dialog>
+        <dialog
+          id="zl-erase-dialog"
+          class="zl-dialog"
+          aria-labelledby="zl-erase-title"
+        >
+          <form id="zl-erase-form">
+            <header class="zl-dialog-head">
+              <h2 id="zl-erase-title">Erase test data</h2>
+              <button
+                type="button"
+                class="zl-close"
+                data-close
+                aria-label="Close erase confirmation"
+              >
+                ×
+              </button>
+            </header>
+            <p id="zl-erase-description" class="zl-dialog-description"></p>
+            <p id="zl-erase-error" class="zl-form-error" role="alert"></p>
+            <footer class="zl-dialog-actions">
+              <button type="button" class="zl-button" data-close>Cancel</button
+              ><button
+                type="submit"
+                id="zl-confirm-erase"
+                class="zl-button zl-danger"
+              >
+                Erase test data
+              </button>
+            </footer>
+          </form>
+        </dialog>
+        <div id="zl-toast" role="status" aria-live="polite" hidden></div>
       </main>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+      /* SQLite runs locally; IndexedDB persists its bytes. Every query/mutation uses a subaccount ID. */
+      window.ZipStore = (() => {
+        const DB_NAME = "clk-subaccount-zip-history-v1";
+        const SCHEMA = `
+    PRAGMA foreign_keys=ON;
+    CREATE TABLE IF NOT EXISTS subaccounts(id TEXT PRIMARY KEY,name TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS history_rows(id TEXT PRIMARY KEY,subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),recorded_on TEXT NOT NULL,source TEXT NOT NULL,comment TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS deletion_events(id TEXT PRIMARY KEY,subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),mode TEXT NOT NULL,group_label TEXT NOT NULL,comment TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS deletion_items(event_id TEXT NOT NULL REFERENCES deletion_events(id) ON DELETE CASCADE,zip TEXT NOT NULL,state_name TEXT,city TEXT,PRIMARY KEY(event_id,zip));
+    CREATE TABLE IF NOT EXISTS history_zips(row_id TEXT NOT NULL REFERENCES history_rows(id) ON DELETE CASCADE,zip TEXT NOT NULL CHECK(length(zip)=5 AND zip NOT GLOB '*[^0-9]*'),already_used INTEGER NOT NULL DEFAULT 0,deleted_event_id TEXT REFERENCES deletion_events(id),PRIMARY KEY(row_id,zip));
+    CREATE TABLE IF NOT EXISTS zip_places(subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),zip TEXT NOT NULL,city TEXT NOT NULL,state_name TEXT NOT NULL,PRIMARY KEY(subaccount_id,zip));
+    CREATE INDEX IF NOT EXISTS history_account ON history_rows(subaccount_id,created_at);
+    CREATE INDEX IF NOT EXISTS history_zip_active ON history_zips(zip,deleted_event_id);
+    CREATE INDEX IF NOT EXISTS deletion_account ON deletion_events(subaccount_id,created_at);
+    PRAGMA user_version=1;
+  `;
+        let enginePromise, storagePromise;
+        const engine = () =>
+          (enginePromise ||= initSqlJs({
+            locateFile: (f) =>
+              `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${f}`,
+          }));
+        const assert = (ok, message) => {
+          if (!ok) throw Error(message);
+        };
+        function query(db, sql, args = []) {
+          const q = db.prepare(sql);
+          try {
+            q.bind(args);
+            const rows = [];
+            while (q.step()) rows.push(q.getAsObject());
+            return rows;
+          } finally {
+            q.free();
+          }
+        }
+        const first = (db, sql, args = []) => query(db, sql, args)[0];
+        function storage() {
+          return (storagePromise ||= new Promise((resolve, reject) => {
+            const q = indexedDB.open(DB_NAME, 1);
+            q.onupgradeneeded = () => q.result.createObjectStore("database");
+            q.onsuccess = () => resolve(q.result);
+            q.onerror = () =>
+              reject(
+                Error(
+                  "Browser storage is unavailable. Allow site storage and reload.",
+                ),
+              );
+          }));
+        }
+        async function getRecord() {
+          const db = await storage();
+          return new Promise((resolve, reject) => {
+            const t = db.transaction("database", "readonly"),
+              q = t.objectStore("database").get("main");
+            q.onsuccess = () => resolve(q.result);
+            q.onerror = () => reject(q.error);
+          });
+        }
+        async function persist(bytes, version) {
+          const db = await storage();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction("database", "readwrite"),
+              s = tx.objectStore("database");
+            let conflict = false;
+            const q = s.get("main");
+            q.onsuccess = () => {
+              if ((q.result?.version || 0) !== version) {
+                conflict = true;
+                tx.abort();
+                return;
+              }
+              s.put({ bytes, version: version + 1 }, "main");
+            };
+            tx.oncomplete = resolve;
+            tx.onerror = () =>
+              reject(tx.error || Error("Could not persist SQLite."));
+            tx.onabort = () =>
+              reject(
+                Error(
+                  conflict
+                    ? "Another tab changed the database. Refresh, review, and try again."
+                    : "The SQLite save was not confirmed.",
+                ),
+              );
+          });
+        }
+        async function open() {
+          const SQL = await engine(),
+            r = await getRecord();
+          const db = r
+            ? new SQL.Database(new Uint8Array(r.bytes))
+            : new SQL.Database();
+          db.run(SCHEMA);
+          return { db, version: r?.version || 0 };
+        }
+        const now = () => new Date().toISOString();
+        const id = () => crypto.randomUUID();
+        function checkAccount(a) {
+          assert(
+            a &&
+              typeof a.id === "string" &&
+              a.id.length > 0 &&
+              a.id.length < 100 &&
+              typeof a.name === "string",
+            "Invalid subaccount.",
+          );
+        }
+        function active(db, account) {
+          return query(
+            db,
+            `SELECT DISTINCT z.zip,p.city,p.state_name FROM history_zips z JOIN history_rows h ON h.id=z.row_id LEFT JOIN zip_places p ON p.zip=z.zip AND p.subaccount_id=h.subaccount_id WHERE h.subaccount_id=? AND z.deleted_event_id IS NULL ORDER BY z.zip`,
+            [account],
+          );
+        }
+        function checkZips(zips) {
+          assert(
+            Array.isArray(zips) &&
+              zips.length > 0 &&
+              zips.length <= 10000 &&
+              zips.every((z) => typeof z === "string" && /^\d{5}$/.test(z)) &&
+              new Set(zips).size === zips.length,
+            "Enter 1–10,000 unique five-digit ZIPs.",
+          );
+        }
+        function comment(s) {
+          assert(
+            typeof s === "string" && s.length <= 3000,
+            "Comment must be at most 3,000 characters.",
+          );
+          return s.trim();
+        }
+        async function snapshot(account) {
+          checkAccount(account);
+          const { db } = await open();
+          try {
+            const revision =
+              first(db, "SELECT revision FROM subaccounts WHERE id=?", [
+                account.id,
+              ])?.revision || 0;
+            const rows = query(
+              db,
+              "SELECT * FROM history_rows WHERE subaccount_id=? ORDER BY created_at DESC,id DESC",
+              [account.id],
+            );
+            const members = query(
+              db,
+              `SELECT z.*,d.mode AS deleted_mode,d.group_label AS deleted_group,d.comment AS deleted_comment,d.created_at AS deleted_at FROM history_zips z JOIN history_rows h ON h.id=z.row_id LEFT JOIN deletion_events d ON d.id=z.deleted_event_id AND d.subaccount_id=h.subaccount_id WHERE h.subaccount_id=? ORDER BY z.zip`,
+              [account.id],
+            );
+            const byRow = new Map();
+            for (const z of members) {
+              if (!byRow.has(z.row_id)) byRow.set(z.row_id, []);
+              byRow.get(z.row_id).push(z);
+            }
+            const events = query(
+              db,
+              "SELECT * FROM deletion_events WHERE subaccount_id=? ORDER BY created_at DESC,id DESC",
+              [account.id],
+            );
+            const deleted = query(
+              db,
+              "SELECT i.* FROM deletion_items i JOIN deletion_events d ON d.id=i.event_id WHERE d.subaccount_id=? ORDER BY i.zip",
+              [account.id],
+            );
+            const byEvent = new Map();
+            for (const z of deleted) {
+              if (!byEvent.has(z.event_id)) byEvent.set(z.event_id, []);
+              byEvent.get(z.event_id).push(z);
+            }
+            return {
+              revision,
+              used: active(db, account.id),
+              rows: rows.map((r) => ({ ...r, zips: byRow.get(r.id) || [] })),
+              events: events.map((e) => ({
+                ...e,
+                zips: byEvent.get(e.id) || [],
+              })),
+              places: first(
+                db,
+                "SELECT count(*) AS n FROM zip_places WHERE subaccount_id=?",
+                [account.id],
+              ).n,
+            };
+          } finally {
+            db.close();
+          }
+        }
+        async function change(account, revision, action, payload) {
+          checkAccount(account);
+          const { db, version } = await open();
+          try {
+            db.run("BEGIN");
+            db.run("INSERT OR IGNORE INTO subaccounts(id,name) VALUES (?,?)", [
+              account.id,
+              account.name,
+            ]);
+            assert(
+              first(db, "SELECT revision FROM subaccounts WHERE id=?", [
+                account.id,
+              ]).revision === revision,
+              "This subaccount changed in another tab. Refresh and review before saving.",
+            );
+            if (action === "add") {
+              checkZips(payload.zips);
+              const note = comment(payload.comment),
+                date = payload.date;
+              assert(
+                /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+                  Number.isFinite(Date.parse(date)) &&
+                  new Date(date).toISOString().slice(0, 10) === date,
+                "Choose a valid date.",
+              );
+              assert(
+                ["contacts", "ghl"].includes(payload.source),
+                "Choose a valid source.",
+              );
+              const used = new Set(active(db, account.id).map((z) => z.zip)),
+                row = id();
+              db.run("INSERT INTO history_rows VALUES (?,?,?,?,?,?)", [
+                row,
+                account.id,
+                date,
+                payload.source,
+                note,
+                now(),
+              ]);
+              for (const z of payload.zips)
+                db.run(
+                  "INSERT INTO history_zips(row_id,zip,already_used) VALUES (?,?,?)",
+                  [row, z, used.has(z) ? 1 : 0],
+                );
+            } else if (action === "delete") {
+              assert(
+                ["individual", "state", "city"].includes(payload.mode),
+                "Invalid deletion type.",
+              );
+              let targets = active(db, account.id),
+                label = "Individual ZIP selection";
+              if (payload.mode === "individual") {
+                checkZips(payload.zips);
+                const requested = new Set(payload.zips);
+                targets = targets.filter((z) => requested.has(z.zip));
+                assert(
+                  targets.length === requested.size,
+                  "Some ZIPs are no longer active. Refresh and review.",
+                );
+              }
+              if (payload.mode === "state") {
+                assert(
+                  typeof payload.state === "string" && payload.state.length > 0,
+                  "Choose a mapped state.",
+                );
+                targets = targets.filter((z) => z.state_name === payload.state);
+                label = payload.state;
+              }
+              if (payload.mode === "city") {
+                assert(
+                  typeof payload.state === "string" &&
+                    typeof payload.city === "string" &&
+                    payload.state &&
+                    payload.city,
+                  "Choose a mapped city and state.",
+                );
+                targets = targets.filter(
+                  (z) =>
+                    z.state_name === payload.state && z.city === payload.city,
+                );
+                label = payload.city + ", " + payload.state;
+              }
+              const expected = [...new Set(payload.zips || [])].sort();
+              assert(
+                targets.length &&
+                  JSON.stringify(targets.map((z) => z.zip).sort()) ===
+                    JSON.stringify(expected),
+                "The ZIPs in this group changed. Reopen the deletion confirmation.",
+              );
+              const event = id();
+              db.run("INSERT INTO deletion_events VALUES (?,?,?,?,?,?)", [
+                event,
+                account.id,
+                payload.mode,
+                label,
+                comment(payload.comment),
+                now(),
+              ]);
+              for (const z of targets) {
+                db.run("INSERT INTO deletion_items VALUES (?,?,?,?)", [
+                  event,
+                  z.zip,
+                  z.state_name || null,
+                  z.city || null,
+                ]);
+                db.run(
+                  "UPDATE history_zips SET deleted_event_id=? WHERE zip=? AND deleted_event_id IS NULL AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
+                  [event, z.zip, account.id],
+                );
+              }
+            } else if (action === "places") {
+              assert(
+                Array.isArray(payload.rows) &&
+                  payload.rows.length > 0 &&
+                  payload.rows.length <= 100000,
+                "CSV must contain 1–100,000 ZIP rows.",
+              );
+              const seen = new Set();
+              for (const r of payload.rows) {
+                assert(
+                  /^\d{5}$/.test(r.zip) &&
+                    typeof r.city === "string" &&
+                    r.city.trim().length > 0 &&
+                    r.city.length < 200 &&
+                    typeof r.state_name === "string" &&
+                    r.state_name.trim().length > 0 &&
+                    r.state_name.length < 100 &&
+                    !seen.has(r.zip),
+                  "CSV has an invalid or conflicting ZIP record.",
+                );
+                seen.add(r.zip);
+              }
+              db.run("DELETE FROM zip_places WHERE subaccount_id=?", [
+                account.id,
+              ]);
+              const stmt = db.prepare(
+                "INSERT INTO zip_places VALUES (?,?,?,?)",
+              );
+              try {
+                for (const r of payload.rows) {
+                  stmt.run([
+                    account.id,
+                    r.zip,
+                    r.city.trim(),
+                    r.state_name.trim(),
+                  ]);
+                }
+              } finally {
+                stmt.free();
+              }
+            } else if (action === "erase_row") {
+              assert(typeof payload.row === "string", "Invalid history row.");
+              assert(
+                first(
+                  db,
+                  "SELECT id FROM history_rows WHERE id=? AND subaccount_id=?",
+                  [payload.row, account.id],
+                ),
+                "This history row no longer exists.",
+              );
+              db.run(
+                "DELETE FROM history_rows WHERE id=? AND subaccount_id=?",
+                [payload.row, account.id],
+              );
+            } else if (action === "reset") {
+              db.run("DELETE FROM history_rows WHERE subaccount_id=?", [
+                account.id,
+              ]);
+              db.run("DELETE FROM deletion_events WHERE subaccount_id=?", [
+                account.id,
+              ]);
+              db.run("DELETE FROM zip_places WHERE subaccount_id=?", [
+                account.id,
+              ]);
+            } else throw Error("Unknown action.");
+            db.run("UPDATE subaccounts SET revision=revision+1 WHERE id=?", [
+              account.id,
+            ]);
+            db.run("COMMIT");
+            await persist(db.export(), version);
+          } finally {
+            db.close();
+          }
+        }
+        return { snapshot, change };
+      })();
+    </script>
+    <script>
+      (() => {
+        // Fixed to the subaccount currently represented by the page. No cross-account selector.
+        const ACCOUNT = { id: "james-clement", name: "James Clement" };
+        const $ = (id) => document.getElementById(id);
+        const model = {
+          data: null,
+          selected: new Set(),
+          busy: false,
+          dialogRevision: 0,
+          deletion: null,
+          erase: null,
+        };
+        function el(tag, attrs = {}, ...children) {
+          const e = document.createElement(tag);
+          for (const [k, v] of Object.entries(attrs)) {
+            if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+            else if (["disabled", "checked", "hidden"].includes(k)) e[k] = v;
+            else if (k === "class") e.className = v;
+            else e.setAttribute(k, v);
+          }
+          for (const c of children.flat(Infinity))
+            if (c !== null && c !== undefined)
+              e.append(
+                c instanceof Node ? c : document.createTextNode(String(c)),
+              );
+          return e;
+        }
+        const chips = (items) => el("div", { class: "zl-chip-list" }, items);
+        const usedSet = () =>
+          new Set((model.data?.used || []).map((z) => z.zip));
+        const date = () => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        };
+        const formatDate = (s) =>
+          new Date(s.length === 10 ? s + "T12:00:00" : s).toLocaleString(
+            undefined,
+            s.length === 10
+              ? { year: "numeric", month: "short", day: "numeric" }
+              : {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                },
+          );
+        function parse(text) {
+          const seen = new Set(),
+            invalid = [];
+          let duplicates = 0,
+            padded = 0;
+          if (text.length > 200000)
+            return {
+              zips: [],
+              invalid: ["List is too long (200,000 characters maximum)."],
+              duplicates,
+              padded,
+            };
+          for (let token of text.split(/[\s,;|]+/).filter(Boolean)) {
+            token = token.replace(/^[\[\](){}"']+|[\[\](){}"']+$/g, "");
+            if (!token) continue;
+            if (!/^\d{1,5}$/.test(token)) {
+              invalid.push(token);
+              continue;
+            }
+            const zip = token.padStart(5, "0");
+            if (token.length < 5) padded++;
+            if (seen.has(zip)) duplicates++;
+            else seen.add(zip);
+          }
+          const zips = [...seen].sort();
+          if (zips.length > 10000)
+            invalid.push("Maximum 10,000 ZIPs per list.");
+          return { zips, invalid, duplicates, padded };
+        }
+        function error(message) {
+          $("zl-error").textContent = message;
+          $("zl-error").hidden = !message;
+        }
+        function toast(text) {
+          $("zl-toast").textContent = text;
+          $("zl-toast").hidden = false;
+          clearTimeout(toast.timer);
+          toast.timer = setTimeout(() => ($("zl-toast").hidden = true), 5000);
+        }
+        function busy(value) {
+          model.busy = value;
+          $("zip-workspace").setAttribute("aria-busy", String(value));
+          document
+            .querySelectorAll(
+              ".zip-lab button,.zip-lab input,.zip-lab select,.zip-lab textarea,.zl-dialog button,.zl-dialog input,.zl-dialog select,.zl-dialog textarea",
+            )
+            .forEach((e) => (e.disabled = value));
+          document
+            .querySelector('label[for="zl-csv"]')
+            .classList.toggle("zl-disabled", value);
+          if (!value && model.data) {
+            selectionControls();
+            validateAdd();
+          }
+        }
+        async function refresh() {
+          try {
+            busy(true);
+            error("");
+            model.data = await ZipStore.snapshot(ACCOUNT);
+            const active = usedSet();
+            model.selected = new Set(
+              [...model.selected].filter((z) => active.has(z)),
+            );
+            render();
+          } catch (e) {
+            error(e.message);
+            $("zl-status").textContent =
+              "SQLite could not be opened. Check browser storage and your internet connection, then Refresh.";
+          } finally {
+            busy(false);
+          }
+        }
+        async function change(action, payload, errorId, success) {
+          try {
+            busy(true);
+            await ZipStore.change(
+              ACCOUNT,
+              model.dialogRevision,
+              action,
+              payload,
+            );
+            model.data = await ZipStore.snapshot(ACCOUNT);
+            model.selected.clear();
+            document
+              .querySelectorAll(".zl-dialog[open]")
+              .forEach((d) => d.close());
+            render();
+            error("");
+            toast(success);
+          } catch (e) {
+            $(errorId).textContent =
+              e.message +
+              " Nothing is retried automatically. Refresh to review saved records before retrying.";
+          } finally {
+            busy(false);
+          }
+        }
+        function selectionControls() {
+          const count = model.selected.size;
+          const n = model.data?.used.length || 0;
+          $("zl-delete-selected").textContent = `Delete selected (${count})`;
+          $("zl-delete-selected").disabled = model.busy || count === 0;
+          $("zl-select-all").checked = n > 0 && count === n;
+          $("zl-select-all").indeterminate = count > 0 && count < n;
+          $("zl-select-all").disabled = model.busy || !n;
+        }
+        function usedChip(z) {
+          return el(
+            "span",
+            { class: "zl-chip" },
+            el(
+              "label",
+              {},
+              el("input", {
+                type: "checkbox",
+                "aria-label": "Select ZIP " + z.zip,
+                checked: model.selected.has(z.zip),
+                onchange: (e) => {
+                  e.target.checked
+                    ? model.selected.add(z.zip)
+                    : model.selected.delete(z.zip);
+                  selectionControls();
+                },
+              }),
+              z.zip,
+            ),
+            el(
+              "button",
+              {
+                type: "button",
+                "aria-label": "Delete ZIP " + z.zip,
+                title: "Delete this ZIP",
+                onclick: () =>
+                  openDelete({ mode: "individual", zips: [z.zip] }),
+              },
+              "×",
+            ),
+          );
+        }
+        function groupHeading(name, zips, kind, state, city) {
+          return el(
+            "div",
+            { class: "zl-group-heading" },
+            el("h4", {}, name + " · " + zips.length),
+            state && (!city || city !== "Unmapped city")
+              ? el(
+                  "button",
+                  {
+                    type: "button",
+                    class: "zl-text-button",
+                    onclick: () =>
+                      openDelete({
+                        mode: kind,
+                        state,
+                        city,
+                        zips: zips.map((z) => z.zip),
+                      }),
+                  },
+                  kind === "city" ? "Delete city" : "Delete state",
+                )
+              : null,
+          );
+        }
+        function renderUsed() {
+          const box = $("zl-used"),
+            data = model.data.used,
+            kind = $("zl-group").value;
+          box.replaceChildren();
+          if (!data.length)
+            box.append(
+              el(
+                "p",
+                { class: "zl-empty" },
+                "No used ZIPs yet. Add a ZIP Used History row below.",
+              ),
+            );
+          else if (kind === "list") box.append(chips(data.map(usedChip)));
+          else {
+            const states = new Map();
+            for (const z of data) {
+              const key = z.state_name || "";
+              if (!states.has(key)) states.set(key, []);
+              states.get(key).push(z);
+            }
+            for (const [state, zips] of [...states].sort((a, b) =>
+              (a[0] || "~").localeCompare(b[0] || "~"),
+            )) {
+              const block = el("section", { class: "zl-group" });
+              block.append(
+                groupHeading(state || "Unmapped state", zips, "state", state),
+              );
+              if (kind === "state") block.append(chips(zips.map(usedChip)));
+              else {
+                const cities = new Map();
+                for (const z of zips) {
+                  const key = z.city || "Unmapped city";
+                  if (!cities.has(key)) cities.set(key, []);
+                  cities.get(key).push(z);
+                }
+                for (const [city, items] of [...cities].sort((a, b) =>
+                  a[0].localeCompare(b[0]),
+                )) {
+                  block.append(
+                    el(
+                      "section",
+                      { class: "zl-city" },
+                      groupHeading(city, items, "city", state, city),
+                      chips(items.map(usedChip)),
+                    ),
+                  );
+                }
+              }
+              box.append(block);
+            }
+          }
+          $("zl-used-count").textContent = data.length;
+          selectionControls();
+          $("zl-geo-status").textContent = model.data.places
+            ? `${model.data.places.toLocaleString()} ZIP locations loaded for this subaccount. Unmatched ZIPs remain under Unmapped.`
+            : "Upload a CSV with zip, city and state_name to group ZIPs by location.";
+        }
+        function historyChip(z) {
+          let title = z.already_used
+            ? "Already active in Used ZIPs when this history row was added."
+            : "Added to Used ZIPs by this history row.";
+          if (z.deleted_event_id)
+            title = `Deleted by ${z.deleted_mode}: ${z.deleted_group} · ${formatDate(z.deleted_at)}${z.deleted_comment ? " · " + z.deleted_comment : ""}`;
+          return el(
+            "span",
+            {
+              class:
+                "zl-history-chip" +
+                (z.deleted_event_id
+                  ? " deleted"
+                  : z.already_used
+                    ? " duplicate"
+                    : ""),
+              title,
+              tabindex: "0",
+              "aria-label": `${z.zip}${z.deleted_event_id ? ", deleted" : z.already_used ? ", already used when added" : ""}`,
+            },
+            z.zip,
+          );
+        }
+        function renderHistory() {
+          const target = $("zl-history");
+          target.replaceChildren();
+          $("zl-history-count").textContent = model.data.rows.length + " rows";
+          if (!model.data.rows.length)
+            target.append(
+              el(
+                "p",
+                { class: "zl-empty" },
+                "No history records. Add a list from a contact request or paste a GHL contact ZIP list.",
+              ),
+            );
+          model.data.rows.forEach((r, i) =>
+            target.append(
+              el(
+                "article",
+                { class: "zl-history-row", "data-row-id": r.id },
+                el(
+                  "div",
+                  { class: "zl-row-index" },
+                  model.data.rows.length - i,
+                ),
+                el(
+                  "div",
+                  { class: "zl-row-body" },
+                  el(
+                    "div",
+                    { class: "zl-row-meta" },
+                    el(
+                      "span",
+                      {},
+                      el("strong", {}, formatDate(r.recorded_on)),
+                      r.source === "ghl"
+                        ? "GHL contact list (manual)"
+                        : "Contacts requested",
+                      `${r.zips.length} ZIPs`,
+                    ),
+                    el(
+                      "button",
+                      {
+                        type: "button",
+                        class: "zl-text-button",
+                        onclick: () => openErase("row", r),
+                      },
+                      "Erase row (test)",
+                    ),
+                  ),
+                  chips(r.zips.map(historyChip)),
+                  r.comment
+                    ? el("p", { class: "zl-row-note" }, r.comment)
+                    : null,
+                ),
+              ),
+            ),
+          );
+        }
+        function renderLog() {
+          const target = $("zl-log");
+          target.replaceChildren();
+          $("zl-log-count").textContent = model.data.events.length;
+          if (!model.data.events.length)
+            target.append(
+              el("p", { class: "zl-empty" }, "No Used ZIP deletions recorded."),
+            );
+          for (const e of model.data.events)
+            target.append(
+              el(
+                "article",
+                { class: "zl-log-item" },
+                el(
+                  "strong",
+                  {},
+                  e.mode === "individual"
+                    ? "Individual ZIP selection"
+                    : e.mode === "state"
+                      ? "Deleted by state: " + e.group_label
+                      : "Deleted by city: " + e.group_label,
+                ),
+                el(
+                  "p",
+                  {},
+                  formatDate(e.created_at) +
+                    " · " +
+                    e.zips.length +
+                    " unique ZIPs",
+                ),
+                e.comment ? el("p", {}, e.comment) : el("p", {}, "No comment."),
+                el(
+                  "p",
+                  { class: "zl-zip-text" },
+                  e.zips.map((z) => z.zip).join(", "),
+                ),
+              ),
+            );
+        }
+        function feedback(target, p) {
+          target.replaceChildren(
+            el(
+              "span",
+              {},
+              `${p.zips.length} unique ZIPs · ${p.duplicates} duplicates within this paste removed${p.padded ? " · " + p.padded + " padded with leading zeros" : ""}`,
+            ),
+          );
+          if (p.invalid.length)
+            target.append(
+              el(
+                "span",
+                { class: "zl-invalid" },
+                "Correct invalid entries: " +
+                  p.invalid.slice(0, 10).join(", ") +
+                  (p.invalid.length > 10 ? " …" : ""),
+              ),
+            );
+        }
+        function checker() {
+          if (!model.data) return;
+          const p = parse($("zl-check").value),
+            set = usedSet(),
+            matches = p.zips.filter((z) => set.has(z)),
+            fresh = p.zips.filter((z) => !set.has(z)),
+            input = new Set(p.zips),
+            other = model.data.used
+              .map((z) => z.zip)
+              .filter((z) => !input.has(z));
+          feedback($("zl-check-feedback"), p);
+          $("zl-check-count").textContent = p.zips.length;
+          const invalid = !!p.invalid.length;
+          for (const [id, count] of [
+            ["zl-match-count", matches.length],
+            ["zl-fresh-count", fresh.length],
+            ["zl-other-count", other.length],
+          ])
+            $(id).textContent = invalid ? "—" : count;
+          const waiting = !$("zl-check").value.trim();
+          $("zl-matches").textContent = invalid
+            ? "Correct invalid entries above before using these results."
+            : waiting
+              ? "Paste a list above to check."
+              : matches.join(", ") ||
+                "None of the pasted ZIPs are currently used.";
+          $("zl-other").textContent = invalid
+            ? "Correct invalid entries above before using these results."
+            : other.join(", ") || "No other used ZIPs.";
+          $("zl-fresh").textContent = invalid
+            ? "Correct invalid entries above before using these results."
+            : waiting
+              ? "Paste a list above to check."
+              : fresh.join(", ") || "All pasted ZIPs are currently used.";
+          checker.values = {
+            matches: invalid ? [] : matches,
+            other: invalid ? [] : other,
+            fresh: invalid ? [] : fresh,
+          };
+        }
+        function render() {
+          renderUsed();
+          renderHistory();
+          renderLog();
+          checker();
+          $("zl-status").textContent =
+            `Saved in this browser · ${ACCOUNT.name} only`;
+        }
+        function validateAdd() {
+          if (!$("zl-add-dialog").open) return;
+          const p = parse($("zl-add-zips").value);
+          feedback($("zl-add-feedback"), p);
+          const used = usedSet(),
+            overlap = p.zips.filter((z) => used.has(z));
+          if (overlap.length)
+            $("zl-add-feedback").append(
+              el(
+                "span",
+                { class: "zl-warning" },
+                overlap.length +
+                  " already Used. They will be highlighted and kept in this new row; no other action is taken.",
+              ),
+            );
+          $("zl-add-preview").replaceChildren(
+            ...p.zips
+              .slice(0, 200)
+              .map((z) =>
+                el(
+                  "span",
+                  {
+                    class:
+                      "zl-history-chip" + (used.has(z) ? " duplicate" : ""),
+                  },
+                  z,
+                ),
+              ),
+          );
+          if (p.zips.length > 200)
+            $("zl-add-preview").append(
+              el(
+                "span",
+                {},
+                "Preview shows the first 200 ZIPs. All " +
+                  p.zips.length +
+                  " will be saved.",
+              ),
+            );
+          $("zl-save-row").disabled =
+            model.busy || !p.zips.length || !!p.invalid.length;
+        }
+        function openAdd() {
+          if (model.busy || !model.data) return;
+          model.dialogRevision = model.data.revision;
+          $("zl-add-form").reset();
+          $("zl-date").value = date();
+          $("zl-add-error").textContent = "";
+          $("zl-add-dialog").showModal();
+          validateAdd();
+        }
+        function openDelete(options) {
+          if (model.busy) return;
+          model.deletion = options;
+          model.dialogRevision = model.data.revision;
+          $("zl-delete-comment").value = "";
+          $("zl-delete-error").textContent = "";
+          const label =
+            options.mode === "state"
+              ? "all active ZIPs in " + options.state
+              : options.mode === "city"
+                ? "all active ZIPs in " + options.city + ", " + options.state
+                : "the selected ZIP" + (options.zips.length === 1 ? "" : "s");
+          $("zl-delete-description").textContent =
+            `Delete ${options.zips.length} unique ZIP${options.zips.length === 1 ? "" : "s"} from Used ZIPs for ${ACCOUNT.name}: ${label}? This action is recorded as a deletion by ${options.mode === "individual" ? "individual ZIP selection" : options.mode}.`;
+          $("zl-delete-preview").replaceChildren(
+            ...options.zips
+              .slice(0, 200)
+              .map((z) => el("span", { class: "zl-history-chip" }, z)),
+          );
+          if (options.zips.length > 200)
+            $("zl-delete-preview").append(
+              el(
+                "span",
+                {},
+                "… " + (options.zips.length - 200) + " more ZIPs included.",
+              ),
+            );
+          $("zl-delete-dialog").showModal();
+        }
+        function openErase(kind, row) {
+          if (model.busy || !model.data) return;
+          model.erase = { kind, row: row?.id };
+          model.dialogRevision = model.data.revision;
+          $("zl-erase-error").textContent = "";
+          $("zl-erase-description").textContent =
+            kind === "row"
+              ? `Erase this test history row (${row.zips.length} ZIPs) for ${ACCOUNT.name}? Its entries are permanently removed without adding an audit record. ZIPs that remain active in other rows stay Used. Existing deletion records are kept; use Reset ZIP data to erase all traces of test history.`
+              : `Reset all ZIP test data for ${ACCOUNT.name}? This permanently erases every history row, Used ZIP, deletion record and uploaded location mapping for this subaccount. It creates no deletion log. This cannot be undone.`;
+          $("zl-erase-dialog").showModal();
+        }
+        async function copy(values) {
+          try {
+            await navigator.clipboard.writeText(values.join(","));
+            toast("ZIP list copied.");
+          } catch {
+            error(
+              "Clipboard access is unavailable. Select the displayed ZIP text and copy it.",
+            );
+          }
+        }
+        $("zl-add").addEventListener("click", openAdd);
+        $("zl-add-zips").addEventListener("input", validateAdd);
+        $("zl-add-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const p = parse($("zl-add-zips").value);
+          if (model.busy || p.invalid.length || !p.zips.length) return;
+          void change(
+            "add",
+            {
+              zips: p.zips,
+              date: $("zl-date").value,
+              source: $("zl-source").value,
+              comment: $("zl-add-comment").value,
+            },
+            "zl-add-error",
+            "History row added. Used ZIPs updated.",
+          );
+        });
+        $("zl-delete-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (!model.busy)
+            void change(
+              "delete",
+              { ...model.deletion, comment: $("zl-delete-comment").value },
+              "zl-delete-error",
+              "ZIPs removed from Used. History and deletion records preserved.",
+            );
+        });
+        $("zl-erase-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (!model.busy)
+            void change(
+              model.erase.kind === "row" ? "erase_row" : "reset",
+              { row: model.erase.row },
+              "zl-erase-error",
+              model.erase.kind === "row"
+                ? "Test history row erased."
+                : "All ZIP test data for this subaccount erased.",
+            );
+        });
+        document.querySelectorAll(".zl-dialog [data-close]").forEach((b) =>
+          b.addEventListener("click", () => {
+            if (!model.busy) b.closest("dialog").close();
+          }),
+        );
+        document.querySelectorAll(".zl-dialog").forEach((d) =>
+          d.addEventListener("cancel", (e) => {
+            if (model.busy) e.preventDefault();
+          }),
+        );
+        $("zl-reset").addEventListener("click", () => openErase("all"));
+        $("zl-refresh").addEventListener("click", () => void refresh());
+        $("zl-group").addEventListener("change", renderUsed);
+        $("zl-delete-selected").addEventListener("click", () =>
+          openDelete({ mode: "individual", zips: [...model.selected].sort() }),
+        );
+        $("zl-select-all").addEventListener("change", (e) => {
+          model.selected = e.target.checked ? usedSet() : new Set();
+          renderUsed();
+        });
+        $("zl-check").addEventListener("input", checker);
+        $("zl-clear-check").addEventListener("click", () => {
+          $("zl-check").value = "";
+          checker();
+        });
+        $("zl-copy-used").addEventListener(
+          "click",
+          () => void copy(model.data.used.map((z) => z.zip)),
+        );
+        for (const key of ["matches", "other", "fresh"])
+          $("zl-copy-" + key).addEventListener(
+            "click",
+            () => void copy(checker.values?.[key] || []),
+          );
+        $("zl-csv").addEventListener("change", async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file || model.busy || !model.data) return;
+          const revision = model.data.revision;
+          busy(true);
+          error("");
+          try {
+            if (file.size > 20000000)
+              throw Error("CSV is too large (20 MB maximum).");
+            if (!window.Papa)
+              throw Error(
+                "CSV library failed to load. Check your connection and reload.",
+              );
+            const text = await file.text();
+            const parsed = Papa.parse(text, {
+              header: true,
+              skipEmptyLines: "greedy",
+              transformHeader: (h) =>
+                h
+                  .replace(/^\uFEFF/, "")
+                  .trim()
+                  .toLowerCase(),
+            });
+            if (parsed.errors.length)
+              throw Error(
+                "CSV could not be parsed: " + parsed.errors[0].message,
+              );
+            if (
+              !["zip", "city", "state_name"].every((k) =>
+                parsed.meta.fields.includes(k),
+              )
+            )
+              throw Error("CSV requires zip, city and state_name columns.");
+            const lookup = new Map();
+            for (const [i, r] of parsed.data.entries()) {
+              const zip = String(r.zip || "").trim();
+              if (
+                !/^\d{1,5}$/.test(zip) ||
+                !r.city?.trim() ||
+                !r.state_name?.trim()
+              )
+                throw Error(
+                  "Invalid ZIP, city or state_name at CSV row " + (i + 2) + ".",
+                );
+              const value = {
+                  zip: zip.padStart(5, "0"),
+                  city: r.city.trim(),
+                  state_name: r.state_name.trim(),
+                },
+                old = lookup.get(value.zip);
+              if (
+                old &&
+                (old.city !== value.city || old.state_name !== value.state_name)
+              )
+                throw Error(
+                  "CSV contains conflicting places for ZIP " + value.zip + ".",
+                );
+              lookup.set(value.zip, value);
+            }
+            await ZipStore.change(ACCOUNT, revision, "places", {
+              rows: [...lookup.values()],
+            });
+            model.data = await ZipStore.snapshot(ACCOUNT);
+            render();
+            toast(
+              lookup.size.toLocaleString() +
+                " ZIP locations loaded for " +
+                ACCOUNT.name +
+                ".",
+            );
+          } catch (err) {
+            error(err.message);
+          } finally {
+            busy(false);
+          }
+        });
+        void refresh();
+      })();
+    </script>
   </body>
 </html>
