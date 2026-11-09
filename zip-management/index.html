@@ -3456,7 +3456,8 @@
           letter-spacing: -0.5px;
         }
       }
-    </style>
+    .zl-fresh-actions{display:flex;justify-content:flex-end;padding-top:8px}.zl-fresh-actions:has(button[hidden]){display:none}.zl-fresh-actions .zl-button{font-size:11px}
+</style>
   </head>
   <body>
     <aside class="sidebar" aria-label="Portal sidebar (design only)">
@@ -3940,6 +3941,7 @@
                     Paste a list above to check.
                   </p>
                   <p id="zl-check-pending" class="zl-pending-check" hidden></p>
+                  <div class="zl-fresh-actions"><button type="button" id="zl-add-checked-new" class="zl-button zl-primary" hidden disabled>Add to New ZIPs</button></div>
                 </div>
               </section>
             </aside>
@@ -5116,6 +5118,7 @@
           $("zl-select-all").checked = n > 0 && count === n;
           $("zl-select-all").indeterminate = count > 0 && count < n;
           $("zl-select-all").disabled = model.busy || !n;
+          $("zl-add-checked-new").disabled = model.busy || !(checker.values?.fresh?.length);
           document
             .querySelectorAll("[data-zl-search-size]")
             .forEach((button) => {
@@ -5863,6 +5866,8 @@
             other: invalid ? [] : other,
             fresh: invalid ? [] : fresh,
           };
+          $("zl-add-checked-new").hidden = invalid || !fresh.length;
+          $("zl-add-checked-new").disabled = model.busy || invalid || !fresh.length;
         }
         function render() {
           renderNew();
@@ -6273,6 +6278,17 @@
         $("zl-source").addEventListener("change", validateAdd);
         $("zl-add").addEventListener("click", openAdd);
         $("zl-add-new").addEventListener("click", () => openAdd("new"));
+        function addCheckedToNew() {
+          if (model.busy || !model.data) return;
+          checker();
+          const zips = checker.values?.fresh || [];
+          if (!zips.length) return;
+          openAdd("new");
+          $("zl-add-zips").value = zips.join(",");
+          validateAdd();
+        }
+        $("zl-add-checked-new").addEventListener("click", addCheckedToNew);
+
         $("zl-edit-form").addEventListener("submit", (e) => {
           e.preventDefault();
           if (model.busy) return;
