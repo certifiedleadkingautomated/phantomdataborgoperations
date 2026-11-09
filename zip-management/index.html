@@ -2942,6 +2942,12 @@
       .zl-log-item summary {
         cursor: pointer;
       }
+      .zl-reset-log-tools {
+        padding: 10px;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: flex-end;
+      }
     </style>
   </head>
   <body>
@@ -3206,7 +3212,7 @@
                 class="zl-button zl-danger-outline"
                 id="zl-reset"
               >
-                Reset ZIP data (test)
+                Reset everything (test)
               </button>
             </div>
           </header>
@@ -4512,6 +4518,22 @@
           const target = $("zl-log");
           target.replaceChildren();
           $("zl-log-count").textContent = model.data.events.length;
+          if (model.data.events.length)
+            target.append(
+              el(
+                "div",
+                { class: "zl-reset-log-tools" },
+                el(
+                  "button",
+                  {
+                    type: "button",
+                    class: "zl-button zl-danger-outline",
+                    onclick: () => openErase("all"),
+                  },
+                  "Reset everything (test)",
+                ),
+              ),
+            );
           if (!model.data.events.length)
             target.append(
               el("p", { class: "zl-empty" }, "No Used ZIP deletions recorded."),
@@ -4936,7 +4958,13 @@
           $("zl-erase-description").textContent =
             kind === "row"
               ? `Erase this test history row (${row.zips.length} ZIPs) for ${ACCOUNT.name}? Its entries are permanently removed without adding an audit record. ZIPs that remain active in other rows stay Used. Existing deletion records are kept; use Reset ZIP data to erase all traces of test history.`
-              : `Reset all ZIP test data for ${ACCOUNT.name}? This permanently erases every history row, Used ZIP, deletion record and uploaded location mapping for this subaccount. It creates no deletion log. This cannot be undone.`;
+              : `Reset everything for ${ACCOUNT.name}? This permanently erases ALL Used ZIPs, ALL history rows, ALL deletion records and the uploaded ZIP location mapping for this subaccount. Nothing from this test data is kept, and no reset record is created. Other subaccounts are not affected. This cannot be undone.`;
+          $("zl-erase-title").textContent =
+            kind === "row"
+              ? "Erase history row (test)"
+              : "Reset everything (test)";
+          $("zl-confirm-erase").textContent =
+            kind === "row" ? "Erase history row" : "Reset everything";
           $("zl-erase-dialog").showModal();
         }
         async function copy(values) {
