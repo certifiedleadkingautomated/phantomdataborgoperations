@@ -2956,6 +2956,326 @@
       .zl-log-record-actions button {
         color: #98634d;
       }
+      /* Clear section boundaries and direct view controls; quieter secondary information. */
+      .zip-lab {
+        background: #fff;
+        padding: 16px;
+        border-color: #d9dfe7;
+      }
+      .zl-columns {
+        gap: 22px;
+      }
+      .zl-left,
+      .zl-right {
+        gap: 20px;
+      }
+      .zl-toolbar {
+        padding: 0 0 10px;
+        margin-bottom: 0;
+      }
+      .zl-toolbar p {
+        display: none;
+      }
+      .zl-status {
+        margin: 0 0 12px;
+        font-size: 10px;
+      }
+      .zl-section {
+        border: 1px solid #d5dce5;
+        border-radius: 9px;
+        box-shadow: 0 1px 2px #18334b06;
+      }
+      .zl-section-head {
+        padding: 10px 12px;
+        background: #f2f4f7;
+        border-bottom: 1px solid #dbe1e9;
+        min-height: 39px;
+      }
+      .zl-section-head h3 {
+        font-size: 13px;
+        color: #26364a;
+        font-weight: 650;
+      }
+      .zl-left > .zl-section:first-child {
+        border-top: 3px solid #c78d75;
+      }
+      .zl-history-section {
+        border-top: 3px solid #7fa38c;
+      }
+      .zl-right > .zl-section:nth-child(1) {
+        border-top: 3px solid #7caeb6;
+      }
+      .zl-right > .zl-section:nth-child(2) {
+        border-top: 3px solid #c78d75;
+      }
+      .zl-right > .zl-section:nth-child(3) {
+        border-top: 3px solid #94ad80;
+      }
+      .zl-used-tools {
+        padding: 9px 10px;
+        gap: 8px;
+      }
+      .zl-view-buttons {
+        display: inline-flex;
+        gap: 3px;
+        padding: 3px;
+        background: #eef0f4;
+        border-radius: 7px;
+        max-width: 100%;
+        flex-wrap: wrap;
+      }
+      .zl-view-buttons button {
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        color: #6c788a;
+        font-size: 10px;
+        font-weight: 500;
+        padding: 6px 9px;
+        min-height: 28px;
+        line-height: 1.3;
+        white-space: nowrap;
+      }
+      .zl-view-buttons button[aria-pressed="true"] {
+        background: white;
+        color: #1e344f;
+        box-shadow: 0 1px 3px #1a2c4514;
+      }
+      .zl-view-buttons button:hover:not([aria-pressed="true"]) {
+        background: #e5e9ef;
+        color: #30465f;
+      }
+      .zl-view-buttons button:focus-visible {
+        outline: 2px solid #95b1ea;
+        outline-offset: 1px;
+      }
+      .zl-used-tools > .zl-text-button {
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .zl-used-list {
+        background: #fdf5f0;
+        min-height: 65px;
+      }
+      .zl-used-search-box {
+        padding: 8px 10px;
+      }
+      .zl-used-search-box textarea {
+        min-height: 43px;
+      }
+      .zl-search-label {
+        margin-bottom: 5px;
+      }
+      .zl-selection {
+        padding: 8px 10px;
+      }
+      .zl-selection label {
+        font-size: 10px;
+      }
+      .zl-selection .zl-button {
+        font-size: 10px;
+      }
+      .zl-history-controls {
+        padding: 9px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px solid #e5e9ee;
+        background: #fff;
+        flex-wrap: wrap;
+      }
+      .zl-history-location-note {
+        padding: 0 10px 8px;
+        font-size: 10px;
+        color: #7b8797;
+        margin: 0;
+      }
+      .zl-highlight-help {
+        font-size: 10px;
+        color: #7b8797;
+        position: relative;
+      }
+      .zl-highlight-help summary {
+        cursor: pointer;
+        white-space: nowrap;
+        list-style: none;
+        padding: 5px;
+      }
+      .zl-highlight-help summary::before {
+        content: "ⓘ ";
+        color: #8794a7;
+      }
+      .zl-highlight-help .zl-legend {
+        position: absolute;
+        right: 0;
+        top: 27px;
+        z-index: 2;
+        background: white;
+        padding: 12px;
+        border: 1px solid #dce2eb;
+        border-radius: 7px;
+        box-shadow: 0 4px 15px #172f4914;
+        width: 205px;
+        display: flex;
+        gap: 8px;
+      }
+      .zl-history-row {
+        grid-template-columns: 26px minmax(0, 1fr);
+        min-height: 0;
+      }
+      .zl-row-index {
+        font-size: 9px;
+        padding-top: 12px;
+      }
+      .zl-row-body {
+        background: white;
+        padding: 10px 12px;
+      }
+      .zl-row-meta {
+        margin-bottom: 7px;
+        align-items: center;
+      }
+      .zl-row-meta > span {
+        align-items: center;
+        gap: 7px;
+      }
+      .zl-row-meta strong {
+        color: #3e516a;
+        font-size: 10px;
+      }
+      .zl-source-tag {
+        font-size: 9px;
+        background: #f1f4f8;
+        color: #8190a4;
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .zl-row-meta > .zl-text-button {
+        font-size: 9px;
+        color: #8d99aa;
+      }
+      .zl-row-meta > .zl-text-button:hover {
+        color: #97654c;
+      }
+      .zl-history-zip-area {
+        max-height: 240px;
+        overflow: auto;
+        scrollbar-width: thin;
+      }
+      .zl-history-zip-area .zl-group {
+        margin-bottom: 12px;
+        padding: 0 0 2px;
+      }
+      .zl-history-zip-area .zl-group-heading {
+        border: 0;
+        background: #f5f7f9;
+        border-radius: 4px;
+        padding: 5px 7px;
+        margin-bottom: 6px;
+      }
+      .zl-history-zip-area .zl-group-heading h4 {
+        font-size: 10px;
+        color: #52667c;
+        font-weight: 600;
+      }
+      .zl-history-zip-area .zl-group-heading .zl-count {
+        font-size: 9px;
+        color: #91a0af;
+      }
+      .zl-history-zip-area .zl-city {
+        border-left: 1px solid #dfe6eb;
+        margin-top: 8px;
+        padding-left: 8px;
+      }
+      .zl-history-zip-area .zl-city .zl-group-heading {
+        background: transparent;
+        padding: 2px 0;
+        margin-bottom: 5px;
+      }
+      .zl-history-zip-area .zl-city .zl-group-heading h4 {
+        font-weight: 500;
+        color: #7c8b9e;
+      }
+      .zl-history-chip {
+        border-color: #dbe5d5;
+        background: #f2f7ee;
+        color: #56704b;
+        max-width: 100%;
+      }
+      .zl-row-note {
+        font-size: 10px;
+        color: #758399;
+        margin-top: 6px;
+      }
+      .zl-audit {
+        border-top: 0;
+      }
+      .zl-audit summary {
+        font-size: 11px;
+        padding: 11px 12px;
+        background: #f7f8fa;
+      }
+      .zl-result {
+        min-height: 50px;
+      }
+      .zl-result-red .zl-result-heading,
+      .zl-result-green .zl-result-heading {
+        justify-content: flex-end;
+        margin-bottom: 3px;
+      }
+      .zl-result-red .zl-result-heading > span,
+      .zl-result-green .zl-result-heading > span {
+        display: none;
+      }
+      .zl-check-input textarea {
+        min-height: 80px;
+      }
+      .zl-footer {
+        padding-top: 9px;
+        margin-top: 16px;
+        color: #9aa4b2;
+      }
+      .zl-geo-status {
+        font-size: 10px;
+      }
+      @media (max-width: 1050px) {
+        .zl-used-tools {
+          flex-wrap: wrap;
+        }
+        .zl-used-tools .zl-view-buttons {
+          flex: 1;
+        }
+        .zl-view-buttons button {
+          padding: 6px 7px;
+        }
+        .zl-columns {
+          gap: 18px;
+        }
+      }
+      @media (max-width: 850px) {
+        .zl-columns {
+          gap: 20px;
+        }
+        .zl-view-buttons button {
+          font-size: 10px;
+          padding: 6px 8px;
+        }
+        .zl-history-zip-area {
+          max-height: 210px;
+        }
+        .zl-section-head {
+          padding: 10px;
+        }
+        .zl-highlight-help .zl-legend {
+          right: 0;
+        }
+      }
+      #zl-history {
+        max-height: 540px;
+        overflow: auto;
+        scrollbar-width: thin;
+      }
     </style>
   </head>
   <body>
@@ -3230,27 +3550,43 @@
             <div class="zl-left">
               <section class="zl-section" aria-labelledby="zl-used-heading">
                 <header class="zl-section-head">
-                  <h3 id="zl-used-heading">ZIP Used</h3>
+                  <h3 id="zl-used-heading">Used ZIPs</h3>
                   <span id="zl-used-count" class="zl-count">0</span>
                 </header>
                 <div class="zl-used-tools">
-                  <label
-                    >Display<select id="zl-group">
-                      <option value="list">Unique, sorted ZIP list</option>
-                      <option value="state">By state</option>
-                      <option value="city">By state and city</option>
-                    </select></label
-                  ><button
-                    type="button"
-                    class="zl-text-button"
-                    id="zl-copy-used"
+                  <div
+                    id="zl-group"
+                    class="zl-view-buttons"
+                    role="group"
+                    aria-label="Used ZIP display"
                   >
-                    Copy ZIPs
+                    <button type="button" data-view="list" aria-pressed="true">
+                      List of Individual ZIPs</button
+                    ><button
+                      type="button"
+                      data-view="state"
+                      aria-pressed="false"
+                    >
+                      By State</button
+                    ><button
+                      type="button"
+                      data-view="city"
+                      aria-pressed="false"
+                    >
+                      By City
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    id="zl-copy-used"
+                    class="zl-text-button"
+                  >
+                    Copy all
                   </button>
                 </div>
                 <div class="zl-used-search-box">
                   <div class="zl-search-label">
-                    <label for="zl-used-search">Find a ZIP list</label
+                    <label for="zl-used-search">Find ZIPs</label
                     ><button
                       type="button"
                       id="zl-clear-used-search"
@@ -3294,7 +3630,7 @@
                 aria-labelledby="zl-history-heading"
               >
                 <header class="zl-section-head">
-                  <h3 id="zl-history-heading">ZIP Used History</h3>
+                  <h3 id="zl-history-heading">Used ZIP history</h3>
                   <div class="zl-head-actions">
                     <span id="zl-history-count" class="zl-count">0 rows</span
                     ><button
@@ -3306,18 +3642,46 @@
                     </button>
                   </div>
                 </header>
-                <p class="zl-history-help">
-                  Paste one list per row. Used ZIPs above are the unique, sorted
-                  ZIPs still active in these records.
-                </p>
-                <div class="zl-legend">
-                  <span
-                    ><i class="zl-key duplicate"></i>Already used when
-                    added</span
-                  ><span
-                    ><i class="zl-key removed"></i>Deleted from Used ZIPs</span
+                <div class="zl-history-controls">
+                  <div
+                    id="zl-history-view"
+                    class="zl-view-buttons"
+                    role="group"
+                    aria-label="History ZIP display"
                   >
+                    <button type="button" data-view="list" aria-pressed="true">
+                      ZIP List</button
+                    ><button
+                      type="button"
+                      data-view="state"
+                      aria-pressed="false"
+                    >
+                      By State</button
+                    ><button
+                      type="button"
+                      data-view="city"
+                      aria-pressed="false"
+                    >
+                      By City
+                    </button>
+                  </div>
+                  <details class="zl-highlight-help">
+                    <summary>Highlights</summary>
+                    <div class="zl-legend">
+                      <span
+                        ><i class="zl-key duplicate"></i>Already used when
+                        added</span
+                      ><span><i class="zl-key removed"></i>Deleted</span>
+                    </div>
+                  </details>
                 </div>
+                <p
+                  id="zl-history-location-note"
+                  class="zl-history-location-note"
+                  hidden
+                >
+                  Upload uszips.csv to group ZIPs by location.
+                </p>
                 <div id="zl-history"></div>
               </section>
               <details class="zl-section zl-audit">
@@ -3331,7 +3695,7 @@
             <aside class="zl-right" aria-label="ZIP checker">
               <section class="zl-section">
                 <header class="zl-section-head">
-                  <h3>ZIP Check</h3>
+                  <h3>Check ZIPs</h3>
                   <span id="zl-check-count" class="zl-count">0</span>
                 </header>
                 <div class="zl-check-input">
@@ -3354,7 +3718,7 @@
               </section>
               <section class="zl-section">
                 <header class="zl-section-head">
-                  <h3>ZIP Check: Already Used</h3>
+                  <h3>Already used</h3>
                   <span id="zl-match-count" class="zl-count">0</span>
                 </header>
                 <div class="zl-result zl-result-red">
@@ -3390,7 +3754,7 @@
               </section>
               <section class="zl-section">
                 <header class="zl-section-head">
-                  <h3>ZIP Check: Not Used</h3>
+                  <h3>Not used</h3>
                   <span id="zl-fresh-count" class="zl-count">0</span>
                 </header>
                 <div class="zl-result zl-result-green">
@@ -3750,7 +4114,7 @@
             );
             const members = query(
               db,
-              `SELECT z.*,d.mode AS deleted_mode,d.group_label AS deleted_group,d.comment AS deleted_comment,d.created_at AS deleted_at FROM history_zips z JOIN history_rows h ON h.id=z.row_id LEFT JOIN deletion_events d ON d.id=z.deleted_event_id AND d.subaccount_id=h.subaccount_id WHERE h.subaccount_id=? ORDER BY z.zip`,
+              `SELECT z.*,p.city,p.state_name,d.mode AS deleted_mode,d.group_label AS deleted_group,d.comment AS deleted_comment,d.created_at AS deleted_at FROM history_zips z JOIN history_rows h ON h.id=z.row_id LEFT JOIN deletion_events d ON d.id=z.deleted_event_id AND d.subaccount_id=h.subaccount_id LEFT JOIN zip_places p ON p.zip=z.zip AND p.subaccount_id=h.subaccount_id WHERE h.subaccount_id=? ORDER BY z.zip`,
               [account.id],
             );
             const byRow = new Map();
@@ -4259,8 +4623,8 @@
               button.disabled =
                 model.busy || Number(button.dataset.zlSearchSize) === 0;
             });
-          $("zl-group").disabled =
-            model.busy || !!$("zl-used-search").value.trim();
+          updateViewButtons("zl-group", model.usedView || "list");
+          updateViewButtons("zl-history-view", model.historyView || "list");
         }
         function usedChip(z) {
           return el(
@@ -4319,9 +4683,96 @@
               : null,
           );
         }
+        function updateViewButtons(container, selected) {
+          $(container)
+            .querySelectorAll("[data-view]")
+            .forEach((button) => {
+              button.setAttribute(
+                "aria-pressed",
+                String(button.dataset.view === selected),
+              );
+              button.disabled = model.busy;
+            });
+        }
+        function zipCollection(items, kind, makeChip, allowDelete = false) {
+          if (kind === "list") return chips(items.map(makeChip));
+          const result = el("div", { class: "zl-zip-groups" });
+          const heading = (title, values, mode, state, city) =>
+            allowDelete
+              ? groupHeading(title, values, mode, state, city)
+              : el(
+                  "div",
+                  { class: "zl-group-heading" },
+                  el("h4", {}, title),
+                  el("span", { class: "zl-count" }, values.length),
+                );
+          if (kind === "city") {
+            const cities = new Map();
+            for (const zip of items) {
+              const state = zip.state_name || "",
+                city = zip.city || "";
+              const key = JSON.stringify([state, city]);
+              if (!cities.has(key)) cities.set(key, { state, city, zips: [] });
+              cities.get(key).zips.push(zip);
+            }
+            const groups = [...cities.values()].sort((a, b) =>
+              !a.state
+                ? b.state
+                  ? 1
+                  : 0
+                : !b.state
+                  ? -1
+                  : a.state.localeCompare(b.state) ||
+                    a.city.localeCompare(b.city),
+            );
+            for (const group of groups) {
+              const title =
+                group.city && group.state
+                  ? group.city + ", " + group.state
+                  : group.state
+                    ? group.state + " · Unmapped city"
+                    : "Unmapped";
+              result.append(
+                el(
+                  "section",
+                  { class: "zl-group" },
+                  heading(
+                    title,
+                    group.zips,
+                    "city",
+                    group.state,
+                    group.city || "Unmapped city",
+                  ),
+                  chips(group.zips.map(makeChip)),
+                ),
+              );
+            }
+            return result;
+          }
+          const states = new Map();
+          for (const zip of items) {
+            const state = zip.state_name || "";
+            if (!states.has(state)) states.set(state, []);
+            states.get(state).push(zip);
+          }
+          for (const [state, zips] of [...states].sort((a, b) =>
+            !a[0] ? (b[0] ? 1 : 0) : !b[0] ? -1 : a[0].localeCompare(b[0]),
+          ))
+            result.append(
+              el(
+                "section",
+                { class: "zl-group" },
+                heading(state || "Unmapped", zips, "state", state),
+                chips(zips.map(makeChip)),
+              ),
+            );
+          return result;
+        }
+
         function renderUsedSearch(box, data) {
           const text = $("zl-used-search").value.trim();
           const feedbackBox = $("zl-used-search-feedback");
+          $("zl-clear-used-search").hidden = !text;
           if (!text) {
             feedbackBox.replaceChildren();
             return false;
@@ -4378,7 +4829,12 @@
                   action,
                 ),
                 list.length
-                  ? chips(list.map(usedChip))
+                  ? zipCollection(
+                      list,
+                      model.usedView || "list",
+                      usedChip,
+                      false,
+                    )
                   : el("p", { class: "zl-search-empty" }, emptyText),
               ),
             );
@@ -4424,62 +4880,25 @@
         function renderUsed() {
           const box = $("zl-used"),
             data = model.data.used,
-            kind = $("zl-group").value;
+            kind = model.usedView || "list";
           box.replaceChildren();
-          if (renderUsedSearch(box, data)) {
-            /* Search results use the same selectable ZIP chips. */
-          } else if (!data.length)
+          if (!renderUsedSearch(box, data))
             box.append(
-              el(
-                "p",
-                { class: "zl-empty" },
-                "No used ZIPs yet. Add a ZIP Used History row below.",
-              ),
+              data.length
+                ? zipCollection(data, kind, usedChip, true)
+                : el(
+                    "p",
+                    { class: "zl-empty" },
+                    "Add a history entry to start.",
+                  ),
             );
-          else if (kind === "list") box.append(chips(data.map(usedChip)));
-          else {
-            const states = new Map();
-            for (const z of data) {
-              const key = z.state_name || "";
-              if (!states.has(key)) states.set(key, []);
-              states.get(key).push(z);
-            }
-            for (const [state, zips] of [...states].sort((a, b) =>
-              (a[0] || "~").localeCompare(b[0] || "~"),
-            )) {
-              const block = el("section", { class: "zl-group" });
-              block.append(
-                groupHeading(state || "Unmapped state", zips, "state", state),
-              );
-              if (kind === "state") block.append(chips(zips.map(usedChip)));
-              else {
-                const cities = new Map();
-                for (const z of zips) {
-                  const key = z.city || "Unmapped city";
-                  if (!cities.has(key)) cities.set(key, []);
-                  cities.get(key).push(z);
-                }
-                for (const [city, items] of [...cities].sort((a, b) =>
-                  a[0].localeCompare(b[0]),
-                )) {
-                  block.append(
-                    el(
-                      "section",
-                      { class: "zl-city" },
-                      groupHeading(city, items, "city", state, city),
-                      chips(items.map(usedChip)),
-                    ),
-                  );
-                }
-              }
-              box.append(block);
-            }
-          }
           $("zl-used-count").textContent = data.length;
           selectionControls();
+          const unknown = data.filter((z) => !z.state_name || !z.city).length;
+          $("zl-geo-status").hidden = kind === "list" || !unknown;
           $("zl-geo-status").textContent = model.data.places
-            ? `${model.data.places.toLocaleString()} ZIP locations loaded for this subaccount. Unmatched ZIPs remain under Unmapped.`
-            : "Upload a CSV with zip, city and state_name to group ZIPs by location.";
+            ? `${unknown} ZIPs have no location match.`
+            : "Upload uszips.csv to group by location.";
         }
         function historyChip(z) {
           let title = z.already_used
@@ -4506,6 +4925,10 @@
         }
         function renderHistory() {
           const target = $("zl-history");
+          const kind = model.historyView || "list";
+          updateViewButtons("zl-history-view", kind);
+          $("zl-history-location-note").hidden =
+            kind === "list" || model.data.places > 0;
           target.replaceChildren();
           $("zl-history-count").textContent = model.data.rows.length + " rows";
           if (!model.data.rows.length)
@@ -4513,7 +4936,7 @@
               el(
                 "p",
                 { class: "zl-empty" },
-                "No history records. Add a list from a contact request or paste a GHL contact ZIP list.",
+                "No history yet. Add a ZIP list or paste spreadsheet rows.",
               ),
             );
           model.data.rows.forEach((r, i) =>
@@ -4536,9 +4959,17 @@
                       "span",
                       {},
                       el("strong", {}, formatDate(r.recorded_on)),
-                      r.source === "ghl"
-                        ? "GHL contact list (manual)"
-                        : "Contacts requested",
+                      el(
+                        "span",
+                        {
+                          class: "zl-source-tag",
+                          title:
+                            r.source === "ghl"
+                              ? "Pasted from GHL contacts"
+                              : "Contacts requested",
+                        },
+                        r.source === "ghl" ? "GHL" : "Request",
+                      ),
                       `${r.zips.length} ZIPs`,
                     ),
                     el(
@@ -4551,7 +4982,11 @@
                       "Erase row (test)",
                     ),
                   ),
-                  chips(r.zips.map(historyChip)),
+                  el(
+                    "div",
+                    { class: "zl-history-zip-area" },
+                    zipCollection(r.zips, kind, historyChip, false),
+                  ),
                   r.comment
                     ? el("p", { class: "zl-row-note" }, r.comment)
                     : null,
@@ -4654,6 +5089,10 @@
               .map((z) => z.zip)
               .filter((z) => !input.has(z));
           feedback($("zl-check-feedback"), p);
+          $("zl-check-feedback").hidden = !$("zl-check").value.trim();
+          $("zl-clear-check").hidden = !$("zl-check").value.trim();
+          $("zl-copy-matches").hidden = !$("zl-check").value.trim();
+          $("zl-copy-fresh").hidden = !$("zl-check").value.trim();
           $("zl-check-count").textContent = p.zips.length;
           const invalid = !!p.invalid.length;
           for (const [id, count] of [
@@ -4666,7 +5105,7 @@
           $("zl-matches").textContent = invalid
             ? "Correct invalid entries above before using these results."
             : waiting
-              ? "Paste a list above to check."
+              ? "—"
               : matches.join(", ") ||
                 "None of the pasted ZIPs are currently used.";
           $("zl-other").textContent = invalid
@@ -4675,7 +5114,7 @@
           $("zl-fresh").textContent = invalid
             ? "Correct invalid entries above before using these results."
             : waiting
-              ? "Paste a list above to check."
+              ? "—"
               : fresh.join(", ") || "All pasted ZIPs are currently used.";
           checker.values = {
             matches: invalid ? [] : matches,
@@ -4688,8 +5127,8 @@
           renderHistory();
           renderLog();
           checker();
-          $("zl-status").textContent =
-            `Saved in this browser · ${ACCOUNT.name} only`;
+          $("zl-status").textContent = "";
+          $("zl-status").hidden = true;
         }
         function setAddMode(mode) {
           model.addMode = mode;
@@ -5104,7 +5543,22 @@
         );
         $("zl-reset").addEventListener("click", () => openErase("all"));
         $("zl-refresh").addEventListener("click", () => void refresh());
-        $("zl-group").addEventListener("change", renderUsed);
+        $("zl-group")
+          .querySelectorAll("[data-view]")
+          .forEach((button) =>
+            button.addEventListener("click", () => {
+              model.usedView = button.dataset.view;
+              renderUsed();
+            }),
+          );
+        $("zl-history-view")
+          .querySelectorAll("[data-view]")
+          .forEach((button) =>
+            button.addEventListener("click", () => {
+              model.historyView = button.dataset.view;
+              renderHistory();
+            }),
+          );
         $("zl-used-search").addEventListener("input", () => {
           model.selected.clear();
           renderUsed();
