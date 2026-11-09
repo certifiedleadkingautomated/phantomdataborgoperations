@@ -1,0 +1,4191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>James Clement · ZIP prototype</title>
+    <style>
+:root {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  color: #17243b;
+  background: #f5f6f9;
+  font-size: 14px;
+  --blue: #1948d1;
+  --border: #dfe4ed;
+  --muted: #66758d;
+  --light: #f8f9fc;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button,
+input,
+textarea,
+select {
+  outline-offset: 3px;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid #91acf3;
+}
+input[type="checkbox"] {
+  accent-color: var(--blue);
+  width: 15px;
+  height: 15px;
+  flex: none;
+  margin: 1px 0;
+}
+textarea {
+  resize: vertical;
+  min-height: 65px;
+  line-height: 1.6;
+}
+input:not([type="checkbox"]),
+select,
+textarea {
+  width: 100%;
+  border: 1px solid #d3dbe8;
+  border-radius: 6px;
+  padding: 9px 11px;
+  color: #17243b;
+  background: white;
+}
+textarea {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 21px;
+  letter-spacing: -0.45px;
+  font-weight: 650;
+}
+h2 {
+  font-size: 17px;
+  letter-spacing: -0.25px;
+  font-weight: 650;
+}
+h3 {
+  font-size: 14px;
+  font-weight: 650;
+}
+label {
+  cursor: pointer;
+}
+fieldset {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.muted,
+.small-muted {
+  color: var(--muted);
+}
+.small-muted {
+  font-size: 11px;
+}
+.lab-strip {
+  background: #172c53;
+  color: #dce6fb;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 7px 24px;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+.lab-strip strong {
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.lab-dot,
+.db-dot {
+  display: inline-block;
+  border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  background: #80caa1;
+}
+.topbar {
+  min-height: 55px;
+  padding: 9px 24px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 12px;
+  color: #34517e;
+}
+.breadcrumbs label {
+  white-space: nowrap;
+  color: #23334d;
+}
+.breadcrumbs select {
+  font-size: 12px;
+  max-width: 270px;
+  padding: 7px 9px;
+}
+.top-right {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+main {
+  max-width: 1500px;
+  margin: auto;
+  padding: 18px 24px 28px;
+}
+.back-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: #426089;
+  margin-bottom: 20px;
+}
+.outline-label {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 5px;
+  background: white;
+  color: #293c5a;
+}
+.account-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 13px;
+}
+.heading-actions,
+.button-row,
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.status-badge {
+  background: #a9edbd;
+  color: #154d2a;
+  border: 1px solid #8fd8a5;
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 12px;
+}
+.flow-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.flow-label strong {
+  font-weight: 500;
+}
+.identity-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 13px;
+  margin-bottom: 15px;
+  font-size: 12px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.65px;
+  color: #566982;
+  margin-bottom: 6px;
+}
+.demo-badge {
+  display: inline-block;
+  color: #4f627d;
+  background: #f2f5fa;
+  border: 1px solid #dae2ee;
+  border-radius: 5px;
+  padding: 3px 7px;
+  font-size: 11px;
+}
+.account-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: fit-content;
+  background: #edf0f5;
+  padding: 3px;
+  border-radius: 7px;
+  margin-bottom: 9px;
+}
+.account-tabs button {
+  border: 0;
+  background: transparent;
+  padding: 7px 12px;
+  color: #52627d;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.account-tabs button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.account-tabs .active {
+  background: white;
+  box-shadow: 0 1px 3px #162a481c;
+  color: #16243a;
+  font-weight: 550;
+}
+.workspace {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px #17335208;
+  overflow: hidden;
+}
+.workspace-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 20px 22px 17px;
+}
+.workspace-heading p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 5px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  border-radius: 5px;
+  border: 1px solid #dce3ed;
+  padding: 3px 7px;
+  background: #f6f8fb;
+  color: #52637b;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.tag.blue {
+  background: #f0f5ff;
+  border-color: #d5e2ff;
+  color: #355bb2;
+}
+.tag.green {
+  background: #edf8f1;
+  border-color: #cfe7d7;
+  color: #32724a;
+}
+.tag.gray {
+  background: #f5f6f8;
+  color: #788497;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  min-height: 35px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
+.button.primary {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: white;
+  box-shadow: 0 1px 2px #1733521a;
+}
+.button.primary:hover:not(:disabled) {
+  background: #163eb1;
+}
+.button.secondary {
+  background: white;
+  border-color: #d4dce9;
+  color: #263d60;
+  box-shadow: 0 1px 2px #1733520a;
+}
+.button.secondary:hover:not(:disabled) {
+  background: #f7f9fd;
+}
+.button.ghost {
+  background: transparent;
+  color: #526887;
+}
+.button.ghost:hover {
+  background: #f3f6fb;
+}
+.button.small {
+  min-height: 30px;
+  font-size: 11px;
+  padding: 6px 9px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 0 22px 18px;
+}
+.stat {
+  border: 1px solid #e4e8ef;
+  border-radius: 7px;
+  padding: 13px 15px;
+  background: #fbfcfe;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  background: #edf3ff;
+  color: #4168bd;
+  border-radius: 7px;
+  font-size: 16px;
+}
+.stat:nth-child(2) .stat-icon {
+  background: #fff5eb;
+  color: #b98043;
+}
+.stat:nth-child(3) .stat-icon {
+  background: #edf7f1;
+  color: #52836b;
+}
+.stat strong {
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.stat p {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.workspace-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid var(--border);
+}
+.inner-tabs {
+  display: flex;
+  gap: 24px;
+}
+.inner-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 14px 0 12px;
+  font-size: 12px;
+  color: #64728a;
+  white-space: nowrap;
+}
+.inner-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--blue);
+  color: #244fba;
+  font-weight: 600;
+}
+.inner-tabs span {
+  padding: 1px 5px;
+  background: #eef1f7;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-left: 4px;
+}
+.section-toolbar {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid #edf0f5;
+}
+.filter-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dce2ed;
+  border-radius: 6px;
+  padding: 0 9px;
+  max-width: 330px;
+  width: 100%;
+  color: #788aa3;
+}
+.filter-field input {
+  border: 0;
+  font-size: 12px;
+  padding: 8px;
+  background: transparent;
+}
+.select-all {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: #5f6e84;
+}
+.arrival {
+  padding: 18px 22px;
+  border-bottom: 1px solid #edf0f5;
+}
+.arrival-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 11px;
+}
+.arrival-date {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.arrival-date .count {
+  font-size: 10px;
+  font-weight: 400;
+  color: #7c879a;
+}
+.arrival-notes {
+  color: #67768d;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.destination-tags {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-width: 52%;
+}
+.zip-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.zip-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #dbe2ef;
+  border-radius: 5px;
+  background: #fbfcff;
+  padding: 6px 8px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  transition: background 0.12s;
+}
+.zip-chip:has(input:checked) {
+  border-color: #8aa7ed;
+  background: #eff4ff;
+  color: #1843a2;
+}
+.zip-chip:hover {
+  border-color: #9aaed4;
+}
+.selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 15px 22px;
+  background: #fafbfe;
+}
+.selection-bar strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.selection-bar p {
+  font-size: 11px;
+  color: #78869b;
+  margin-top: 4px;
+}
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  min-height: 230px;
+  text-align: center;
+}
+.empty-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  background: #f0f4fb;
+  border: 1px solid #e2e8f2;
+  border-radius: 12px;
+  font-size: 21px;
+  color: #6e86b0;
+  margin-bottom: 13px;
+}
+.empty-state h3 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.empty-state p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 440px;
+}
+.empty-state .button {
+  margin-top: 15px;
+}
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #7d8ba1;
+  font-size: 10px;
+  padding: 13px 1px;
+  line-height: 1.6;
+}
+code {
+  font-size: 10px;
+}
+.history-intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 22px 12px;
+  align-items: flex-start;
+}
+.history-intro p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-top: 5px;
+  max-width: 650px;
+}
+.used-summary {
+  padding: 0 22px;
+}
+.used-summary details {
+  background: #f9fafc;
+  border: 1px solid #e2e7ef;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+.used-summary summary {
+  font-size: 11px;
+  cursor: pointer;
+  color: #5e6c82;
+}
+.zip-text {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.request-card {
+  margin: 0 22px 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.request-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #edf0f5;
+  background: #fafbfe;
+}
+.request-card header strong {
+  font-size: 12px;
+}
+.request-card header span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.request-card .request-body {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 18px;
+}
+.request-body h4 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #718098;
+  margin: 0 0 7px;
+}
+.request-body .destination-tags {
+  max-width: 100%;
+  justify-content: flex-start;
+}
+.request-comments {
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin-top: 12px;
+}
+.request-card details {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #718098;
+}
+.request-card summary {
+  cursor: pointer;
+}
+.source-note {
+  padding: 6px 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.checker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  padding: 24px;
+}
+.checker-input > p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 7px 0 18px;
+}
+.checker-input > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.check-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.check-card {
+  border: 1px solid #dde4ee;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.check-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f8fafd;
+  border-bottom: 1px solid #e6ebf2;
+}
+.check-card h4 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0;
+}
+.check-card p {
+  padding: 12px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  max-height: 150px;
+  overflow: auto;
+}
+.check-card.used {
+  border-color: #efd9c8;
+}
+.check-card.used header {
+  background: #fff7f0;
+  border-color: #f2e3d8;
+}
+.check-card.fresh {
+  border-color: #cce4d5;
+}
+.check-card.fresh header {
+  background: #f1faf4;
+  border-color: #dcece2;
+}
+.check-card footer {
+  padding: 0 12px 12px;
+}
+.notice {
+  padding: 12px 15px;
+  border: 1px solid;
+  border-radius: 7px;
+  font-size: 12px;
+  margin: 12px 0;
+  line-height: 1.6;
+}
+.notice p {
+  margin-top: 4px;
+}
+.notice.error {
+  border-color: #f0c4c1;
+  background: #fff5f4;
+  color: #9b3931;
+}
+.notice.warning {
+  border-color: #e8d3a4;
+  background: #fffbf0;
+  color: #806128;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+.notice[hidden] {
+  display: none;
+}
+dialog {
+  border: 1px solid #d5ddea;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 590px;
+  width: calc(100% - 28px);
+  max-height: 92vh;
+  color: #17243b;
+  box-shadow: 0 20px 80px #071c4a40;
+}
+dialog::backdrop {
+  background: #14233a80;
+  backdrop-filter: blur(2px);
+}
+dialog form {
+  padding: 24px;
+  overflow: auto;
+}
+.dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.dialog-heading h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+.dialog-heading .eyebrow {
+  font-size: 9px;
+  color: #5577b2;
+  letter-spacing: 1px;
+}
+.icon-button {
+  border: 0;
+  background: transparent;
+  font-size: 25px;
+  color: #77869c;
+  padding: 0 2px;
+  line-height: 1;
+}
+.dialog-description {
+  font-size: 12px;
+  color: #687891;
+  line-height: 1.7;
+  margin-bottom: 19px;
+}
+.form-field {
+  margin-bottom: 15px;
+}
+.form-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+}
+.required {
+  color: #b15d58;
+  font-weight: 400;
+}
+.optional {
+  font-weight: 400;
+  color: #8190a5;
+  font-size: 11px;
+  margin-left: 5px;
+}
+.helper {
+  font-size: 11px !important;
+  color: #7b889d !important;
+  line-height: 1.65 !important;
+  margin: 6px 0 !important;
+}
+.input-feedback {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #718299;
+  overflow-wrap: anywhere;
+}
+.input-feedback .invalid {
+  color: #b0443d;
+}
+.input-feedback .positive {
+  color: #427b59;
+}
+.destinations {
+  margin: 0 0 16px;
+}
+.destinations legend {
+  font-size: 12px;
+}
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 9px 0;
+}
+.text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3c64b5;
+  font-size: 11px;
+}
+.account-options {
+  border: 1px solid #dfe5ef;
+  border-radius: 7px;
+  overflow: auto;
+  max-height: 180px;
+}
+.account-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid #edf0f5;
+}
+.account-option:last-child {
+  border: 0;
+}
+.account-option .industry {
+  margin-left: auto;
+  color: #8a96a8;
+  font-size: 10px;
+}
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #e8edf4;
+  padding-top: 15px;
+  margin-top: 17px;
+}
+.selected-review {
+  background: #f5f8ff;
+  border: 1px solid #dce5f9;
+  border-radius: 7px;
+  padding: 12px;
+  margin: 0 0 16px;
+}
+.selected-review > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.selected-review .zip-text {
+  max-height: 95px;
+  overflow: auto;
+}
+.destination-review {
+  background: #fffaf0;
+  border: 1px solid #eee0bd;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 10px;
+  color: #8a6b2f;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.acknowledgement {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  margin-top: 9px;
+}
+.form-error {
+  color: #aa3731;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+#toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9;
+  padding: 12px 17px;
+  background: #173757;
+  color: white;
+  border: 1px solid #3c5773;
+  border-radius: 8px;
+  box-shadow: 0 4px 18px #14263b20;
+  max-width: 400px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 760px) {
+  .topbar {
+    align-items: flex-start;
+    padding: 10px 15px;
+  }
+  .breadcrumbs {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .breadcrumbs select {
+    max-width: 240px;
+  }
+  .top-right {
+    display: none;
+  }
+  main {
+    padding: 15px 12px;
+  }
+  .lab-strip {
+    padding: 7px 14px;
+  }
+  .lab-strip > span:last-child {
+    font-size: 10px;
+  }
+  .account-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .identity-card {
+    padding: 12px;
+    font-size: 11px;
+  }
+  .account-tabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow: auto;
+  }
+  .account-tabs button {
+    padding: 8px 11px;
+  }
+  .workspace-heading {
+    padding: 17px 15px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .title-row {
+    flex-wrap: wrap;
+  }
+  .stats {
+    padding: 0 15px 15px;
+    gap: 7px;
+  }
+  .stat {
+    padding: 10px;
+    gap: 0;
+  }
+  .stat-icon {
+    display: none;
+  }
+  .stat strong {
+    font-size: 21px;
+  }
+  .stat p {
+    font-size: 10px;
+  }
+  .workspace-nav {
+    padding: 0 15px;
+  }
+  .workspace-nav > .small-muted {
+    display: none;
+  }
+  .inner-tabs {
+    gap: 20px;
+  }
+  .inner-tabs button {
+    font-size: 11px;
+  }
+  .section-toolbar {
+    padding: 12px 15px;
+    flex-wrap: wrap;
+  }
+  .filter-field {
+    max-width: none;
+  }
+  .arrival {
+    padding: 15px;
+  }
+  .arrival-top {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .destination-tags {
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+  .selection-bar {
+    padding: 13px 15px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .selection-bar p {
+    line-height: 1.7;
+  }
+  .selection-bar > .button-row {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .history-intro {
+    padding: 17px 15px;
+    flex-direction: column;
+  }
+  .used-summary {
+    padding: 0 15px;
+  }
+  .request-card {
+    margin: 0 15px 12px;
+  }
+  .request-card .request-body {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .checker {
+    grid-template-columns: 1fr;
+    padding: 17px 15px;
+    gap: 20px;
+  }
+  .page-footer {
+    flex-direction: column;
+    gap: 3px;
+    font-size: 9px;
+  }
+  .notice.warning {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  dialog form {
+    padding: 20px;
+  }
+  .dialog-heading h2 {
+    font-size: 19px;
+  }
+  .dialog-footer {
+    flex-wrap: wrap;
+  }
+  .heading-actions {
+    flex-wrap: wrap;
+  }
+}
+#new-scope {
+  width: auto;
+  font-size: 11px;
+  max-width: 190px;
+  padding: 8px;
+}
+.clipboard-helper {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+}
+
+/* Portal shell matches the supplied 1439 × 739 reference. It is decorative. */
+:root {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #020817;
+  background: #f5f6f8;
+  --blue: #1d4ed8;
+  --border: #dce1eb;
+  --muted: #5f6e86;
+}
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 224px;
+  background: #08091e;
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+.brand {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  font-size: 14px;
+}
+.brand img {
+  width: 39px;
+  height: 44px;
+  object-fit: contain;
+}
+.brand strong {
+  font-size: 14px;
+}
+.collapse-chevron {
+  margin-left: auto;
+  margin-right: 12px;
+  color: #d0d3de;
+  font-size: 24px;
+  font-weight: 300;
+}
+.sidebar-content {
+  padding: 0 8px;
+  flex: 1;
+  overflow: auto;
+}
+.sidebar-label {
+  font-size: 12px;
+  color: #9195aa;
+  margin: 2px 12px 7px;
+  line-height: 18px;
+}
+.sidebar-label:not(:first-child) {
+  margin-top: 18px;
+}
+.sidebar-item {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.sidebar-item svg {
+  width: 18px;
+  height: 18px;
+  color: #d4d5e1;
+  flex-shrink: 0;
+}
+.sidebar-item.selected {
+  height: 36px;
+  background: #1b1c36;
+  border-left: 2px solid #4780ff;
+  padding-left: 12px;
+  font-weight: 600;
+  margin: 2px 0;
+}
+.nav-badge {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #1e1f39;
+}
+.sidebar-user {
+  height: 61px;
+  flex-shrink: 0;
+  border-top: 1px solid #28293c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+}
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #20213b;
+  display: grid;
+  place-items: center;
+  font-weight: bold;
+}
+.sidebar-user p {
+  font-size: 12px;
+  color: #9296a7;
+  margin-top: 2px;
+}
+.user-chevron {
+  margin-left: auto;
+  color: #cdd1de;
+}
+.portal-page {
+  margin-left: 224px;
+  min-height: 100vh;
+}
+.portal-topbar {
+  height: 48px;
+  border-bottom: 1px solid #dce1eb;
+  background: #fff;
+  padding: 0 35px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.portal-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #506285;
+}
+.crumb-arrow {
+  color: #8992a4;
+}
+.switch-design {
+  color: #020817;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  margin-left: 8px;
+}
+.switch-design svg {
+  width: 16px;
+  height: 16px;
+}
+.search-design {
+  width: 224px;
+  height: 36px;
+  border: 1px solid #cfd5e0;
+  box-shadow: 0 1px 2px #0002;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  font-size: 12px;
+  color: #52617c;
+  background: #f6f7f9;
+}
+.search-design svg {
+  width: 16px;
+  height: 16px;
+}
+.search-design kbd {
+  font-size: 9px;
+  border: 1px solid #e0e4eb;
+  border-radius: 3px;
+  background: white;
+  padding: 1px 5px;
+  margin-left: auto;
+  color: #67748b;
+}
+main {
+  padding: 16px 20px 28px;
+  max-width: none;
+  margin: 0;
+}
+.portal-back {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #516581;
+  margin-bottom: 32px;
+  padding-left: 12px;
+}
+.shell-button {
+  height: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #cfd5e0;
+  border-radius: 6px;
+  background: #f7f8fa;
+  box-shadow: 0 1px 2px #0002;
+  color: #020817;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.shell-button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.portal-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 32px;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+.portal-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.portal-title h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.industry-badge {
+  width: 27px;
+  height: 27px;
+  border: 1px solid #dce1eb;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  font-size: 16px;
+}
+.portal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-control {
+  height: 32px;
+  border: 1px solid #cfd5e0;
+  border-radius: 6px;
+  background: #f7f8fa;
+  box-shadow: 0 1px 2px #0002;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  color: #788192;
+}
+.status-control span:first-child {
+  background: #98edba;
+  color: #07542c;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.flow-design,
+.verified-design {
+  font-size: 12px;
+  color: #586b87;
+}
+.shell-primary {
+  background: #1c46c8;
+  border-color: #1c46c8;
+  color: #fff;
+  font-weight: 600;
+}
+.manage-design {
+  gap: 16px;
+}
+.portal-identity {
+  height: 64px;
+  border: 1px solid #dce1eb;
+  border-radius: 8px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 14px 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.portal-identity p {
+  font-size: 10px;
+  color: #52617c;
+  margin-bottom: 5px;
+}
+.portal-identity > div:nth-child(2) {
+  padding-left: 17px;
+}
+.verified-pill {
+  color: #008044;
+  background: #e8f5ec;
+  border: 1px solid #a0d7b6;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 12px;
+}
+.portal-tabs {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  background: #f0f1f4;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.portal-tabs span {
+  font-size: 14px;
+  color: #4c5e79;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+.portal-tabs .active {
+  background: #f8f9fb;
+  color: #020817;
+  box-shadow: 0 1px 3px #0002;
+}
+.workspace {
+  border-radius: 8px;
+  border-color: #dce1eb;
+  box-shadow: 0 1px 2px #00000008;
+}
+.zip-card-header {
+  height: 53px;
+  border-bottom: 1px solid #dce1eb;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.zip-card-header h2 {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.zip-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.shell-text-button {
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  color: #020817;
+  padding: 4px 0;
+}
+.assignment-overview {
+  min-height: 192px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.inbox-icon {
+  width: 24px;
+  height: 24px;
+  color: #596079;
+}
+.assignment-overview strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.assignment-overview p {
+  color: #64748b;
+  font-size: 14px;
+}
+.planner-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 20px 12px;
+}
+.planner-context strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.planner-context p {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.workspace-switch {
+  font-size: 11px;
+  color: #64748b;
+  min-width: 220px;
+}
+.workspace-switch select {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+}
+.planner-tools {
+  padding: 0 20px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.storage-label {
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.stats {
+  padding: 0 20px 18px;
+}
+.stat {
+  padding: 10px 12px;
+}
+.stat strong {
+  font-size: 20px;
+}
+.page-footer {
+  font-size: 11px;
+  padding: 0 2px;
+  line-height: 1.5;
+}
+.button.small {
+  font-size: 11px;
+}
+.empty-state {
+  min-height: 210px;
+}
+.notice {
+  margin-top: 0;
+}
+.workspace input,
+.workspace select,
+.workspace textarea,
+dialog input,
+dialog select,
+dialog textarea {
+  color: #17243b;
+}
+.workspace .button-row {
+  flex-wrap: wrap;
+}
+.workspace,
+.planner-context > div,
+.selection-bar > div {
+  min-width: 0;
+}
+.portal-title,
+.portal-actions {
+  flex-shrink: 0;
+}
+@media (max-width: 1100px) {
+  .sidebar {
+    width: 200px;
+  }
+  .portal-page {
+    margin-left: 200px;
+  }
+  .portal-actions {
+    gap: 6px;
+  }
+  .flow-design,
+  .verified-design {
+    display: none;
+  }
+  .portal-tabs span {
+    padding: 6px 9px;
+  }
+  .planner-context {
+    align-items: flex-start;
+  }
+  .planner-tools .button-row {
+    gap: 6px;
+  }
+  .portal-topbar {
+    padding-right: 20px;
+  }
+}
+@media (max-width: 760px) {
+  .sidebar {
+    width: 60px;
+  }
+  .brand {
+    padding: 10px;
+  }
+  .brand img {
+    width: 40px;
+  }
+  .brand strong,
+  .collapse-chevron,
+  .sidebar-label,
+  .sidebar-item span,
+  .sidebar-user > div,
+  .sidebar-user > .user-chevron {
+    display: none;
+  }
+  .sidebar-item {
+    padding: 0;
+    justify-content: center;
+  }
+  .sidebar-item.selected {
+    padding: 0;
+  }
+  .sidebar-item svg {
+    width: 19px;
+    height: 19px;
+  }
+  .sidebar-content {
+    padding: 8px;
+  }
+  .sidebar-user {
+    padding: 12px 16px;
+  }
+  .portal-page {
+    margin-left: 60px;
+  }
+  .portal-topbar {
+    padding: 0 14px;
+  }
+  .search-design {
+    display: none;
+  }
+  main {
+    padding: 16px 12px;
+  }
+  .portal-back {
+    margin-bottom: 24px;
+    padding: 0;
+  }
+  .portal-heading {
+    height: auto;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .portal-title h1 {
+    font-size: 19px;
+  }
+  .portal-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .portal-identity {
+    height: auto;
+    min-height: 64px;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .portal-identity > div:nth-child(2) {
+    padding: 0;
+  }
+  .portal-tabs {
+    width: 100%;
+  }
+  .portal-tabs span {
+    font-size: 12px;
+    padding: 6px 9px;
+  }
+  .zip-card-header {
+    height: auto;
+    min-height: 53px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  .zip-header-actions {
+    gap: 12px;
+  }
+  .planner-context {
+    flex-direction: column;
+    padding: 16px 12px;
+  }
+  .workspace-switch {
+    width: 100%;
+    min-width: 0;
+  }
+  .planner-tools {
+    padding: 0 12px 16px;
+  }
+  .stats {
+    padding: 0 12px 12px;
+    grid-template-columns: 1fr;
+  }
+  .planner-tools .button-row {
+    width: 100%;
+  }
+  .assignment-overview {
+    padding: 28px 16px;
+  }
+  .page-footer {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .portal-breadcrumb {
+    gap: 8px;
+  }
+  .switch-design {
+    margin-left: 0;
+  }
+  .workspace-nav {
+    padding: 0 12px;
+  }
+  .inner-tabs {
+    gap: 14px;
+  }
+  .section-toolbar {
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  .section-toolbar select {
+    max-width: 100%;
+  }
+  .destination-tags {
+    max-width: 100%;
+  }
+  .selection-bar {
+    padding: 12px;
+  }
+  .selection-bar .button-row {
+    width: 100%;
+  }
+  .selection-bar .button.primary {
+    white-space: normal;
+  }
+}
+
+@media (min-width: 761px) {
+  .portal-back {
+    margin-bottom: 16px;
+  }
+}
+.sidebar-label {
+  margin-bottom: 0;
+}
+.sidebar-label:not(:first-child) {
+  margin-top: 14px;
+}
+.industry-badge img {
+  width: 21px;
+  height: 22px;
+  object-fit: contain;
+}
+
+</style>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js"
+    ></script>
+    
+    
+    
+  </head>
+  <body>
+    <aside class="sidebar" aria-label="Portal sidebar (design only)">
+      <div class="brand">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAsCAYAAADmZKH2AAAK6UlEQVR4nM2Ze2xc1Z3HP+fce2dsz9gzY8/4VdsTe8JEcYLJq6FZQkiCIKS0JIESQUH0sbAR2i3VUgGrXSK60W60aoVUUDertoKW1ZbSFgK0hJYGyjMNuywESJPUOPhF/BiPH2N77Hnde3/7x5AJKU4Im7TlJ90/7tXM93zO7/zO95xzr/KWRYVPaCjgEwunz6ma8pxTuXMKZzZ8Hm1VnzO9cwanlEYvuhNjwZ3nNINytpcyykRpj1iRS8T83Hti1FwioM5a9+wzpzRGw5UY9RuwR/ehhn+F0bED5Q2ftTScZe+MqnbxXHFIrM/2iK5oEe1pEGPdK2LGvyEo8y+XOWX60fG/Q1KdyEwvesGdiJ1Cd/8A5n0JXb2Solv9/8I80ZJGGxWIk0HE+WgwZWA0X42EVsBrXwfTQF30JEbiWZzBX2LUXISO3YpM/QEpjJ8BikabflxnBt5v/0TmlIkOLsVo2gq67KOlAh0QuwX6f4qTPogzth/p+i5q4XYwynG7/wNV3ozRvBWljNN3FIXRsBEdXo3S3g/gHg8RxPCjYtsw/PNRqFOKKrMK2r4CqSM4fQ9jRtZjBM/H6bwXKaTQ829DZnpg8AlU83UYwQuYc3iVRqFRnmpU298g3jCCOxecjcx2gzOLqlmFKqvFrF2H9p93sp4yMKJfQAcWIv0Po7UJC26HRTtQkoXOf4Oma9CR1TgDTyDTXdByA8r0n5z5imasT21B+9vQNcvBqsKdPAJufg44BMmPIxNv4waXgLIg9GlUw+dQHzBVI3QBqulq3IGncCcPoeK3AS46tBRr/u04yVeg/z9h/q3g5pHBJyDQgW7cBOp4cwpVexmEL0a0F2ougukuyA2CzJU5QOxpZPJttC+GMny4+UlUaDnKN6/4YysIzdcj0324g3sw6tZC40aczm8jb/0jzvzb0L55SP9/oZQX3XYrknodRp5DNVyF9sdP6ISW4+bGUPYMVLYjE29AYfLk7J505+SQdBdKbFRwCTJzFKW9qEAHSlnopqtRgXbcoT1osaHtJuj5CW5yH86xxzCSL6A6voVkRnC7dqHqNqD8i5ChX6PdLKrpWpThQ1UtRJfVwUw32t+GMgPI1BHEyZwGDkGyQ8hUJxLogPS7MPY7cGYxgotRDRtwE8+hJl5Hx/8WLeAeewwzuATRJs7h7RBcjNn2ZdzRl5CRZyH2VcglcUf2omsuRNeuA3sWRvfBdGfRitL9kBkoWcgp4IDCBJLuRFXGUW4O572HYeoQNH0BClMw9Bt0eDVSsxrn6PchN4J0/DOe8BrsmR7UwbtxW25BWZXI0G6MslrUvBtwR15AJt9CNWxEnFmc/h8jM71I5UJk+iCST34I5UNw4mSQmS6UpwwCHUhuAhVejQ4tQ4Z+A04aab4ONfA0jP4PZvvtmFaIQuo1lDKxh/agM70Yi3Yi0+/g9DwEkcvQ5U1I4llUWSOqbgNiT6Mq56PLa5F0F2KnPxoOcZGZPmSqF4JL0YE4NFyOk9yHm3wRFfsq2irDHd6D4WvBrd9E4Y3bITeO9zM/Q9lZ7N9vR0LtGI1XImP7UOl3kXlfQaYO4SZ/i667BCO0DGouRDKDyGzvh4Z0bjiA/CjMdENwCarliyjDixreg6peCjWfwe7+IZLuxj3/XzBGXoDUAczodeQaN2At/IfiRHr3e7jRr4GTxR78OSoQRzVugaE9SD4FjVvQ1asg3YVkh+bEmBNOCmnc9NEiTP2VuIO/QrJJVMv1MPo6jL2GOf8WtFVFofM7YHhwzt+J5/C/Umi9FV3eijvwS0xnAmPhdtTEm/De46jI5Yguh6E9EPkrpHYNku4u1vKZwoGLpI8io7/DTexFhp9BRa9He8LI0NOosjqc+iuxj3wbyY1iLr0fa7KT/B92YiV+gV7xA8ROY3d+CzewGFWzEkm+hJYCuuWLyOg+GHoGNboPSXcjHzDeM4ADsoPQ8yM49hjKrESZVTg9DxXXzAVfx5j6PYy/jtlwOU7gfPKvfRkRl/xbdyKWB6N1GzLdiR55DuZtQwoTOP0PoZWBKm9CBnYjXd9FZvs41QHw9EdDZRZ3CcoqLj1KYURvQDVcjnPwmyh7GnXRzzH6f0b+6C5wCyjlwfjURtz4P6H+90u4Thbd/k0k9Tby7r8j2CACYhdNX+xTIphzPj3OZgXQNReCb16xH0YFNFyG0/cTmO3FWLwd1wjhiINuub70P7EqUZ5yVPzv4Y2vIX0/RrX9NUpyiP1+fWUHcEf3QzZxyvZPC4fSUF4P1RcgolACavQVSL4EWuHmJmD4aVxfKwpB9PvbIleQwWfQ+QTK8iMT/40aaUIC7cVOKmDcRWGc9kRfGlatNcFgkLq6OmZnZ0mlUlRU+DBNExGXbDaPaWo8lkU2m2NyapJQMITlsUpi+Xwej+Uhl88B4PWWAYJI8crn8ziOg8/nAyCdTmNZFl6vl0KhwNTUFJlMBhE5kTmtNa2trdx4443EYjH6+vp48803WbJkCZWVlUxNTdHb20tdXR2RSITZ2VmOHDnCeeedRygUwuPxkM/nOXDgAMuXL6enpweAWCxGJpMhny/u0QYGBpienmbFihXk83lefvllWltbaWtrI5PJMDAwwOOPP86xY8cQkeJs9Xg8bN26lW3btjE8PEwikaC5uZlrr72WZcuWYds2jY2NbN68mWg0ypYtW9ixYweRSIRoNMpNN92E67qkUiluvvlmNm3axFVXXcXmzZtxHIdQKMTWrVu54oorWLt2LWvWrKGiooJCocD69etZt24d9fX13HXXXVxzzTV4PJ4TmbMsi9WrV5NIJNixYwfpdJpLL70UANu2SSaTGEZxy57NZrFtm/Hxce6//36WLVvGxRdfzD333MPU1AkzFRFc12VsbIzR0VFEBKWKNem6LrlcjvHxcbLZLIcOHeLee++lo6ODtWvX8sADD5DL5U74nOM4KKWwLAvDMNBal57n83lct2iUixYtIhKJsHv3bhKJRKk+5grDMPD5fHi93pOeu65LoVAoaR5PkNYaxzmxxurjhfziiy9SX1/Pzp07ufvuu1m/fj1KKbxeLy0tLYTDYRzH4amnnqKrq4t4PF4q7D8GPH4/PDzMrl27ePXVV0uTQkSwLAu/309jYyM+n4/Fixdzxx13EA6H2bt3b6lGzeNwjz76KF6vl3g8jtfr5eDBg6TTaSorK7Ftm76+Ph555BH279/P4cOHaW1tBeCdd95h165dJcH77ruP/v5+RASv18vExATd3d08+OCDJJNJ0uk0yWQSx3FKnY1Go6UEPfnkkyWtkpUopQgEAoTDYTKZzPtWUoHWumQDhmEwMzODaZqUl5eTSqUwTZPKykqSySQiQm1tLbZtc1xzfHwcy7KoqqrCtm1EhLKy4rk4k8lgmiaWZeE4Dul0mlwuV8r8J/rN5ulXiD+KWCxGLpejoqKCVCpFe3s7Bw4cIB6P4/f7ef7559m4cWNp1o6Pj5NIJKiuriYQCDAwMMDw8PAZt/exXuREIhFCoRDhcBiv14vruvj9fjKZDG1tbQAsWLCAXC5HNBolFouxatWq0uxvbGws2cmZxMfKnM/nIxgMYts2kUiEoaEhVq5ciVKKmZkZAGZnZ4lEIhQKBSYmJhgbGyMQCBCNRhkZGfk4zX28misrKzvJ/2zbxuPxoLXGtu3SkNu2jWEYpRlpGAamaeI4Drlc7k8D9+cO01sW/UsznDLO7XeIcxyfaLj/AwYfH+cZk5zbAAAAAElFTkSuQmCC" alt="CLK" /><strong>CLK Portal</strong
+        ><span class="collapse-chevron">‹</span>
+      </div>
+      <div class="sidebar-content">
+        <p class="sidebar-label">WORKSPACE</p>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 13a9 9 0 0 1 18 0v5h-4v-5M3 13v5h4v-5M12 13l4-4" /></svg
+          ><span>Overview</span>
+        </div>
+        <div class="sidebar-item selected">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="8" width="8" height="12" rx="1" />
+            <rect x="10" y="3" width="10" height="17" rx="1" />
+            <path d="M6 11h2m-2 3h2m-2 3h2m5-10h4m-4 4h4m-4 4h4" /></svg
+          ><span>Accounts</span>
+        </div>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16" /></svg
+          ><span>ZIPs</span>
+        </div>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 9a6 6 0 0 1 12 0v5l2 3H4l2-3zM10 20h4" /></svg
+          ><span>Tasks</span><span class="nav-badge">0</span>
+        </div>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="10" cy="7" r="4" />
+            <path d="M3 21v-3a7 7 0 0 1 14 0v3m3-14v6m-3-3h6" /></svg
+          ><span>Onboardings</span>
+        </div>
+        <p class="sidebar-label">DATA</p>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M2 12h5l3-9 4 18 3-9h5" /></svg
+          ><span>Leads</span>
+        </div>
+        <p class="sidebar-label">SETTINGS</p>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M8 2v5m8-5v5M6 7h12v5a6 6 0 0 1-12 0zM12 18v4" /></svg
+          ><span>Connections</span>
+        </div>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 3l4 6H8zM6 13H2v7h7v-7z" />
+            <circle cx="18" cy="17" r="4" /></svg
+          ><span>Verticals</span>
+        </div>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M4 3h16v17H7l-3 2zM8 7h8M8 11h8M8 15h6" /></svg
+          ><span>Templates</span>
+        </div>
+        <div class="sidebar-item">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="10" cy="7" r="4" />
+            <path d="M3 21v-3a7 7 0 0 1 14 0v3m3-14v6m-3-3h6" /></svg
+          ><span>Team</span>
+        </div>
+      </div>
+      <div class="sidebar-user">
+        <span class="avatar">M</span>
+        <div>
+          <strong>Miguel Montoya</strong>
+          <p>Ops</p>
+        </div>
+        <span class="user-chevron">⌄</span>
+      </div>
+    </aside>
+    <div class="portal-page">
+      <header class="portal-topbar">
+        <div class="portal-breadcrumb">
+          <span>Accounts</span><span class="crumb-arrow">›</span
+          ><span class="switch-design"
+            ><svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="10" cy="10" r="7" />
+              <path d="M15 15l6 6" /></svg
+            >Switch account</span
+          >
+        </div>
+        <div class="search-design">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="10" cy="10" r="7" />
+            <path d="M15 15l6 6" /></svg
+          ><span>Search...</span><kbd>Ctrl K</kbd>
+        </div>
+      </header>
+      <main>
+        <div class="portal-back">
+          <span>‹ &nbsp;All accounts</span
+          ><button type="button" disabled class="shell-button">
+            Go to client
+          </button>
+        </div>
+        <div class="portal-heading">
+          <div class="portal-title">
+            <h1>James Clement</h1>
+            <span class="industry-badge" aria-label="Industry"
+              ><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAWCAYAAAAvg9c4AAACaElEQVR4nK2UzUtUYRSHn/PeO/fO+K2pkZCRCgmFBEZgZfQnRNCiRbmIahXkroVF7VoF4a7aWC0iiGhXFBFa0CajKBBCQ1uY+DV+jc5473tajI0MM1dT/K0O573nec/93XOuHD99ST9/G2In1N7WyocX95F4U6fuCHFNy8P9mGIHqhAEElloA2CDVgqhAjGF+vJVJCwEayh45ZqFRtybBxVAkx43zv3mY98XOlsWsWlnvcO0ULF/lVPPJjlweZEwaYqC16EKnhV6rvyiu2uUvek0vbeHOLZvCQ0MGkBFY8CRO7PYAJq7Fjh4bR7CQityUGuF6qoM6ZQwMFDFSkp496aGEx1T+MaCKLUnVxh/H8dbqWDqbQ3pBfDrQjTMh7o5uqNMzMW4+6gZczGk/dA8T17vYXC0HCpdXNdjpM+homWVprNJ5r/X8/NhiFsFEsvvNs9TBQIT4LkWKqEkYQnsNLvP9NBw/hZoEnGUUALsrlkQs14Y9aHypGCNpeHCPcpaOvBrD9N49QES99fOo0cuGhoI0ngUtQHp2QXSM0ky00kSTZ1oZjmybGOoCzryifHH3Rh3jtXUJH+eXif14xXil2wTqgCCuB6C4lcnwHFQNdmV2xZU1oPs8kguGe3mZtBi/MhEvtyCjIJxgbhiJJuQmAFjsrEIjq+Y2P9CBaQk5PlAHV/HShmaSiCeMPGyFyTr7/IMDN6sYnHMxSnVol0X/k8FbEaQjEFKQjCCXUkBiomXglXCJUF8MJ4WDP7ycH/E68cUYmsLrYrxE7kYAadMc88Wk2lva402Z4v6xxLVTYZuG/qvkdqq/gJibOB5XygeQwAAAABJRU5ErkJggg==" alt=""
+            /></span>
+          </div>
+          <div class="portal-actions">
+            <div class="status-control"><span>Active</span><span>⌄</span></div>
+            <span class="flow-design">Flow: Active</span
+            ><span class="verified-design">GHL verified</span
+            ><button disabled class="shell-button shell-primary">
+              Requests <span>⌄</span></button
+            ><button disabled class="shell-button manage-design">
+              Manage account <span>⌄</span>
+            </button>
+          </div>
+        </div>
+        <section class="portal-identity">
+          <div>
+            <p>GHL LINK</p>
+            <span class="verified-pill">GHL · identity verified</span>
+          </div>
+          <div>
+            <p>SENDER</p>
+            <span>José Santos</span>
+          </div>
+        </section>
+        <nav class="portal-tabs" aria-label="Account tabs (design only)">
+          <span>Overview</span><span>Leads</span><span>Campaign</span
+          ><span class="active" aria-current="page">ZIPs</span
+          ><span>Contacts</span><span>Conversations</span><span>Activity</span
+          ><span>Preferences</span><span>Snapshots</span>
+        </nav>
+        <div id="error-banner" class="notice error" role="alert" hidden></div>
+        <div id="pending-banner" class="notice warning" hidden>
+          <div>
+            <strong>A previous save needs checking.</strong>
+            <p>
+              No action is retried automatically. Check SQLite before making
+              another change.
+            </p>
+            <p id="recovery-message"></p>
+          </div>
+          <div class="button-row">
+            <button class="button secondary small" id="recover">
+              Check saved records</button
+            ><button class="button secondary small" id="accept-recovery" hidden>
+              I reviewed the saved records
+            </button>
+          </div>
+        </div>
+        <section class="workspace" aria-labelledby="workspace-title">
+          <header class="zip-card-header">
+            <h2 id="workspace-title">ZIP assignments</h2>
+            <div class="zip-header-actions">
+              <button
+                type="button"
+                id="campaign-history"
+                class="shell-text-button"
+              >
+                Campaign history</button
+              ><button type="button" id="open-planner" class="shell-button">
+                Open ZIP planner
+              </button>
+            </div>
+          </header>
+          <div id="assignment-overview" class="assignment-overview">
+            <svg
+              class="inbox-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+            >
+              <path d="M4 12l3-7h10l3 7v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+              <path d="M4 12h5l1 3h4l1-3h5" /></svg
+            ><strong id="overview-title">No ZIPs assigned yet</strong>
+            <p id="overview-description">
+              No past campaign ZIPs were imported.
+            </p>
+          </div>
+          <div id="planner" hidden>
+            <div class="planner-context">
+              <div>
+                <strong>Client ZIP management</strong>
+                <p id="workspace-subtitle">
+                  Incoming ZIPs, used history and duplicate checks.
+                </p>
+              </div>
+              <label class="workspace-switch"
+                >Viewing subaccount<select
+                  id="account-switch"
+                  aria-label="Switch subaccount"
+                ></select
+              ></label>
+            </div>
+            <div class="planner-tools">
+              <div class="storage-label">
+                <span class="db-dot"></span
+                ><span id="connection">Opening browser SQLite…</span>
+              </div>
+              <div class="button-row">
+                <button
+                  type="button"
+                  class="button secondary small"
+                  id="export-db"
+                >
+                  Export SQLite</button
+                ><label class="button secondary small" for="import-db"
+                  >Import SQLite</label
+                ><input
+                  id="import-db"
+                  type="file"
+                  accept=".sqlite3,.sqlite,.db"
+                  hidden
+                /><button
+                  type="button"
+                  class="button secondary small"
+                  id="add-account"
+                >
+                  + Test subaccount</button
+                ><button
+                  type="button"
+                  class="button secondary small"
+                  id="refresh"
+                >
+                  ↻ Refresh</button
+                ><button
+                  type="button"
+                  class="button primary small"
+                  id="add-arrival"
+                >
+                  + Add incoming ZIPs
+                </button>
+              </div>
+            </div>
+            <div class="stats" id="stats"></div>
+            <div class="workspace-nav">
+              <div
+                class="inner-tabs"
+                role="tablist"
+                aria-label="ZIP workspace views"
+              >
+                <button
+                  role="tab"
+                  id="tab-new"
+                  aria-controls="view-new"
+                  aria-selected="true"
+                >
+                  New ZIPs <span id="new-count">0</span></button
+                ><button
+                  role="tab"
+                  id="tab-history"
+                  aria-controls="view-history"
+                  aria-selected="false"
+                >
+                  Used History <span id="history-count">0</span></button
+                ><button
+                  role="tab"
+                  id="tab-check"
+                  aria-controls="view-check"
+                  aria-selected="false"
+                >
+                  ZIP checker
+                </button>
+              </div>
+              <span class="small-muted" id="revision"></span>
+            </div>
+            <section id="view-new" role="tabpanel" aria-labelledby="tab-new">
+              <div class="section-toolbar">
+                <div class="filter-field">
+                  <span>⌕</span
+                  ><input
+                    id="new-filter"
+                    placeholder="Find a ZIP, note or destination…"
+                    aria-label="Filter New ZIPs"
+                  />
+                </div>
+                <select
+                  id="new-scope"
+                  aria-label="Filter arrivals by destination"
+                >
+                  <option value="all">All client arrivals</option>
+                  <option value="current">For this subaccount</option>
+                  <option value="unassigned">Unassigned only</option></select
+                ><label class="select-all"
+                  ><input type="checkbox" id="select-visible" />Select visible
+                  ZIPs</label
+                >
+              </div>
+              <div id="arrival-list"></div>
+              <div class="selection-bar">
+                <div>
+                  <strong id="selected-count">0 ZIPs selected</strong>
+                  <p>
+                    Choose part of an arrival or combine ZIPs from multiple
+                    arrivals.
+                  </p>
+                </div>
+                <div class="button-row">
+                  <button class="button ghost" id="clear-selection">
+                    Clear</button
+                  ><button class="button primary" id="record-request" disabled>
+                    Record contact request &nbsp;→
+                  </button>
+                </div>
+              </div>
+            </section>
+            <section
+              id="view-history"
+              role="tabpanel"
+              aria-labelledby="tab-history"
+              hidden
+            >
+              <div class="history-intro">
+                <div>
+                  <h3>ZIPs Used History</h3>
+                  <p>
+                    Used means contact data was requested. Each request
+                    preserves its ZIPs, destinations and source arrival notes.
+                  </p>
+                </div>
+                <button class="button secondary small" id="copy-used">
+                  Copy all Used ZIPs
+                </button>
+              </div>
+              <div class="used-summary" id="used-summary"></div>
+              <div id="history-list"></div>
+            </section>
+            <section
+              id="view-check"
+              role="tabpanel"
+              aria-labelledby="tab-check"
+              hidden
+            >
+              <div class="checker">
+                <div class="checker-input">
+                  <h3>Check a ZIP list</h3>
+                  <p>
+                    Compare against this entire client's New pool and Used
+                    History.
+                  </p>
+                  <label for="check-input">ZIPs to check</label
+                  ><textarea
+                    id="check-input"
+                    rows="6"
+                    placeholder="53029, 53118, 02108&#10;90210, 10001"
+                  ></textarea>
+                  <div id="check-feedback" class="input-feedback"></div>
+                  <p class="helper">
+                    Commas, spaces, semicolons or new lines. Short numeric
+                    entries get leading zeros; annotated or overlong entries are
+                    flagged. This is not USPS verification.
+                  </p>
+                </div>
+                <div id="check-results" class="check-results"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+        <footer class="page-footer" id="zip-footer" hidden>
+          <span
+            >SQLite is stored in this browser. Export a backup before clearing
+            site data.</span
+          ><span>Isolated prototype · No GHL connection</span>
+        </footer>
+      </main>
+    </div>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <dialog id="arrival-dialog" aria-labelledby="arrival-title">
+      <form id="arrival-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">NEW ARRIVAL</p>
+            <h2 id="arrival-title">Add incoming ZIPs</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button close-dialog"
+            aria-label="Close arrival dialog"
+          >
+            ×
+          </button>
+        </div>
+        <p class="dialog-description">
+          Record when a new list arrived and who it is intended for. ZIPs
+          already Used or in New cannot be added again.
+        </p>
+        <div class="form-field">
+          <label for="arrival-date"
+            >Date received <span class="required">*</span></label
+          ><input type="date" id="arrival-date" required />
+        </div>
+        <div class="form-field">
+          <label for="arrival-zips"
+            >Incoming ZIP list <span class="required">*</span></label
+          ><textarea
+            id="arrival-zips"
+            rows="4"
+            placeholder="53029, 53118, 02108"
+            required
+          ></textarea>
+          <div id="arrival-feedback" class="input-feedback"></div>
+        </div>
+        <fieldset class="destinations">
+          <legend>
+            Intended subaccounts <span class="optional">optional</span>
+          </legend>
+          <p class="helper">
+            Leave unassigned if the destination is not decided yet.
+          </p>
+          <div class="account-actions">
+            <button type="button" class="text-button" id="arrival-all">
+              Select all current subaccounts</button
+            ><button type="button" class="text-button" id="arrival-none">
+              Clear
+            </button>
+          </div>
+          <div id="arrival-accounts" class="account-options"></div>
+          <p class="helper">
+            New subaccounts created later will not inherit this list.
+          </p>
+        </fieldset>
+        <div class="form-field">
+          <label for="arrival-comments"
+            >Comments <span class="optional">optional</span></label
+          ><textarea
+            id="arrival-comments"
+            rows="2"
+            maxlength="2000"
+            placeholder="For example: sent by the client; focus on residential roofs."
+          ></textarea>
+        </div>
+        <p id="arrival-error" role="alert" class="form-error"></p>
+        <div class="dialog-footer">
+          <button type="button" class="button secondary close-dialog">
+            Cancel</button
+          ><button type="submit" class="button primary" id="save-arrival">
+            Save incoming ZIPs
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="request-dialog" aria-labelledby="request-title">
+      <form id="request-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">CONTACT-DATA REQUEST</p>
+            <h2 id="request-title">Record contact request</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button close-dialog"
+            aria-label="Close contact request dialog"
+          >
+            ×
+          </button>
+        </div>
+        <p class="dialog-description">
+          Record a submission to your data platform. On save, the selected ZIPs
+          move from New to Used History together.
+        </p>
+        <div class="selected-review">
+          <div>
+            <strong id="request-zip-count"></strong
+            ><span class="tag">From the New pool</span>
+          </div>
+          <p id="request-zips" class="zip-text"></p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="request-date"
+              >Date requested <span class="required">*</span></label
+            ><input type="date" id="request-date" required />
+          </div>
+          <div class="form-field">
+            <label for="request-order"
+              >Order number <span class="optional">optional</span></label
+            ><input
+              id="request-order"
+              maxlength="100"
+              placeholder="Not every request has one"
+            />
+          </div>
+        </div>
+        <fieldset class="destinations">
+          <legend>
+            Destination subaccounts <span class="required">*</span>
+          </legend>
+          <p class="helper">
+            These are the actual destinations for this request.
+          </p>
+          <div class="account-actions">
+            <button type="button" class="text-button" id="request-all">
+              Select all current subaccounts</button
+            ><button type="button" class="text-button" id="request-none">
+              Clear
+            </button>
+          </div>
+          <div id="request-accounts" class="account-options"></div>
+          <div class="destination-review" id="destination-review" hidden>
+            <p id="destination-warning"></p>
+            <label class="acknowledgement"
+              ><input type="checkbox" id="confirm-destinations" />I reviewed the
+              change from the arrivals' intended destinations.</label
+            >
+          </div>
+        </fieldset>
+        <div class="form-field">
+          <label for="request-comments"
+            >Comments / order details
+            <span class="optional">optional</span></label
+          ><textarea
+            id="request-comments"
+            rows="3"
+            maxlength="2000"
+            placeholder="Order number, platform notes or other instructions…"
+          ></textarea>
+        </div>
+        <p id="request-error" role="alert" class="form-error"></p>
+        <p class="helper">
+          This saves a local record. It does not submit an order to a data
+          platform.
+        </p>
+        <div class="dialog-footer">
+          <button type="button" class="button secondary close-dialog">
+            Cancel</button
+          ><button type="submit" class="button primary" id="save-request">
+            Confirm & move to Used History
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="account-dialog" aria-labelledby="new-account-title">
+      <form id="account-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">TEST THE SCOPE</p>
+            <h2 id="new-account-title">Add a test subaccount</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button close-dialog"
+            aria-label="Close subaccount dialog"
+          >
+            ×
+          </button>
+        </div>
+        <p class="dialog-description">
+          Creates a demo subaccount for the current client. Existing intended
+          destinations and request history will remain unchanged.
+        </p>
+        <div class="form-field">
+          <label for="new-account-name">Subaccount name</label
+          ><input
+            id="new-account-name"
+            maxlength="100"
+            placeholder="Cory Peterson - Solar"
+            required
+          />
+        </div>
+        <div class="form-field">
+          <label for="new-account-industry">Industry</label
+          ><input
+            id="new-account-industry"
+            maxlength="100"
+            placeholder="Solar"
+            required
+          />
+        </div>
+        <p id="account-error" class="form-error" role="alert"></p>
+        <div class="dialog-footer">
+          <button type="button" class="button secondary close-dialog">
+            Cancel</button
+          ><button type="submit" class="button primary" id="save-account">
+            Create test subaccount
+          </button>
+        </div>
+      </form>
+    </dialog>
+  
+<script>
+// Executed only when initializing a new browser database.
+window.ZIP_LAB_SCHEMA = `
+PRAGMA foreign_keys = ON;
+CREATE TABLE IF NOT EXISTS clients (
+ id INTEGER PRIMARY KEY, name TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS subaccounts (
+ id INTEGER PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), name TEXT NOT NULL, industry TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS arrivals (
+ id INTEGER PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), received_on TEXT NOT NULL,
+ comments TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE TABLE IF NOT EXISTS arrival_accounts (
+ arrival_id INTEGER NOT NULL REFERENCES arrivals(id), account_id INTEGER NOT NULL REFERENCES subaccounts(id),
+ account_name TEXT NOT NULL, PRIMARY KEY(arrival_id,account_id)
+);
+CREATE TABLE IF NOT EXISTS contact_requests (
+ id INTEGER PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), requested_on TEXT NOT NULL,
+ order_reference TEXT NOT NULL DEFAULT '', comments TEXT NOT NULL DEFAULT '',
+ created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE TABLE IF NOT EXISTS request_accounts (
+ request_id INTEGER NOT NULL REFERENCES contact_requests(id), account_id INTEGER NOT NULL REFERENCES subaccounts(id),
+ account_name TEXT NOT NULL, PRIMARY KEY(request_id,account_id)
+);
+CREATE TABLE IF NOT EXISTS zip_items (
+ id INTEGER PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), arrival_id INTEGER NOT NULL REFERENCES arrivals(id),
+ postal_code TEXT NOT NULL CHECK(length(postal_code)=5 AND postal_code NOT GLOB '*[^0-9]*'),
+ request_id INTEGER REFERENCES contact_requests(id), UNIQUE(client_id,postal_code)
+);
+CREATE INDEX IF NOT EXISTS zip_pending ON zip_items(client_id,request_id,arrival_id);
+CREATE INDEX IF NOT EXISTS arrival_client ON arrivals(client_id,id);
+CREATE INDEX IF NOT EXISTS request_client ON contact_requests(client_id,id);
+CREATE TABLE IF NOT EXISTS operations (
+ id TEXT PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), action TEXT NOT NULL,
+ payload TEXT NOT NULL, entity_id INTEGER NOT NULL, applied_revision INTEGER NOT NULL,
+ created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+`;
+
+</script>
+<script>
+/* SQLite loads from cdnjs. All ZIP data stays in the browser; IndexedDB persists the SQLite file. */
+window.zipLabStorage = (() => {
+  let enginePromise, storagePromise;
+  const DB_NAME = "clk-zip-github-prototype-v1",
+    KEY = "main";
+  class Problem extends Error {
+    constructor(message, status = 400, details = {}) {
+      super(message);
+      this.status = status;
+      this.details = details;
+    }
+  }
+  const require = (ok, message, status = 400, details = {}) => {
+    if (!ok) throw new Problem(message, status, details);
+  };
+  const integer = (v, label) => {
+    require(Number.isInteger(v) &&
+      v > 0, `${label} must be a positive integer.`);
+    return v;
+  };
+  const text = (v, label, max = 2000) => {
+    require(typeof v === "string" &&
+      v.length <= max, `${label} is invalid or too long.`);
+    return v.trim();
+  };
+  const date = (v, label) => {
+    require(typeof v === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(v) &&
+      Number.isFinite(Date.parse(v)) &&
+      new Date(v).toISOString().slice(0, 10) ===
+        v, `${label} is required and must be valid.`);
+    return v;
+  };
+  const ids = (v, label, optional = false) => {
+    require(Array.isArray(v) &&
+      v.length <= 2000 &&
+      (optional || v.length > 0) &&
+      v.every((x) => Number.isInteger(x) && x > 0) &&
+      new Set(v).size === v.length, `Choose valid ${label}.`);
+    return [...v].sort((a, b) => a - b);
+  };
+  const codes = (v) => {
+    require(Array.isArray(v) &&
+      v.length > 0 &&
+      v.length <= 2000 &&
+      v.every((z) => typeof z === "string" && /^\d{5}$/.test(z)) &&
+      new Set(v).size === v.length, "Enter 1–2,000 unique five-digit ZIPs.");
+    return [...v].sort();
+  };
+  function all(db, sql, args = []) {
+    const stmt = db.prepare(sql);
+    try {
+      stmt.bind(args);
+      const result = [];
+      while (stmt.step()) result.push(stmt.getAsObject());
+      return result;
+    } finally {
+      stmt.free();
+    }
+  }
+  const one = (db, sql, args = []) => all(db, sql, args)[0];
+  function run(db, sql, args = []) {
+    db.run(sql, args);
+    return one(db, "SELECT last_insert_rowid() AS id").id;
+  }
+  function canonical(v) {
+    if (Array.isArray(v)) return v.map(canonical);
+    if (v && typeof v === "object")
+      return Object.fromEntries(
+        Object.keys(v)
+          .sort()
+          .map((k) => [k, canonical(v[k])]),
+      );
+    return v;
+  }
+  function engine() {
+    if (!enginePromise)
+      enginePromise = initSqlJs({
+        locateFile: (filename) =>
+          `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/${filename}`,
+      });
+    return enginePromise;
+  }
+  function storage() {
+    if (!storagePromise)
+      storagePromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("databases");
+        req.onsuccess = () => {
+          const db = req.result;
+          db.onversionchange = () => db.close();
+          resolve(db);
+        };
+        req.onerror = () =>
+          reject(
+            new Error(
+              "Browser storage is unavailable. Allow site storage and reload.",
+            ),
+          );
+        req.onblocked = () =>
+          reject(new Error("Close other ZIP Lab tabs and reload."));
+      });
+    return storagePromise;
+  }
+  async function current() {
+    const db = await storage();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("databases", "readonly"),
+        q = tx.objectStore("databases").get(KEY);
+      q.onsuccess = () => resolve(q.result || null);
+      q.onerror = () => reject(q.error);
+    });
+  }
+  async function persist(bytes, expected) {
+    const db = await storage();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("databases", "readwrite"),
+        store = tx.objectStore("databases");
+      let problem = null;
+      const q = store.get(KEY);
+      q.onsuccess = () => {
+        const revision = q.result?.revision ?? 0;
+        if (revision !== expected) {
+          problem = new Problem(
+            "Another tab saved changes. Refresh and review the workspace.",
+            409,
+          );
+          tx.abort();
+          return;
+        }
+        store.put(
+          {
+            revision: revision + 1,
+            bytes: bytes,
+            updated_at: new Date().toISOString(),
+          },
+          KEY,
+        );
+      };
+      tx.oncomplete = () => resolve(expected + 1);
+      tx.onerror = () =>
+        reject(
+          problem || tx.error || Error("Could not save the SQLite database."),
+        );
+      tx.onabort = () =>
+        reject(problem || tx.error || Error("SQLite save was not confirmed."));
+    });
+  }
+  function seed(db) {
+    db.run(window.ZIP_LAB_SCHEMA);
+    db.run(
+      "PRAGMA user_version=1; CREATE TABLE IF NOT EXISTS app_meta(name TEXT PRIMARY KEY,value TEXT NOT NULL); INSERT OR IGNORE INTO app_meta VALUES('app','clk-zip-lab-browser-v1');",
+    );
+    for (const c of [
+      [1, "James Clement"],
+      [2, "Taylor Morgan"],
+    ])
+      db.run("INSERT OR IGNORE INTO clients(id,name) VALUES (?,?)", c);
+    for (const a of [
+      [1, 1, "James Clement - Roofing", "Roofing"],
+      [2, 1, "James Clement - Roofing II", "Roofing"],
+      [3, 1, "James Clement - HVAC", "HVAC"],
+      [4, 2, "Taylor Morgan - Landscaping", "Landscaping"],
+    ])
+      db.run(
+        "INSERT OR IGNORE INTO subaccounts(id,client_id,name,industry) VALUES (?,?,?,?)",
+        a,
+      );
+  }
+  async function open() {
+    const SQL = await engine();
+    let record = await current();
+    if (!record) {
+      const db = new SQL.Database();
+      try {
+        seed(db);
+        try {
+          await persist(db.export(), 0);
+        } catch (e) {
+          if (e.status !== 409) throw e;
+        }
+      } finally {
+        db.close();
+      }
+      record = await current();
+    }
+    const db = new SQL.Database(new Uint8Array(record.bytes));
+    db.run("PRAGMA foreign_keys=ON");
+    return { db, version: record.revision };
+  }
+  function destinations(db, client, values) {
+    return values.map((id) => {
+      const a = one(
+        db,
+        "SELECT id,name FROM subaccounts WHERE id=? AND client_id=?",
+        [id, client],
+      );
+      require(a, "A destination does not belong to this client.");
+      return a;
+    });
+  }
+  function snapshot(db, anchor, op = null) {
+    const account = one(db, "SELECT * FROM subaccounts WHERE id=?", [anchor]);
+    require(account, "Subaccount not found.", 404);
+    const client = one(db, "SELECT * FROM clients WHERE id=?", [
+      account.client_id,
+    ]);
+    const accounts = all(
+      db,
+      "SELECT * FROM subaccounts WHERE client_id=? ORDER BY id",
+      [client.id],
+    );
+    const arrivals = [];
+    for (const a of all(
+      db,
+      "SELECT * FROM arrivals WHERE client_id=? ORDER BY received_on DESC,id DESC",
+      [client.id],
+    )) {
+      a.zips = all(
+        db,
+        "SELECT id,postal_code FROM zip_items WHERE arrival_id=? AND request_id IS NULL ORDER BY postal_code",
+        [a.id],
+      );
+      if (!a.zips.length) continue;
+      a.accounts = all(
+        db,
+        "SELECT account_id AS id,account_name AS name FROM arrival_accounts WHERE arrival_id=? ORDER BY account_id",
+        [a.id],
+      );
+      a.original_count = one(
+        db,
+        "SELECT COUNT(*) AS n FROM zip_items WHERE arrival_id=?",
+        [a.id],
+      ).n;
+      arrivals.push(a);
+    }
+    const history = [];
+    for (const r of all(
+      db,
+      "SELECT * FROM contact_requests WHERE client_id=? ORDER BY requested_on DESC,id DESC",
+      [client.id],
+    )) {
+      r.zips = all(
+        db,
+        "SELECT postal_code FROM zip_items WHERE request_id=? ORDER BY postal_code",
+        [r.id],
+      ).map((z) => z.postal_code);
+      r.accounts = all(
+        db,
+        "SELECT account_id AS id,account_name AS name FROM request_accounts WHERE request_id=? ORDER BY account_id",
+        [r.id],
+      );
+      r.sources = all(
+        db,
+        "SELECT DISTINCT a.id,a.received_on,a.comments FROM arrivals a JOIN zip_items z ON z.arrival_id=a.id WHERE z.request_id=? ORDER BY a.id",
+        [r.id],
+      );
+      for (const a of r.sources)
+        a.accounts = all(
+          db,
+          "SELECT account_id AS id,account_name AS name FROM arrival_accounts WHERE arrival_id=? ORDER BY account_id",
+          [a.id],
+        );
+      history.push(r);
+    }
+    return {
+      client,
+      account,
+      accounts,
+      arrivals,
+      history,
+      used_zips: all(
+        db,
+        "SELECT postal_code FROM zip_items WHERE client_id=? AND request_id IS NOT NULL ORDER BY postal_code",
+        [client.id],
+      ).map((z) => z.postal_code),
+      operation: op
+        ? one(
+            db,
+            "SELECT id,action,entity_id,applied_revision FROM operations WHERE id=? AND client_id=?",
+            [op, client.id],
+          ) || null
+        : null,
+    };
+  }
+  async function api(path, options) {
+    const { db, version } = await open();
+    try {
+      const url = new URL(path, "https://zip-lab.invalid");
+      if (!options || options.method !== "POST") {
+        if (url.pathname === "/api/directory")
+          return {
+            clients: all(db, "SELECT id,name FROM clients ORDER BY id"),
+            accounts: all(db, "SELECT * FROM subaccounts ORDER BY id"),
+          };
+        if (url.pathname === "/api/workspace")
+          return snapshot(
+            db,
+            integer(Number(url.searchParams.get("account_id")), "Subaccount"),
+            url.searchParams.get("operation_id"),
+          );
+        throw new Problem("Unknown local action.", 404);
+      }
+      require(url.pathname === "/api/change", "Unknown local action.", 404);
+      const b = JSON.parse(options.body),
+        action = b.action,
+        p = b.payload;
+      require(["receive", "request", "add_account"].includes(action) &&
+        p &&
+        typeof p === "object" &&
+        !Array.isArray(p), "Invalid action.");
+      const anchor = integer(b.account_id, "Subaccount"),
+        client = integer(b.client_id, "Client"),
+        a = one(db, "SELECT client_id FROM subaccounts WHERE id=?", [anchor]);
+      require(a &&
+        a.client_id ===
+          client, "Client/subaccount context changed. Reload.", 409);
+      require(Number.isInteger(b.expected_revision) &&
+        b.expected_revision >= 0, "Missing workspace revision.");
+      require(typeof b.operation_id === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+          b.operation_id,
+        ), "Invalid operation ID.");
+      const encoded = JSON.stringify(canonical({ action, payload: p })),
+        previous = one(db, "SELECT * FROM operations WHERE id=?", [
+          b.operation_id,
+        ]);
+      if (previous) {
+        require(previous.client_id === client &&
+          previous.payload ===
+            encoded, "Operation ID reused for different input.", 409);
+        return snapshot(db, anchor, b.operation_id);
+      }
+      const revision = one(db, "SELECT revision FROM clients WHERE id=?", [
+        client,
+      ]).revision;
+      require(revision ===
+        b.expected_revision, "Saved records changed. Refresh and review the selection.", 409);
+      db.run("BEGIN IMMEDIATE");
+      let entity;
+      try {
+        if (action === "receive") {
+          const received = date(p.received_on, "Date received"),
+            zips = codes(p.zips),
+            comments = text(p.comments ?? "", "Comments"),
+            targets = destinations(
+              db,
+              client,
+              ids(p.account_ids ?? [], "intended subaccounts", true),
+            );
+          const existing = new Map(
+            all(
+              db,
+              "SELECT postal_code,request_id FROM zip_items WHERE client_id=?",
+              [client],
+            ).map((z) => [z.postal_code, z.request_id]),
+          );
+          const used = zips.filter(
+              (z) => existing.has(z) && existing.get(z) !== null,
+            ),
+            pending = zips.filter(
+              (z) => existing.has(z) && existing.get(z) === null,
+            );
+          require(!used.length &&
+            !pending.length, "Remove ZIPs already Used or in New before saving this arrival.", 409, {
+            used,
+            pending,
+          });
+          require(existing.size + zips.length <=
+            20000, "This prototype supports 20,000 ZIPs per client.");
+          entity = run(
+            db,
+            "INSERT INTO arrivals(client_id,received_on,comments) VALUES (?,?,?)",
+            [client, received, comments],
+          );
+          for (const t of targets)
+            db.run(
+              "INSERT INTO arrival_accounts(arrival_id,account_id,account_name) VALUES (?,?,?)",
+              [entity, t.id, t.name],
+            );
+          for (const z of zips)
+            db.run(
+              "INSERT INTO zip_items(client_id,arrival_id,postal_code) VALUES (?,?,?)",
+              [client, entity, z],
+            );
+        } else if (action === "request") {
+          const requested = date(p.requested_on, "Date requested"),
+            selected = ids(p.item_ids, "ZIPs"),
+            targetIds = ids(p.account_ids, "destination subaccounts"),
+            targets = destinations(db, client, targetIds),
+            comments = text(p.comments ?? "", "Comments"),
+            order = text(p.order_reference ?? "", "Order number", 100);
+          const items = selected.map((id) => {
+            const item = one(
+              db,
+              "SELECT * FROM zip_items WHERE id=? AND client_id=? AND request_id IS NULL",
+              [id, client],
+            );
+            require(item, "Some selected ZIPs are no longer New. Refresh and review.", 409);
+            return item;
+          });
+          let changed = false;
+          for (const arrival of new Set(items.map((i) => i.arrival_id))) {
+            const intended = all(
+              db,
+              "SELECT account_id FROM arrival_accounts WHERE arrival_id=? ORDER BY account_id",
+              [arrival],
+            ).map((t) => t.account_id);
+            if (
+              intended.length &&
+              JSON.stringify(intended) !== JSON.stringify(targetIds)
+            )
+              changed = true;
+          }
+          require(!changed ||
+            p.confirm_destination_change ===
+              true, "Review and acknowledge the change from intended destinations.", 400, {
+            destination_change: true,
+          });
+          entity = run(
+            db,
+            "INSERT INTO contact_requests(client_id,requested_on,order_reference,comments) VALUES (?,?,?,?)",
+            [client, requested, order, comments],
+          );
+          for (const t of targets)
+            db.run(
+              "INSERT INTO request_accounts(request_id,account_id,account_name) VALUES (?,?,?)",
+              [entity, t.id, t.name],
+            );
+          for (const i of items)
+            db.run("UPDATE zip_items SET request_id=? WHERE id=?", [
+              entity,
+              i.id,
+            ]);
+        } else {
+          const name = text(p.name ?? "", "Subaccount name", 100),
+            industry = text(p.industry ?? "", "Industry", 100);
+          require(name && industry, "Enter a subaccount name and industry.");
+          entity = run(
+            db,
+            "INSERT INTO subaccounts(client_id,name,industry) VALUES (?,?,?)",
+            [client, name, industry],
+          );
+        }
+        db.run("UPDATE clients SET revision=? WHERE id=?", [
+          revision + 1,
+          client,
+        ]);
+        db.run(
+          "INSERT INTO operations(id,client_id,action,payload,entity_id,applied_revision) VALUES (?,?,?,?,?,?)",
+          [b.operation_id, client, action, encoded, entity, revision + 1],
+        );
+        db.run("COMMIT");
+      } catch (e) {
+        db.run("ROLLBACK");
+        throw e;
+      }
+      const result = snapshot(db, anchor, b.operation_id);
+      await persist(db.export(), version);
+      return result;
+    } finally {
+      db.close();
+    }
+  }
+  async function exportDatabase() {
+    const record = await current();
+    if (!record) throw Error("The database is not ready yet.");
+    return new Uint8Array(record.bytes);
+  }
+  async function importDatabase(bytes) {
+    require(bytes.length > 0 &&
+      bytes.length <
+        5000000, "Choose a ZIP Lab SQLite database smaller than 5 MB.");
+    const SQL = await engine();
+    let db;
+    try {
+      db = new SQL.Database(bytes);
+      require(one(db, "SELECT value FROM app_meta WHERE name='app'")?.value ===
+        "clk-zip-lab-browser-v1", "This file is not a database exported by this ZIP Lab.");
+      require(one(db, "PRAGMA integrity_check").integrity_check ===
+        "ok", "SQLite integrity check failed.");
+      require(all(db, "PRAGMA foreign_key_check").length ===
+        0, "SQLite relationships are invalid.");
+      const record = await current();
+      await persist(db.export(), record?.revision ?? 0);
+    } catch (e) {
+      if (e instanceof Problem) throw e;
+      throw new Problem("Could not read this ZIP Lab SQLite file.");
+    } finally {
+      db?.close();
+    }
+  }
+  return { api, exportDatabase, importDatabase };
+})();
+
+</script>
+<script>
+const $ = (id) => document.getElementById(id);
+const state = {
+  data: null,
+  directory: null,
+  selected: new Set(),
+  busy: false,
+  loading: false,
+  view: "new",
+  generation: 0,
+  requestItems: [],
+  draftRevision: null,
+  requestTargets: new Set(),
+  arrivalTargets: new Set(),
+  recovery: null,
+  reviewReady: false,
+  storageOK: true,
+};
+function node(tag, attrs = {}, ...children) {
+  const e = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key.startsWith("on")) e.addEventListener(key.slice(2), value);
+    else if (key === "class") e.className = value;
+    else if (key === "checked" || key === "disabled") e[key] = !!value;
+    else e.setAttribute(key, value);
+  }
+  const add = (child) => {
+    if (Array.isArray(child)) child.forEach(add);
+    else if (child !== null && child !== undefined)
+      e.append(
+        child instanceof Node ? child : document.createTextNode(String(child)),
+      );
+  };
+  children.forEach(add);
+  return e;
+}
+const clear = (e) => e.replaceChildren();
+const dateLabel = (value) =>
+  new Date(value + "T12:00:00").toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+function parseZips(text) {
+  const seen = new Set(),
+    invalid = [];
+  let duplicates = 0,
+    padded = 0;
+  if (text.length > 100000)
+    return {
+      zips: [],
+      invalid: ["List exceeds 100,000 characters"],
+      duplicates,
+      padded,
+    };
+  for (const token of text.split(/[\s,;]+/).filter(Boolean)) {
+    if (!/^\d{1,5}$/.test(token)) {
+      invalid.push(token);
+      continue;
+    }
+    const zip = token.padStart(5, "0");
+    if (token.length < 5) padded++;
+    if (seen.has(zip)) duplicates++;
+    else seen.add(zip);
+  }
+  const zips = [...seen].sort();
+  if (zips.length > 2000) invalid.push("Maximum 2,000 ZIPs per arrival");
+  return { zips, invalid, duplicates, padded };
+}
+function zipText(zips) {
+  const lines = [];
+  for (let i = 0; i < zips.length; i += 10)
+    lines.push(zips.slice(i, i + 10).join(",") + ",");
+  return lines.join("\n");
+}
+function classify(zips) {
+  const used = new Set(state.data.used_zips),
+    pending = new Set(
+      state.data.arrivals.flatMap((a) => a.zips.map((z) => z.postal_code)),
+    );
+  return {
+    used: zips.filter((z) => used.has(z)),
+    pending: zips.filter((z) => pending.has(z)),
+    fresh: zips.filter((z) => !used.has(z) && !pending.has(z)),
+  };
+}
+function same(a, b) {
+  return a.size === b.size && [...a].every((id) => b.has(id));
+}
+function notify(message) {
+  $("toast").textContent = message;
+  $("toast").hidden = false;
+  window.clearTimeout(notify.timer);
+  notify.timer = window.setTimeout(() => {
+    $("toast").hidden = true;
+  }, 4500);
+}
+function showError(message) {
+  $("error-banner").textContent = message;
+  $("error-banner").hidden = !message;
+}
+const pendingKey = () =>
+  `zip-github-pending:${location.origin}:${state.data.client.id}`;
+function readPending() {
+  const value = JSON.parse(localStorage.getItem(pendingKey()) || "null");
+  if (
+    value &&
+    (typeof value.id !== "string" || value.client_id !== state.data.client.id)
+  )
+    throw Error("Invalid saved recovery state.");
+  return value;
+}
+function syncRecovery() {
+  try {
+    state.recovery = readPending();
+    state.storageOK = true;
+  } catch {
+    state.storageOK = false;
+    state.recovery = { id: null };
+  }
+  renderRecovery();
+}
+function renderRecovery() {
+  $("pending-banner").hidden = !state.recovery;
+  $("accept-recovery").hidden = !state.reviewReady || !state.storageOK;
+  $("recover").disabled = state.busy || state.loading;
+  $("accept-recovery").disabled = state.busy || state.loading;
+  if (!state.storageOK)
+    $("recovery-message").textContent =
+      "Browser recovery storage is unavailable. Changes are disabled; check your browser storage settings.";
+}
+const blocked = () =>
+  state.busy ||
+  state.loading ||
+  !!state.recovery ||
+  !state.storageOK ||
+  !state.data;
+function controls() {
+  $("add-arrival").disabled = blocked();
+  $("add-account").disabled = blocked();
+  $("account-switch").disabled = state.busy || state.loading;
+  $("refresh").disabled = state.busy || state.loading;
+  $("record-request").disabled = blocked() || state.selected.size === 0;
+  $("clear-selection").disabled = state.busy || state.selected.size === 0;
+  $("select-visible").disabled = blocked();
+  document.querySelectorAll("#arrival-list input").forEach((e) => {
+    e.disabled = blocked();
+  });
+  document
+    .querySelectorAll("dialog input,dialog textarea,dialog button")
+    .forEach((e) => {
+      e.disabled = state.busy;
+    });
+  validateArrival();
+  validateRequest();
+  renderRecovery();
+}
+// These routes are local function calls into browser SQLite, never HTTP requests.
+async function api(path, options) {
+  return window.zipLabStorage.api(path, options);
+}
+
+function validateSnapshot(data, account) {
+  if (
+    !data ||
+    !Number.isInteger(data.client?.id) ||
+    data.account?.id !== account ||
+    data.account.client_id !== data.client.id ||
+    !Number.isInteger(data.client.revision) ||
+    !Array.isArray(data.arrivals) ||
+    !Array.isArray(data.history) ||
+    !Array.isArray(data.used_zips) ||
+    !Array.isArray(data.accounts) ||
+    data.accounts.some((a) => a.client_id !== data.client.id)
+  )
+    throw Error(
+      "The saved workspace did not match the selected subaccount. Reload.",
+    );
+  return data;
+}
+async function directory() {
+  state.directory = await api("/api/directory");
+}
+async function load(account) {
+  const generation = ++state.generation;
+  state.loading = true;
+  showError("");
+  controls();
+  try {
+    if (!state.directory) await directory();
+    const data = validateSnapshot(
+      await api(`/api/workspace?account_id=${account}`),
+      account,
+    );
+    if (generation !== state.generation) return;
+    state.data = data;
+    state.selected.clear();
+    state.reviewReady = false;
+    syncRecovery();
+    render();
+    const url = new URL(location.href);
+    url.searchParams.set("account", String(account));
+    history.replaceState(null, "", url);
+  } catch (e) {
+    if (generation === state.generation) showError(e.message);
+  } finally {
+    if (generation === state.generation) {
+      state.loading = false;
+      controls();
+    }
+  }
+}
+function renderDirectory() {
+  const select = $("account-switch");
+  clear(select);
+  for (const client of state.directory.clients) {
+    const group = node("optgroup", { label: client.name });
+    for (const account of state.directory.accounts.filter(
+      (a) => a.client_id === client.id,
+    )) {
+      const option = node("option", { value: account.id }, account.name);
+      option.selected = account.id === state.data.account.id;
+      group.append(option);
+    }
+    select.append(group);
+  }
+}
+function render() {
+  if (!state.data) return;
+  const d = state.data,
+    items = d.arrivals.flatMap((a) => a.zips),
+    current = new Set(items.map((i) => i.id));
+  state.selected = new Set([...state.selected].filter((id) => current.has(id)));
+  // The surrounding portal design is static. Only the ZIP panel changes.
+  updateOverview(d);
+  $("workspace-subtitle").textContent =
+    `${d.client.name} · Shared pool across ${d.accounts.length} subaccounts. Intended destinations are shown on each arrival.`;
+  $("connection").textContent = "SQLite · saved in this browser";
+  $("revision").textContent = `Revision ${d.client.revision}`;
+  $("new-count").textContent = items.length;
+  $("history-count").textContent = d.history.length;
+  const stats = $("stats");
+  clear(stats);
+  for (const [symbol, count, label] of [
+    ["↘", items.length, "New ZIPs waiting"],
+    ["✓", d.used_zips.length, "Used ZIPs · client-wide"],
+    ["▤", d.history.length, "Contact-data requests"],
+  ])
+    stats.append(
+      node(
+        "div",
+        { class: "stat" },
+        node("div", { class: "stat-icon", "aria-hidden": "true" }, symbol),
+        node("div", {}, node("strong", {}, count), node("p", {}, label)),
+      ),
+    );
+  renderDirectory();
+  renderNew();
+  renderHistory();
+  renderChecker();
+  setView(state.view);
+  controls();
+}
+function intendedTags(accounts) {
+  return accounts.length
+    ? accounts.map((a) => node("span", { class: "tag blue" }, a.name))
+    : [node("span", { class: "tag gray" }, "Unassigned · choose later")];
+}
+function visibleArrivals() {
+  const search = $("new-filter").value.trim().toLowerCase(),
+    scope = $("new-scope").value;
+  return state.data.arrivals
+    .filter(
+      (a) =>
+        scope === "all" ||
+        (scope === "unassigned"
+          ? !a.accounts.length
+          : a.accounts.some((x) => x.id === state.data.account.id)),
+    )
+    .map((a) => {
+      const context = [
+        a.comments,
+        a.received_on,
+        ...a.accounts.map((x) => x.name),
+      ]
+        .join(" ")
+        .toLowerCase();
+      const zips =
+        !search || context.includes(search)
+          ? a.zips
+          : a.zips.filter((z) => z.postal_code.includes(search));
+      return { ...a, zips };
+    })
+    .filter((a) => a.zips.length);
+}
+function renderNew() {
+  if (!state.data) return;
+  const target = $("arrival-list");
+  clear(target);
+  const arrivals = visibleArrivals();
+  if (!arrivals.length) {
+    const empty = !state.data.arrivals.length;
+    target.append(
+      node(
+        "div",
+        { class: "empty-state" },
+        node("div", { class: "empty-symbol", "aria-hidden": "true" }, "↘"),
+        node(
+          "h3",
+          {},
+          empty ? "No new ZIPs waiting" : "No arrivals match this view",
+        ),
+        node(
+          "p",
+          {},
+          empty
+            ? "Add a dated ZIP list from your client. Choose intended subaccounts now, or leave the list unassigned until contacts are requested."
+            : "Try a different search or destination filter. New subaccounts do not inherit old intended destinations.",
+        ),
+        empty
+          ? node(
+              "button",
+              { class: "button secondary small", onclick: () => openArrival() },
+              "Add the first arrival",
+            )
+          : null,
+      ),
+    );
+  }
+  for (const arrival of arrivals) {
+    const allSelected = arrival.zips.every((z) => state.selected.has(z.id));
+    const receiptCheckbox = node("input", {
+      type: "checkbox",
+      checked: allSelected,
+      disabled: blocked(),
+      "aria-label": `Select arrival ${arrival.id}`,
+      onchange: (e) => {
+        arrival.zips.forEach((z) =>
+          e.target.checked
+            ? state.selected.add(z.id)
+            : state.selected.delete(z.id),
+        );
+        renderNew();
+      },
+    });
+    const section = node(
+      "section",
+      { class: "arrival", "data-arrival-id": arrival.id },
+      node(
+        "div",
+        { class: "arrival-top" },
+        node(
+          "div",
+          {},
+          node(
+            "div",
+            { class: "arrival-date" },
+            receiptCheckbox,
+            dateLabel(arrival.received_on),
+            node(
+              "span",
+              { class: "count" },
+              `${arrival.zips.length} remaining / ${arrival.original_count} received`,
+            ),
+          ),
+          arrival.comments
+            ? node("p", { class: "arrival-notes" }, arrival.comments)
+            : null,
+        ),
+        node(
+          "div",
+          { class: "destination-tags", "aria-label": "Intended subaccounts" },
+          intendedTags(arrival.accounts),
+        ),
+      ),
+    );
+    const chips = node("div", { class: "zip-chips" });
+    for (const item of arrival.zips)
+      chips.append(
+        node(
+          "label",
+          { class: "zip-chip" },
+          node("input", {
+            type: "checkbox",
+            checked: state.selected.has(item.id),
+            disabled: blocked(),
+            "aria-label": `Select ZIP ${item.postal_code}`,
+            onchange: (e) => {
+              e.target.checked
+                ? state.selected.add(item.id)
+                : state.selected.delete(item.id);
+              selectionStatus();
+            },
+          }),
+          item.postal_code,
+        ),
+      );
+    section.append(chips);
+    target.append(section);
+  }
+  selectionStatus();
+}
+function selectionStatus() {
+  $("selected-count").textContent =
+    `${state.selected.size} ZIP${state.selected.size === 1 ? "" : "s"} selected`;
+  $("record-request").disabled = blocked() || !state.selected.size;
+  $("clear-selection").disabled = state.busy || !state.selected.size;
+  const visible = visibleArrivals().flatMap((a) => a.zips);
+  $("select-visible").checked =
+    visible.length > 0 && visible.every((z) => state.selected.has(z.id));
+  $("select-visible").indeterminate =
+    visible.some((z) => state.selected.has(z.id)) &&
+    !$("select-visible").checked;
+}
+function renderHistory() {
+  const summary = $("used-summary"),
+    list = $("history-list");
+  clear(summary);
+  clear(list);
+  $("copy-used").disabled = !state.data.used_zips.length;
+  if (state.data.used_zips.length)
+    summary.append(
+      node(
+        "details",
+        {},
+        node(
+          "summary",
+          {},
+          `View all ${state.data.used_zips.length} unique Used ZIPs`,
+        ),
+        node("p", { class: "zip-text" }, zipText(state.data.used_zips)),
+      ),
+    );
+  if (!state.data.history.length)
+    list.append(
+      node(
+        "div",
+        { class: "empty-state" },
+        node("div", { class: "empty-symbol", "aria-hidden": "true" }, "▤"),
+        node("h3", {}, "No contact requests recorded"),
+        node(
+          "p",
+          {},
+          "Select ZIPs in New, then record the request date, destination subaccounts and optional order details.",
+        ),
+      ),
+    );
+  for (const request of state.data.history) {
+    const sourceDetails = node(
+      "details",
+      {},
+      node("summary", {}, `Source arrivals (${request.sources.length})`),
+    );
+    for (const source of request.sources)
+      sourceDetails.append(
+        node(
+          "div",
+          { class: "source-note" },
+          `Received ${source.received_on} · Intended: ${source.accounts.map((a) => a.name).join(", ") || "unassigned"}`,
+          source.comments ? node("p", {}, source.comments) : null,
+        ),
+      );
+    list.append(
+      node(
+        "article",
+        { class: "request-card", "data-request-id": request.id },
+        node(
+          "header",
+          {},
+          node(
+            "div",
+            {},
+            node("strong", {}, dateLabel(request.requested_on)),
+            node("span", {}, ` · ${request.zips.length} ZIPs`),
+          ),
+          node(
+            "button",
+            {
+              class: "button ghost small",
+              onclick: () => copy(zipText(request.zips)),
+            },
+            "Copy ZIPs",
+          ),
+        ),
+        node(
+          "div",
+          { class: "request-body" },
+          node(
+            "div",
+            {},
+            node("h4", {}, "Contacts requested for"),
+            node("p", { class: "zip-text" }, request.zips.join(", ")),
+            sourceDetails,
+          ),
+          node(
+            "div",
+            {},
+            node("h4", {}, "Destination subaccounts"),
+            node(
+              "div",
+              { class: "destination-tags" },
+              intendedTags(request.accounts),
+            ),
+            node(
+              "p",
+              { class: "request-comments" },
+              request.order_reference
+                ? `Order: ${request.order_reference}`
+                : "Order number not recorded",
+            ),
+            request.comments
+              ? node("p", { class: "request-comments" }, request.comments)
+              : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+function renderChecker() {
+  if (!state.data) return;
+  const parsed = parseZips($("check-input").value),
+    target = $("check-results");
+  clear(target);
+  feedback($("check-feedback"), parsed);
+  const result = classify(parsed.zips);
+  for (const [key, label, tone] of [
+    ["used", "Already Used", "used"],
+    ["pending", "Already in New", "pending"],
+    ["fresh", "Not used or in New", "fresh"],
+  ]) {
+    const codes = parsed.invalid.length ? [] : result[key];
+    target.append(
+      node(
+        "section",
+        { class: `check-card ${tone}`, "aria-label": label },
+        node(
+          "header",
+          {},
+          node(
+            "h4",
+            {},
+            label,
+            " ",
+            node("span", { class: "tag" }, codes.length),
+          ),
+          node(
+            "button",
+            {
+              class: "button ghost small",
+              disabled: !codes.length,
+              onclick: () => copy(zipText(codes)),
+            },
+            "Copy",
+          ),
+        ),
+        node(
+          "p",
+          {},
+          parsed.invalid.length
+            ? "Correct invalid entries to compare."
+            : codes.length
+              ? codes.join(", ")
+              : $("check-input").value.trim()
+                ? "None"
+                : "Paste a list to begin.",
+        ),
+        key === "fresh" && codes.length
+          ? node(
+              "footer",
+              {},
+              node(
+                "button",
+                {
+                  class: "button secondary small",
+                  disabled: blocked(),
+                  onclick: () => openArrival(codes.join(", ")),
+                },
+                "Review as a new arrival",
+              ),
+            )
+          : null,
+      ),
+    );
+  }
+}
+function feedback(target, parsed) {
+  clear(target);
+  target.append(
+    node(
+      "p",
+      {},
+      `${parsed.zips.length} unique ZIPs · ${parsed.duplicates} duplicates removed${parsed.padded ? ` · ${parsed.padded} entries padded with leading zeros` : ""}`,
+    ),
+  );
+  if (parsed.invalid.length)
+    target.append(
+      node(
+        "p",
+        { class: "invalid" },
+        `Invalid: ${parsed.invalid.slice(0, 8).join(", ")}${parsed.invalid.length > 8 ? "…" : ""}. Use numeric ZIPs, not ranges or annotations.`,
+      ),
+    );
+}
+function setView(view) {
+  state.view = view;
+  for (const key of ["new", "history", "check"]) {
+    $(`view-${key}`).hidden = key !== view;
+    $(`tab-${key}`).setAttribute("aria-selected", String(key === view));
+  }
+}
+function accountOptions(container, selection, onChange) {
+  clear(container);
+  for (const account of state.data.accounts)
+    container.append(
+      node(
+        "label",
+        { class: "account-option" },
+        node("input", {
+          type: "checkbox",
+          value: account.id,
+          checked: selection.has(account.id),
+          "aria-label": account.name,
+          onchange: (e) => {
+            e.target.checked
+              ? selection.add(account.id)
+              : selection.delete(account.id);
+            onChange();
+          },
+        }),
+        node("span", {}, account.name),
+        node("span", { class: "industry" }, account.industry),
+      ),
+    );
+}
+function captureDraft() {
+  state.draftRevision = state.data.client.revision;
+}
+function openArrival(value = "") {
+  if (blocked()) return;
+  $("arrival-form").reset();
+  $("arrival-date").value = today();
+  $("arrival-zips").value = value;
+  $("arrival-error").textContent = "";
+  state.arrivalTargets = new Set();
+  captureDraft();
+  accountOptions($("arrival-accounts"), state.arrivalTargets, validateArrival);
+  validateArrival();
+  $("arrival-dialog").showModal();
+}
+function validateArrival() {
+  if (!state.data) {
+    $("save-arrival").disabled = true;
+    return;
+  }
+  const parsed = parseZips($("arrival-zips").value),
+    matches = classify(parsed.zips);
+  feedback($("arrival-feedback"), parsed);
+  if (matches.used.length)
+    $("arrival-feedback").append(
+      node(
+        "p",
+        { class: "invalid" },
+        `Already Used: ${matches.used.join(", ")}. Remove these before saving.`,
+      ),
+    );
+  if (matches.pending.length)
+    $("arrival-feedback").append(
+      node(
+        "p",
+        { class: "invalid" },
+        `Already in New: ${matches.pending.join(", ")}. Remove these before saving.`,
+      ),
+    );
+  const stale =
+    $("arrival-dialog").open &&
+    state.draftRevision !== state.data.client.revision;
+  if (stale)
+    $("arrival-error").textContent =
+      "Saved records changed. Close this form and review the current workspace.";
+  $("save-arrival").disabled =
+    blocked() ||
+    stale ||
+    !parsed.zips.length ||
+    !!parsed.invalid.length ||
+    !!matches.used.length ||
+    !!matches.pending.length ||
+    !$("arrival-date").value;
+}
+function openRequest() {
+  if (blocked() || !state.selected.size) return;
+  state.requestItems = state.data.arrivals.flatMap((a) =>
+    a.zips
+      .filter((z) => state.selected.has(z.id))
+      .map((z) => ({ ...z, arrival_id: a.id })),
+  );
+  if (!state.requestItems.length) return;
+  $("request-form").reset();
+  $("request-date").value = today();
+  $("request-error").textContent = "";
+  const sources = state.data.arrivals.filter((a) =>
+    state.requestItems.some((i) => i.arrival_id === a.id),
+  );
+  const first = new Set(sources[0].accounts.map((a) => a.id));
+  state.requestTargets = sources.every((a) =>
+    same(new Set(a.accounts.map((x) => x.id)), first),
+  )
+    ? first
+    : new Set();
+  captureDraft();
+  accountOptions($("request-accounts"), state.requestTargets, () => {
+    $("confirm-destinations").checked = false;
+    validateRequest();
+  });
+  $("request-zip-count").textContent =
+    `${state.requestItems.length} selected ZIPs`;
+  $("request-zips").textContent = state.requestItems
+    .map((i) => i.postal_code)
+    .sort()
+    .join(", ");
+  validateRequest();
+  $("request-dialog").showModal();
+}
+function destinationChanges() {
+  const sourceIds = new Set(state.requestItems.map((i) => i.arrival_id));
+  return state.data.arrivals.filter(
+    (a) =>
+      sourceIds.has(a.id) &&
+      a.accounts.length &&
+      !same(new Set(a.accounts.map((x) => x.id)), state.requestTargets),
+  );
+}
+function validateRequest() {
+  if (!state.data) {
+    $("save-request").disabled = true;
+    return;
+  }
+  const changes = destinationChanges();
+  $("destination-review").hidden = !changes.length;
+  $("destination-warning").textContent = changes.length
+    ? `${changes.length} selected arrival${changes.length === 1 ? "" : "s"} had different intended destinations. The original intentions remain recorded in source history.`
+    : "";
+  const stale =
+    $("request-dialog").open &&
+    state.draftRevision !== state.data.client.revision;
+  if (stale)
+    $("request-error").textContent =
+      "Saved records changed. Close this form, reload and review your selection.";
+  $("save-request").disabled =
+    blocked() ||
+    stale ||
+    !state.requestItems.length ||
+    !state.requestTargets.size ||
+    !$("request-date").value ||
+    (changes.length > 0 && !$("confirm-destinations").checked);
+}
+async function save(action, payload, dialog, errorId) {
+  if (blocked() || state.draftRevision !== state.data.client.revision) return;
+  const account = state.data.account.id,
+    client = state.data.client.id,
+    revision = state.draftRevision,
+    op = crypto.randomUUID();
+  let sent = false;
+  state.busy = true;
+  controls();
+  $(errorId).textContent = "";
+  showError("");
+  state.reviewReady = false;
+  try {
+    const existing = readPending();
+    if (existing) {
+      state.recovery = existing;
+      throw Error("A previous save needs checking.");
+    }
+    const hold = { id: op, client_id: client };
+    localStorage.setItem(pendingKey(), JSON.stringify(hold));
+    if (readPending()?.id !== op)
+      throw Error("Could not preserve recovery information. Nothing was sent.");
+    sent = true;
+    const result = validateSnapshot(
+      await api("/api/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-ZIP-Local": "1" },
+        body: JSON.stringify({
+          action,
+          payload,
+          account_id: account,
+          client_id: client,
+          expected_revision: revision,
+          operation_id: op,
+        }),
+      }),
+      account,
+    );
+    if (
+      result.client.id !== client ||
+      result.operation?.id !== op ||
+      result.operation.applied_revision !== revision + 1
+    )
+      throw Error("Save receipt could not be verified.");
+    localStorage.removeItem(pendingKey());
+    state.recovery = null;
+    state.data = result;
+    state.selected.clear();
+    if (action === "add_account") await directory();
+    $(dialog).close();
+    render();
+    notify(
+      action === "receive"
+        ? "Incoming ZIPs saved to SQLite."
+        : action === "request"
+          ? "Contact request recorded. Selected ZIPs moved to Used History."
+          : "Test subaccount created. It inherited no existing destinations.",
+    );
+  } catch (e) {
+    if (!sent || (e.status >= 400 && e.status < 500)) {
+      try {
+        if (readPending()?.id === op) localStorage.removeItem(pendingKey());
+      } catch {
+        state.storageOK = false;
+      }
+    }
+    syncRecovery();
+    $(errorId).textContent = e.message;
+  } finally {
+    state.busy = false;
+    controls();
+    renderNew();
+    renderChecker();
+  }
+}
+async function recover() {
+  if (state.busy || !state.storageOK) return;
+  state.busy = true;
+  controls();
+  state.reviewReady = false;
+  try {
+    const hold = readPending();
+    const fresh = validateSnapshot(
+      await api(
+        `/api/workspace?account_id=${state.data.account.id}${hold?.id ? `&operation_id=${encodeURIComponent(hold.id)}` : ""}`,
+      ),
+      state.data.account.id,
+    );
+    if (fresh.client.id !== state.data.client.id)
+      throw Error("Client context changed. Reload the page.");
+    state.data = fresh;
+    if (hold && fresh.operation?.id === hold.id) {
+      localStorage.removeItem(pendingKey());
+      state.recovery = null;
+      notify("Previous save verified in SQLite.");
+    } else {
+      state.reviewReady = true;
+      $("recovery-message").textContent =
+        "Current records loaded. Review New and Used History before accepting them.";
+    }
+    render();
+  } catch (e) {
+    $("recovery-message").textContent = e.message;
+  } finally {
+    state.busy = false;
+    controls();
+  }
+}
+async function copy(value) {
+  try {
+    if (navigator.clipboard?.writeText)
+      await navigator.clipboard.writeText(value);
+    else {
+      const input = node(
+        "textarea",
+        { class: "clipboard-helper", "aria-label": "Copy ZIPs" },
+        value,
+      );
+      document.body.append(input);
+      input.select();
+      const ok = document.execCommand("copy");
+      input.remove();
+      if (!ok) throw Error();
+    }
+    notify("ZIP list copied.");
+  } catch {
+    notify(
+      "Copy was unavailable. You can select and copy the displayed ZIP text.",
+    );
+  }
+}
+
+for (const key of ["new", "history", "check"])
+  $(`tab-${key}`).addEventListener("click", () => setView(key));
+$("add-arrival").addEventListener("click", () => openArrival());
+$("record-request").addEventListener("click", openRequest);
+$("clear-selection").addEventListener("click", () => {
+  state.selected.clear();
+  renderNew();
+});
+$("select-visible").addEventListener("change", (e) => {
+  visibleArrivals()
+    .flatMap((a) => a.zips)
+    .forEach((z) =>
+      e.target.checked ? state.selected.add(z.id) : state.selected.delete(z.id),
+    );
+  renderNew();
+});
+$("new-filter").addEventListener("input", renderNew);
+$("new-scope").addEventListener("change", renderNew);
+$("check-input").addEventListener("input", renderChecker);
+$("arrival-zips").addEventListener("input", validateArrival);
+$("arrival-date").addEventListener("input", validateArrival);
+$("request-date").addEventListener("input", validateRequest);
+$("confirm-destinations").addEventListener("change", validateRequest);
+for (const kind of ["arrival", "request"]) {
+  $(`${kind}-all`).addEventListener("click", () => {
+    const selected = new Set(state.data.accounts.map((a) => a.id));
+    if (kind === "arrival") state.arrivalTargets = selected;
+    else {
+      state.requestTargets = selected;
+      $("confirm-destinations").checked = false;
+    }
+    accountOptions($(`${kind}-accounts`), selected, () => {
+      if (kind === "request") $("confirm-destinations").checked = false;
+      kind === "arrival" ? validateArrival() : validateRequest();
+    });
+    kind === "arrival" ? validateArrival() : validateRequest();
+  });
+  $(`${kind}-none`).addEventListener("click", () => {
+    const selected = new Set();
+    if (kind === "arrival") state.arrivalTargets = selected;
+    else {
+      state.requestTargets = selected;
+      $("confirm-destinations").checked = false;
+    }
+    accountOptions(
+      $(`${kind}-accounts`),
+      selected,
+      kind === "arrival" ? validateArrival : validateRequest,
+    );
+    kind === "arrival" ? validateArrival() : validateRequest();
+  });
+}
+$("arrival-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  validateArrival();
+  if ($("save-arrival").disabled) return;
+  void save(
+    "receive",
+    {
+      received_on: $("arrival-date").value,
+      zips: parseZips($("arrival-zips").value).zips,
+      comments: $("arrival-comments").value,
+      account_ids: [...state.arrivalTargets].sort((a, b) => a - b),
+    },
+    "arrival-dialog",
+    "arrival-error",
+  );
+});
+$("request-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  validateRequest();
+  if ($("save-request").disabled) return;
+  void save(
+    "request",
+    {
+      requested_on: $("request-date").value,
+      item_ids: state.requestItems.map((i) => i.id).sort((a, b) => a - b),
+      account_ids: [...state.requestTargets].sort((a, b) => a - b),
+      comments: $("request-comments").value,
+      order_reference: $("request-order").value,
+      confirm_destination_change: $("confirm-destinations").checked,
+    },
+    "request-dialog",
+    "request-error",
+  );
+});
+$("add-account").addEventListener("click", () => {
+  if (blocked()) return;
+  $("account-form").reset();
+  $("account-error").textContent = "";
+  captureDraft();
+  $("account-dialog").showModal();
+});
+$("account-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  void save(
+    "add_account",
+    {
+      name: $("new-account-name").value,
+      industry: $("new-account-industry").value,
+    },
+    "account-dialog",
+    "account-error",
+  );
+});
+$("copy-used").addEventListener("click", () =>
+  copy(zipText(state.data.used_zips)),
+);
+$("refresh").addEventListener("click", () => {
+  if (state.data) void load(state.data.account.id);
+  else void load(1);
+});
+$("recover").addEventListener("click", recover);
+$("accept-recovery").addEventListener("click", () => {
+  try {
+    localStorage.removeItem(pendingKey());
+    state.recovery = null;
+    state.reviewReady = false;
+    $("recovery-message").textContent = "";
+    controls();
+    renderNew();
+    renderChecker();
+    notify("Saved records accepted. Start a new reviewed action.");
+  } catch {
+    $("recovery-message").textContent =
+      "Browser recovery storage is unavailable.";
+  }
+});
+$("account-switch").addEventListener("change", (e) => {
+  const next = Number(e.target.value);
+  if (
+    state.selected.size &&
+    !window.confirm("Clear this selection and switch subaccount?")
+  ) {
+    e.target.value = state.data.account.id;
+    return;
+  }
+  $("new-filter").value = "";
+  $("new-scope").value = "all";
+  void load(next);
+});
+document.querySelectorAll(".close-dialog").forEach((button) =>
+  button.addEventListener("click", () => {
+    if (!state.busy) button.closest("dialog").close();
+  }),
+);
+document.querySelectorAll("dialog").forEach((dialog) =>
+  dialog.addEventListener("cancel", (e) => {
+    if (state.busy) e.preventDefault();
+  }),
+);
+window.addEventListener("beforeunload", (event) => {
+  if (state.busy || document.querySelector("dialog[open]")) {
+    event.preventDefault();
+    event.returnValue = "";
+  }
+});
+window.addEventListener("storage", (event) => {
+  if (state.data && event.key === pendingKey()) {
+    syncRecovery();
+    controls();
+    renderNew();
+  }
+});
+const initial = Number(new URL(location.href).searchParams.get("account") || 1);
+void load(Number.isInteger(initial) && initial > 0 ? initial : 1);
+
+// ZIP-panel controls. Everything above this panel is intentionally decorative.
+function setPlanner(open, view) {
+  $("planner").hidden = !open;
+  $("assignment-overview").hidden = open;
+  $("zip-footer").hidden = !open;
+  $("open-planner").textContent = open
+    ? "Close ZIP planner"
+    : "Open ZIP planner";
+  $("open-planner").setAttribute("aria-expanded", String(open));
+  if (view) setView(view);
+}
+function updateOverview(data) {
+  const newCount = data.arrivals.reduce((sum, a) => sum + a.zips.length, 0);
+  $("overview-title").textContent =
+    newCount || data.used_zips.length
+      ? `${newCount} new ZIPs · ${data.used_zips.length} used ZIPs`
+      : "No ZIPs assigned yet";
+  $("overview-description").textContent =
+    newCount || data.used_zips.length
+      ? "Open ZIP planner to manage incoming ZIPs, requests and destinations."
+      : "No past campaign ZIPs were imported.";
+}
+$("open-planner").setAttribute("aria-controls", "planner");
+$("open-planner").setAttribute("aria-expanded", "false");
+$("open-planner").addEventListener("click", () =>
+  setPlanner($("planner").hidden),
+);
+$("campaign-history").addEventListener("click", () =>
+  setPlanner(true, "history"),
+);
+$("export-db").addEventListener("click", async () => {
+  try {
+    const bytes = await window.zipLabStorage.exportDatabase();
+    const url = URL.createObjectURL(
+      new Blob([bytes], { type: "application/vnd.sqlite3" }),
+    );
+    const a = node("a", {
+      href: url,
+      download: "zip-prototype-" + today() + ".sqlite3",
+    });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    notify("SQLite backup downloaded.");
+  } catch (e) {
+    showError(e.message);
+  }
+});
+$("import-db").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file || state.busy) return;
+  if (
+    !window.confirm(
+      "Replace this browser’s current prototype database with this backup? Export the current database first if needed.",
+    )
+  )
+    return;
+  state.busy = true;
+  controls();
+  try {
+    await window.zipLabStorage.importDatabase(
+      new Uint8Array(await file.arrayBuffer()),
+    );
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith("zip-github-pending:" + location.origin + ":"))
+        localStorage.removeItem(key);
+    state.recovery = null;
+    state.directory = null;
+    state.selected.clear();
+    document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+    notify("SQLite backup imported.");
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    state.busy = false;
+    await load(1);
+  }
+});
+
+</script>
+</body>
+</html>
