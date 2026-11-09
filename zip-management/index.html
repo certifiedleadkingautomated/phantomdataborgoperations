@@ -2730,10 +2730,9 @@
       .zl-bulk-table-head,
       .zl-bulk-row {
         display: grid;
-        grid-template-columns: 20px 123px minmax(105px, 1fr) minmax(
-            180px,
-            1.65fr
-          ) 22px;
+        grid-template-columns:
+          20px 123px minmax(105px, 1fr) minmax(180px, 1.65fr)
+          22px;
         gap: 9px;
         align-items: start;
         padding: 9px 10px;
@@ -2854,6 +2853,94 @@
           grid-template-columns: 1fr 1fr;
           max-width: none;
         }
+      }
+
+      /* Used ZIP list reconciliation stays within its subsection. */
+      .zl-used-search-box {
+        padding: 9px 10px;
+        border-bottom: 1px solid #eee5df;
+        background: #fff;
+      }
+      .zl-search-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+      .zl-search-label label {
+        font-size: 11px;
+        font-weight: 500;
+        color: #536177;
+      }
+      .zl-used-search-box textarea {
+        min-height: 49px;
+        padding: 7px 8px;
+        font-size: 11px;
+        line-height: 1.6;
+        border-color: #dde2e9;
+        border-radius: 6px;
+        background: #fcfcfd;
+      }
+      .zl-used-search-box .zl-feedback:empty {
+        display: none;
+      }
+      .zl-search-result + .zl-search-result {
+        border-top: 1px solid #ead8ce;
+        margin-top: 12px;
+        padding-top: 12px;
+      }
+      .zl-search-result-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .zl-search-result-head h4 {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 600;
+        color: #784b3d;
+      }
+      .zl-search-result-head .zl-count {
+        font-size: 10px;
+        margin-left: 6px;
+        color: #97766b;
+      }
+      .zl-search-result-head .zl-button {
+        font-size: 10px;
+        min-height: 27px;
+        padding: 4px 7px;
+      }
+      .zl-search-empty {
+        font-size: 10px;
+        color: #9c7d72;
+        line-height: 1.6;
+        padding: 3px 0;
+      }
+      .zl-search-missing {
+        border-top: 1px solid #ead8ce;
+        margin-top: 12px;
+        padding-top: 10px;
+        font-size: 10px;
+        color: #8c766d;
+        line-height: 1.6;
+      }
+      .zl-search-missing summary {
+        cursor: pointer;
+      }
+      .zl-search-missing .zl-zip-text {
+        font-size: 10px;
+        margin-top: 6px;
+      }
+      .zl-log-item details {
+        font-size: 10px;
+        margin-top: 6px;
+      }
+      .zl-log-item summary {
+        cursor: pointer;
       }
     </style>
   </head>
@@ -3146,6 +3233,28 @@
                   >
                     Copy ZIPs
                   </button>
+                </div>
+                <div class="zl-used-search-box">
+                  <div class="zl-search-label">
+                    <label for="zl-used-search">Find a ZIP list</label
+                    ><button
+                      type="button"
+                      id="zl-clear-used-search"
+                      class="zl-text-button"
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                  <textarea
+                    id="zl-used-search"
+                    rows="2"
+                    placeholder="Paste ZIPs to find or keep, e.g. 35801,35802,35803"
+                  ></textarea>
+                  <div
+                    id="zl-used-search-feedback"
+                    class="zl-feedback"
+                    aria-live="polite"
+                  ></div>
                 </div>
                 <div id="zl-used" class="zl-used-list"></div>
                 <div class="zl-selection">
@@ -3732,7 +3841,13 @@
               }
             } else if (action === "delete") {
               assert(
-                ["individual", "state", "city"].includes(payload.mode),
+                [
+                  "individual",
+                  "state",
+                  "city",
+                  "search_matches",
+                  "search_others",
+                ].includes(payload.mode),
                 "Invalid deletion type.",
               );
               let targets = active(db, account.id),
@@ -3767,6 +3882,19 @@
                     z.state_name === payload.state && z.city === payload.city,
                 );
                 label = payload.city + ", " + payload.state;
+              }
+              if (
+                payload.mode === "search_matches" ||
+                payload.mode === "search_others"
+              ) {
+                checkZips(payload.search_zips);
+                const searched = new Set(payload.search_zips);
+                targets = targets.filter((z) =>
+                  payload.mode === "search_matches"
+                    ? searched.has(z.zip)
+                    : !searched.has(z.zip),
+                );
+                label = [...searched].sort().join(", ");
               }
               const expected = [...new Set(payload.zips || [])].sort();
               assert(
@@ -4073,6 +4201,14 @@
           $("zl-select-all").checked = n > 0 && count === n;
           $("zl-select-all").indeterminate = count > 0 && count < n;
           $("zl-select-all").disabled = model.busy || !n;
+          document
+            .querySelectorAll("[data-zl-search-size]")
+            .forEach((button) => {
+              button.disabled =
+                model.busy || Number(button.dataset.zlSearchSize) === 0;
+            });
+          $("zl-group").disabled =
+            model.busy || !!$("zl-used-search").value.trim();
         }
         function usedChip(z) {
           return el(
@@ -4131,12 +4267,116 @@
               : null,
           );
         }
+        function renderUsedSearch(box, data) {
+          const text = $("zl-used-search").value.trim();
+          const feedbackBox = $("zl-used-search-feedback");
+          if (!text) {
+            feedbackBox.replaceChildren();
+            return false;
+          }
+          const parsed = parse(text);
+          feedback(feedbackBox, parsed);
+          if (parsed.invalid.length || !parsed.zips.length) {
+            feedbackBox.append(
+              el(
+                "span",
+                { class: "zl-invalid" },
+                "Correct the list before deleting search results. The complete Used list is shown below.",
+              ),
+            );
+            return false;
+          }
+          const requested = new Set(parsed.zips),
+            active = new Set(data.map((z) => z.zip));
+          const matches = data.filter((z) => requested.has(z.zip));
+          const others = data.filter((z) => !requested.has(z.zip));
+          const missing = parsed.zips.filter((z) => !active.has(z));
+          function result(title, list, mode, buttonText, emptyText) {
+            const action = el(
+              "button",
+              {
+                type: "button",
+                class: "zl-button zl-danger-outline",
+                disabled: model.busy || !list.length,
+                "data-zl-search-size": String(list.length),
+                onclick: () =>
+                  openDelete({
+                    mode,
+                    search_zips: parsed.zips,
+                    zips: list.map((z) => z.zip),
+                    kept_count:
+                      mode === "search_others" ? matches.length : others.length,
+                  }),
+              },
+              buttonText,
+            );
+            box.append(
+              el(
+                "section",
+                { class: "zl-search-result" },
+                el(
+                  "header",
+                  { class: "zl-search-result-head" },
+                  el(
+                    "h4",
+                    {},
+                    title,
+                    el("span", { class: "zl-count" }, list.length),
+                  ),
+                  action,
+                ),
+                list.length
+                  ? chips(list.map(usedChip))
+                  : el("p", { class: "zl-search-empty" }, emptyText),
+              ),
+            );
+          }
+          result(
+            "Matching ZIPs",
+            matches,
+            "search_matches",
+            "Delete matching ZIPs",
+            "None of the pasted ZIPs are currently Used.",
+          );
+          result(
+            "Other used ZIPs",
+            others,
+            "search_others",
+            "Keep matches, delete others",
+            "Every Used ZIP is in the pasted list.",
+          );
+          if (missing.length)
+            box.append(
+              el(
+                "details",
+                { class: "zl-search-missing" },
+                el(
+                  "summary",
+                  {},
+                  missing.length +
+                    " pasted ZIP" +
+                    (missing.length === 1 ? " is" : "s are") +
+                    " not currently Used",
+                ),
+                el("p", { class: "zl-zip-text" }, missing.join(", ")),
+                el(
+                  "p",
+                  { class: "zl-helper" },
+                  "These ZIPs are not added or deleted by this search.",
+                ),
+              ),
+            );
+          return true;
+        }
+
         function renderUsed() {
           const box = $("zl-used"),
             data = model.data.used,
             kind = $("zl-group").value;
           box.replaceChildren();
-          if (!data.length)
+          if (renderUsedSearch(box, data)) {
+            /* Search results use the same selectable ZIP chips. */
+          } else if (!data.length)
             box.append(
               el(
                 "p",
@@ -4194,7 +4434,7 @@
             ? "Already active in Used ZIPs when this history row was added."
             : "Added to Used ZIPs by this history row.";
           if (z.deleted_event_id)
-            title = `Deleted by ${z.deleted_mode}: ${z.deleted_group} · ${formatDate(z.deleted_at)}${z.deleted_comment ? " · " + z.deleted_comment : ""}`;
+            title = `Deleted by ${{ search_others: "search remainder (kept matching ZIPs)", search_matches: "search matches", individual: "individual ZIP selection" }[z.deleted_mode] || z.deleted_mode}: ${z.deleted_group} · ${formatDate(z.deleted_at)}${z.deleted_comment ? " · " + z.deleted_comment : ""}`;
           return el(
             "span",
             {
@@ -4284,11 +4524,15 @@
                 el(
                   "strong",
                   {},
-                  e.mode === "individual"
-                    ? "Individual ZIP selection"
-                    : e.mode === "state"
-                      ? "Deleted by state: " + e.group_label
-                      : "Deleted by city: " + e.group_label,
+                  e.mode === "search_matches"
+                    ? "Deleted matching ZIPs from search"
+                    : e.mode === "search_others"
+                      ? "Deleted other Used ZIPs (kept search matches)"
+                      : e.mode === "individual"
+                        ? "Individual ZIP selection"
+                        : e.mode === "state"
+                          ? "Deleted by state: " + e.group_label
+                          : "Deleted by city: " + e.group_label,
                 ),
                 el(
                   "p",
@@ -4299,6 +4543,14 @@
                     " unique ZIPs",
                 ),
                 e.comment ? el("p", {}, e.comment) : el("p", {}, "No comment."),
+                e.mode.startsWith("search_")
+                  ? el(
+                      "details",
+                      {},
+                      el("summary", {}, "ZIP list used for this search"),
+                      el("p", { class: "zl-zip-text" }, e.group_label),
+                    )
+                  : null,
                 el(
                   "p",
                   { class: "zl-zip-text" },
@@ -4514,19 +4766,17 @@
                       ? "Comment exceeds 3,000 characters."
                       : `${p.zips.length} ZIPs${matches.size ? " · " + matches.size + " already used" : ""}${p.duplicates ? " · " + p.duplicates + " repeats removed" : ""}${p.padded ? " · " + p.padded + " padded" : ""}`;
               row.preview.replaceChildren(
-                ...p.zips
-                  .slice(0, 24)
-                  .map((z) =>
-                    el(
-                      "span",
-                      {
-                        class:
-                          "zl-history-chip" +
-                          (matches.has(z) ? " duplicate" : ""),
-                      },
-                      z,
-                    ),
+                ...p.zips.slice(0, 24).map((z) =>
+                  el(
+                    "span",
+                    {
+                      class:
+                        "zl-history-chip" +
+                        (matches.has(z) ? " duplicate" : ""),
+                    },
+                    z,
                   ),
+                ),
               );
               if (p.zips.length > 24)
                 row.preview.append(
@@ -4648,13 +4898,21 @@
           $("zl-delete-comment").value = "";
           $("zl-delete-error").textContent = "";
           const label =
-            options.mode === "state"
-              ? "all active ZIPs in " + options.state
-              : options.mode === "city"
-                ? "all active ZIPs in " + options.city + ", " + options.state
-                : "the selected ZIP" + (options.zips.length === 1 ? "" : "s");
+            options.mode === "search_matches"
+              ? `the ZIPs matching your pasted list; ${options.kept_count} other Used ZIPs will remain`
+              : options.mode === "search_others"
+                ? `the ZIPs outside your pasted list; ${options.kept_count} matching Used ZIPs will remain${options.kept_count === 0 ? " — none of your pasted ZIPs were found, so this removes every currently Used ZIP" : ""}`
+                : options.mode === "state"
+                  ? "all active ZIPs in " + options.state
+                  : options.mode === "city"
+                    ? "all active ZIPs in " +
+                      options.city +
+                      ", " +
+                      options.state
+                    : "the selected ZIP" +
+                      (options.zips.length === 1 ? "" : "s");
           $("zl-delete-description").textContent =
-            `Delete ${options.zips.length} unique ZIP${options.zips.length === 1 ? "" : "s"} from Used ZIPs for ${ACCOUNT.name}: ${label}? This action is recorded as a deletion by ${options.mode === "individual" ? "individual ZIP selection" : options.mode}.`;
+            `Delete ${options.zips.length} unique ZIP${options.zips.length === 1 ? "" : "s"} from Used ZIPs for ${ACCOUNT.name}: ${label}? This action is recorded as a deletion by ${options.mode === "individual" ? "individual ZIP selection" : options.mode === "search_matches" ? "search matches" : options.mode === "search_others" ? "search remainder (keep matching ZIPs)" : options.mode}.`;
           $("zl-delete-preview").replaceChildren(
             ...options.zips
               .slice(0, 200)
@@ -4762,6 +5020,15 @@
         $("zl-reset").addEventListener("click", () => openErase("all"));
         $("zl-refresh").addEventListener("click", () => void refresh());
         $("zl-group").addEventListener("change", renderUsed);
+        $("zl-used-search").addEventListener("input", () => {
+          model.selected.clear();
+          renderUsed();
+        });
+        $("zl-clear-used-search").addEventListener("click", () => {
+          $("zl-used-search").value = "";
+          model.selected.clear();
+          renderUsed();
+        });
         $("zl-delete-selected").addEventListener("click", () =>
           openDelete({ mode: "individual", zips: [...model.selected].sort() }),
         );
