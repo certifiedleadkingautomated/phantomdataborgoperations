@@ -3276,6 +3276,31 @@
         overflow: auto;
         scrollbar-width: thin;
       }
+      .zl-entry-view-buttons {
+        margin: 0 0 7px;
+        padding: 2px;
+        gap: 1px;
+        background: #f3f5f8;
+      }
+      .zl-entry-view-buttons button {
+        font-size: 9px;
+        padding: 3px 7px;
+        min-height: 22px;
+      }
+      .zl-entry-location-note {
+        font-size: 9px;
+        color: #8996a8;
+        margin: 0 0 6px;
+      }
+      .zl-history-section .zl-head-actions {
+        gap: 8px;
+      }
+      .zl-history-section .zl-highlight-help summary {
+        font-size: 9px;
+      }
+      .zl-history-section .zl-highlight-help .zl-legend {
+        top: 28px;
+      }
     </style>
   </head>
   <body>
@@ -3640,48 +3665,17 @@
                     >
                       + Add history row
                     </button>
+                    <details class="zl-highlight-help">
+                      <summary>Highlights</summary>
+                      <div class="zl-legend">
+                        <span
+                          ><i class="zl-key duplicate"></i>Already used when
+                          added</span
+                        ><span><i class="zl-key removed"></i>Deleted</span>
+                      </div>
+                    </details>
                   </div>
                 </header>
-                <div class="zl-history-controls">
-                  <div
-                    id="zl-history-view"
-                    class="zl-view-buttons"
-                    role="group"
-                    aria-label="History ZIP display"
-                  >
-                    <button type="button" data-view="list" aria-pressed="true">
-                      ZIP List</button
-                    ><button
-                      type="button"
-                      data-view="state"
-                      aria-pressed="false"
-                    >
-                      By State</button
-                    ><button
-                      type="button"
-                      data-view="city"
-                      aria-pressed="false"
-                    >
-                      By City
-                    </button>
-                  </div>
-                  <details class="zl-highlight-help">
-                    <summary>Highlights</summary>
-                    <div class="zl-legend">
-                      <span
-                        ><i class="zl-key duplicate"></i>Already used when
-                        added</span
-                      ><span><i class="zl-key removed"></i>Deleted</span>
-                    </div>
-                  </details>
-                </div>
-                <p
-                  id="zl-history-location-note"
-                  class="zl-history-location-note"
-                  hidden
-                >
-                  Upload uszips.csv to group ZIPs by location.
-                </p>
                 <div id="zl-history"></div>
               </section>
               <details class="zl-section zl-audit">
@@ -4624,7 +4618,6 @@
                 model.busy || Number(button.dataset.zlSearchSize) === 0;
             });
           updateViewButtons("zl-group", model.usedView || "list");
-          updateViewButtons("zl-history-view", model.historyView || "list");
         }
         function usedChip(z) {
           return el(
@@ -4923,12 +4916,60 @@
             z.zip,
           );
         }
+        function historyEntryView(row) {
+          model.historyViews ||= new Map();
+          const wrapper = el("div", { class: "zl-history-entry-view" });
+          const controls = el("div", {
+            class: "zl-view-buttons zl-entry-view-buttons",
+            role: "group",
+            "aria-label": "ZIP display for history entry " + row.id,
+          });
+          const content = el("div", { class: "zl-history-zip-area" });
+          const note = el(
+            "p",
+            { class: "zl-entry-location-note", hidden: true },
+            "Upload uszips.csv to group by location.",
+          );
+          function apply() {
+            const kind = model.historyViews.get(row.id) || "list";
+            controls.querySelectorAll("[data-view]").forEach((button) => {
+              button.setAttribute(
+                "aria-pressed",
+                String(button.dataset.view === kind),
+              );
+              button.disabled = model.busy;
+            });
+            content.replaceChildren(
+              zipCollection(row.zips, kind, historyChip, false),
+            );
+            note.hidden = kind === "list" || model.data.places > 0;
+          }
+          for (const [view, label] of [
+            ["list", "ZIP List"],
+            ["state", "By State"],
+            ["city", "By City"],
+          ])
+            controls.append(
+              el(
+                "button",
+                {
+                  type: "button",
+                  "data-view": view,
+                  onclick: () => {
+                    model.historyViews.set(row.id, view);
+                    apply();
+                  },
+                },
+                label,
+              ),
+            );
+          wrapper.append(controls, note, content);
+          apply();
+          return wrapper;
+        }
+
         function renderHistory() {
           const target = $("zl-history");
-          const kind = model.historyView || "list";
-          updateViewButtons("zl-history-view", kind);
-          $("zl-history-location-note").hidden =
-            kind === "list" || model.data.places > 0;
           target.replaceChildren();
           $("zl-history-count").textContent = model.data.rows.length + " rows";
           if (!model.data.rows.length)
@@ -4982,11 +5023,7 @@
                       "Erase row (test)",
                     ),
                   ),
-                  el(
-                    "div",
-                    { class: "zl-history-zip-area" },
-                    zipCollection(r.zips, kind, historyChip, false),
-                  ),
+                  historyEntryView(r),
                   r.comment
                     ? el("p", { class: "zl-row-note" }, r.comment)
                     : null,
@@ -5549,14 +5586,6 @@
             button.addEventListener("click", () => {
               model.usedView = button.dataset.view;
               renderUsed();
-            }),
-          );
-        $("zl-history-view")
-          .querySelectorAll("[data-view]")
-          .forEach((button) =>
-            button.addEventListener("click", () => {
-              model.historyView = button.dataset.view;
-              renderHistory();
             }),
           );
         $("zl-used-search").addEventListener("input", () => {
