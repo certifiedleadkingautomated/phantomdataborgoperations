@@ -3301,7 +3301,7 @@
       .zl-history-section .zl-highlight-help .zl-legend {
         top: 28px;
       }
-    
+
       /* Deletion records use the same section treatment as Used ZIPs and History. */
       .zl-audit {
         border: 1px solid #d5dce5;
@@ -3324,8 +3324,12 @@
         list-style: none;
         cursor: pointer;
       }
-      .zl-audit > summary::-webkit-details-marker { display: none; }
-      .zl-audit > summary .zl-count { margin-left: auto; }
+      .zl-audit > summary::-webkit-details-marker {
+        display: none;
+      }
+      .zl-audit > summary .zl-count {
+        margin-left: auto;
+      }
       .zl-audit > summary::after {
         content: "";
         width: 6px;
@@ -3333,13 +3337,15 @@
         border-right: 1.5px solid #78869b;
         border-bottom: 1.5px solid #78869b;
         transform: rotate(-45deg);
-        transition: transform .15s;
+        transition: transform 0.15s;
         margin: 0 2px 0 4px;
       }
       .zl-audit[open] > summary {
         border-bottom: 1px solid #dbe1e9;
       }
-      .zl-audit[open] > summary::after { transform: rotate(45deg); }
+      .zl-audit[open] > summary::after {
+        transform: rotate(45deg);
+      }
       .zl-audit .zl-log-item summary {
         display: list-item;
         min-height: 0;
@@ -3349,7 +3355,108 @@
         font-size: 10px;
         font-weight: 400;
       }
-</style>
+
+      .zl-new-section {
+        border-top: 3px solid #819fc8;
+      }
+      .zl-new-row {
+        display: grid;
+        grid-template-columns: 26px minmax(0, 1fr);
+        border-top: 1px solid #e5e9ee;
+      }
+      .zl-new-row:first-child {
+        border-top: 0;
+      }
+      .zl-new-row .zl-row-body {
+        background: #fbfcff;
+      }
+      .zl-new-row .zl-row-note {
+        margin: 0 0 8px;
+      }
+      #zl-new-entries {
+        max-height: 470px;
+        overflow: auto;
+        scrollbar-width: thin;
+      }
+      .zl-new-batch + .zl-new-batch {
+        border-top: 1px solid #e4eaf3;
+        padding-top: 8px;
+        margin-top: 8px;
+      }
+      .zl-ten-zips {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+        gap: 3px;
+      }
+      .zl-ten-zips .zl-history-chip {
+        text-align: center;
+        padding: 3px 0;
+        font-size: 9px;
+        border-color: #d4dfed;
+        background: #f1f5fb;
+        color: #506b91;
+      }
+      .zl-batch-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 5px;
+      }
+      .zl-batch-actions .zl-button {
+        font-size: 10px;
+        padding: 4px 7px;
+        min-height: 25px;
+      }
+      .zl-entry-actions {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .zl-entry-actions .zl-text-button {
+        font-size: 9px;
+      }
+      .zl-pending-tag {
+        font-size: 9px;
+        background: #fff1c9;
+        color: #946d23;
+        padding: 2px 5px;
+        border-radius: 4px;
+      }
+      .zl-pending-row .zl-row-body {
+        background: #fffdf6;
+      }
+      .zl-confirm-request {
+        color: #3e7051 !important;
+        font-weight: 600;
+      }
+      .zl-edit-zips {
+        padding: 9px;
+        background: #f6f8fb;
+        border: 1px solid #e5eaf1;
+        border-radius: 6px;
+        max-height: 110px;
+        overflow: auto;
+      }
+      .zl-pending-check {
+        font-size: 10px;
+        line-height: 1.6;
+        color: #8e6b2e;
+        margin-top: 7px;
+      }
+      .zl-left > .zl-section:first-child {
+        border-top-color: #c78d75;
+      }
+      @media (max-width: 600px) {
+        .zl-ten-zips {
+          gap: 1px;
+        }
+        .zl-ten-zips .zl-history-chip {
+          font-size: 8px;
+          padding: 4px 0;
+          letter-spacing: -0.5px;
+        }
+      }
+    </style>
   </head>
   <body>
     <aside class="sidebar" aria-label="Portal sidebar (design only)">
@@ -3699,6 +3806,25 @@
                 </p>
               </section>
               <section
+                class="zl-section zl-new-section"
+                aria-labelledby="zl-new-heading"
+              >
+                <header class="zl-section-head">
+                  <h3 id="zl-new-heading">New ZIPs</h3>
+                  <div class="zl-head-actions">
+                    <span class="zl-count" id="zl-new-count">0</span
+                    ><button
+                      type="button"
+                      class="zl-button zl-primary"
+                      id="zl-add-new"
+                    >
+                      + Add new ZIPs
+                    </button>
+                  </div>
+                </header>
+                <div id="zl-new-entries"></div>
+              </section>
+              <section
                 class="zl-section zl-history-section"
                 aria-labelledby="zl-history-heading"
               >
@@ -3813,6 +3939,7 @@
                   <p id="zl-fresh" class="zl-zip-text">
                     Paste a list above to check.
                   </p>
+                  <p id="zl-check-pending" class="zl-pending-check" hidden></p>
                 </div>
               </section>
             </aside>
@@ -3843,7 +3970,7 @@
               For James Clement only. All valid ZIPs are recorded; existing Used
               ZIPs are highlighted.
             </p>
-            <div class="zl-mode-switch" aria-label="History entry mode">
+            <div class="zl-mode-switch" aria-label="Entry mode">
               <button type="button" id="zl-mode-single" aria-pressed="true">
                 Single entry</button
               ><button type="button" id="zl-mode-bulk" aria-pressed="false">
@@ -4003,6 +4130,47 @@
             </footer>
           </form>
         </dialog>
+        <dialog
+          id="zl-edit-dialog"
+          class="zl-dialog"
+          aria-labelledby="zl-edit-title"
+        >
+          <form id="zl-edit-form">
+            <header class="zl-dialog-head">
+              <h2 id="zl-edit-title">Edit history entry</h2>
+              <button
+                type="button"
+                class="zl-close"
+                data-close
+                aria-label="Close entry editor"
+              >
+                ×
+              </button>
+            </header>
+            <p id="zl-edit-description" class="zl-dialog-description"></p>
+            <p id="zl-edit-zips" class="zl-zip-text zl-edit-zips"></p>
+            <label>Date<input type="date" id="zl-edit-date" required /></label
+            ><label
+              >Comment / order number <span class="zl-optional">optional</span
+              ><textarea
+                id="zl-edit-comment"
+                rows="3"
+                maxlength="3000"
+              ></textarea>
+            </label>
+            <p id="zl-edit-error" class="zl-form-error" role="alert"></p>
+            <footer class="zl-dialog-actions">
+              <button type="button" class="zl-button" data-close>Cancel</button
+              ><button
+                type="submit"
+                class="zl-button zl-primary"
+                id="zl-edit-save"
+              >
+                Save changes
+              </button>
+            </footer>
+          </form>
+        </dialog>
         <div id="zl-toast" role="status" aria-live="polite" hidden></div>
       </main>
     </div>
@@ -4023,6 +4191,10 @@
     CREATE INDEX IF NOT EXISTS history_account ON history_rows(subaccount_id,created_at);
     CREATE INDEX IF NOT EXISTS history_zip_active ON history_zips(zip,deleted_event_id);
     CREATE INDEX IF NOT EXISTS deletion_account ON deletion_events(subaccount_id,created_at);
+    CREATE TABLE IF NOT EXISTS new_zip_rows(id TEXT PRIMARY KEY,subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),recorded_on TEXT NOT NULL,comment TEXT NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS new_zip_items(row_id TEXT NOT NULL REFERENCES new_zip_rows(id) ON DELETE CASCADE,zip TEXT NOT NULL CHECK(length(zip)=5 AND zip NOT GLOB '*[^0-9]*'),PRIMARY KEY(row_id,zip));
+    CREATE TABLE IF NOT EXISTS pending_sources(history_id TEXT NOT NULL REFERENCES history_rows(id) ON DELETE CASCADE,new_row_id TEXT NOT NULL REFERENCES new_zip_rows(id) ON DELETE CASCADE,zip TEXT NOT NULL,PRIMARY KEY(history_id,new_row_id,zip));
+    CREATE INDEX IF NOT EXISTS new_zip_account ON new_zip_rows(subaccount_id);
     PRAGMA user_version=1;
   `;
         let enginePromise, storagePromise;
@@ -4103,6 +4275,14 @@
             ? new SQL.Database(new Uint8Array(r.bytes))
             : new SQL.Database();
           db.run(SCHEMA);
+          if (
+            !query(db, "PRAGMA table_info(history_rows)").some(
+              (c) => c.name === "status",
+            )
+          )
+            db.run(
+              "ALTER TABLE history_rows ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed' CHECK(status IN ('pending','confirmed'))",
+            );
           return { db, version: r?.version || 0 };
         }
         const now = () => new Date().toISOString();
@@ -4120,7 +4300,7 @@
         function active(db, account) {
           return query(
             db,
-            `SELECT DISTINCT z.zip,p.city,p.state_name FROM history_zips z JOIN history_rows h ON h.id=z.row_id LEFT JOIN zip_places p ON p.zip=z.zip AND p.subaccount_id=h.subaccount_id WHERE h.subaccount_id=? AND z.deleted_event_id IS NULL ORDER BY z.zip`,
+            `SELECT DISTINCT z.zip,p.city,p.state_name FROM history_zips z JOIN history_rows h ON h.id=z.row_id LEFT JOIN zip_places p ON p.zip=z.zip AND p.subaccount_id=h.subaccount_id WHERE h.subaccount_id=? AND h.status='confirmed' AND z.deleted_event_id IS NULL ORDER BY z.zip`,
             [account],
           );
         }
@@ -4141,6 +4321,61 @@
           );
           return s.trim();
         }
+        function recordDate(value) {
+          assert(
+            typeof value === "string" &&
+              /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+              Number.isFinite(Date.parse(value)) &&
+              new Date(value).toISOString().slice(0, 10) === value,
+            "Choose a valid date.",
+          );
+          return value;
+        }
+        function pendingCodes(db, account, except = "") {
+          return query(
+            db,
+            "SELECT DISTINCT z.zip FROM history_zips z JOIN history_rows h ON h.id=z.row_id WHERE h.subaccount_id=? AND h.status='pending' AND h.id<>? ORDER BY z.zip",
+            [account, except],
+          ).map((z) => z.zip);
+        }
+        function consumeNew(db, account, zips) {
+          for (const zip of zips) {
+            db.run(
+              "DELETE FROM new_zip_items WHERE zip=? AND row_id IN (SELECT id FROM new_zip_rows WHERE subaccount_id=?)",
+              [zip, account],
+            );
+            db.run(
+              "DELETE FROM pending_sources WHERE zip=? AND history_id IN (SELECT id FROM history_rows WHERE subaccount_id=? AND status='pending')",
+              [zip, account],
+            );
+            db.run(
+              "DELETE FROM history_zips WHERE zip=? AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=? AND status='pending')",
+              [zip, account],
+            );
+          }
+          db.run(
+            "DELETE FROM history_rows WHERE subaccount_id=? AND status='pending' AND NOT EXISTS (SELECT 1 FROM history_zips z WHERE z.row_id=history_rows.id)",
+            [account],
+          );
+        }
+        function restorePending(db, account, row) {
+          const blocked = new Set([
+            ...active(db, account).map((z) => z.zip),
+            ...pendingCodes(db, account, row),
+          ]);
+          const origins = query(
+            db,
+            "SELECT p.new_row_id,p.zip FROM pending_sources p JOIN new_zip_rows n ON n.id=p.new_row_id JOIN history_rows h ON h.id=p.history_id WHERE p.history_id=? AND n.subaccount_id=? AND h.subaccount_id=?",
+            [row, account, account],
+          );
+          for (const item of origins)
+            if (!blocked.has(item.zip))
+              db.run("INSERT OR IGNORE INTO new_zip_items VALUES (?,?)", [
+                item.new_row_id,
+                item.zip,
+              ]);
+        }
+
         async function snapshot(account) {
           checkAccount(account);
           const { db } = await open();
@@ -4179,7 +4414,27 @@
               if (!byEvent.has(z.event_id)) byEvent.set(z.event_id, []);
               byEvent.get(z.event_id).push(z);
             }
+            const incoming = query(
+              db,
+              "SELECT n.* FROM new_zip_rows n WHERE n.subaccount_id=? AND EXISTS(SELECT 1 FROM new_zip_items z WHERE z.row_id=n.id) ORDER BY n.created_at DESC,n.rowid DESC",
+              [account.id],
+            );
+            const newItems = query(
+              db,
+              "SELECT z.* FROM new_zip_items z JOIN new_zip_rows n ON n.id=z.row_id WHERE n.subaccount_id=? ORDER BY z.zip",
+              [account.id],
+            );
+            const incomingMap = new Map();
+            for (const z of newItems) {
+              if (!incomingMap.has(z.row_id)) incomingMap.set(z.row_id, []);
+              incomingMap.get(z.row_id).push(z.zip);
+            }
             return {
+              incoming: incoming.map((n) => ({
+                ...n,
+                zips: incomingMap.get(n.id) || [],
+              })),
+              pending_zips: pendingCodes(db, account.id),
               revision,
               used: active(db, account.id),
               rows: rows.map((r) => ({ ...r, zips: byRow.get(r.id) || [] })),
@@ -4243,22 +4498,201 @@
                   "Choose a valid source.",
                 );
                 const row = id();
-                db.run("INSERT INTO history_rows VALUES (?,?,?,?,?,?)", [
-                  row,
-                  account.id,
-                  date,
-                  entry.source,
-                  note,
-                  now(),
-                ]);
+                db.run(
+                  "INSERT INTO history_rows(id,subaccount_id,recorded_on,source,comment,created_at) VALUES (?,?,?,?,?,?)",
+                  [row, account.id, date, entry.source, note, now()],
+                );
                 for (const z of entry.zips) {
                   db.run(
                     "INSERT INTO history_zips(row_id,zip,already_used) VALUES (?,?,?)",
                     [row, z, used.has(z) ? 1 : 0],
                   );
                 }
+                consumeNew(db, account.id, entry.zips);
                 entry.zips.forEach((z) => used.add(z));
               }
+            } else if (action === "add_new" || action === "bulk_add_new") {
+              const entries =
+                action === "bulk_add_new" ? payload.rows : [payload];
+              assert(
+                Array.isArray(entries) &&
+                  entries.length > 0 &&
+                  entries.length <= 500,
+                "Add 1–500 rows at a time.",
+              );
+              assert(
+                entries.reduce((n, r) => n + (r.zips?.length || 0), 0) <= 50000,
+                "Add at most 50,000 ZIP entries at a time.",
+              );
+              const blocked = new Set([
+                ...active(db, account.id).map((z) => z.zip),
+                ...pendingCodes(db, account.id),
+              ]);
+              for (const entry of entries) {
+                checkZips(entry.zips);
+                assert(
+                  !entry.zips.some((z) => blocked.has(z)),
+                  "Remove ZIPs already Used or pending before adding New ZIPs.",
+                );
+                const row = id();
+                db.run("INSERT INTO new_zip_rows VALUES (?,?,?,?,?)", [
+                  row,
+                  account.id,
+                  recordDate(entry.date),
+                  comment(entry.comment),
+                  now(),
+                ]);
+                for (const zip of entry.zips)
+                  db.run("INSERT INTO new_zip_items VALUES (?,?)", [row, zip]);
+              }
+            } else if (action === "request_batch") {
+              checkZips(payload.zips);
+              assert(
+                payload.zips.length <= 10,
+                "Copy up to 10 ZIPs per request.",
+              );
+              const origin = first(
+                db,
+                "SELECT * FROM new_zip_rows WHERE id=? AND subaccount_id=?",
+                [payload.row, account.id],
+              );
+              assert(origin, "This New ZIP entry no longer exists.");
+              const blocked = new Set([
+                ...active(db, account.id).map((z) => z.zip),
+                ...pendingCodes(db, account.id),
+              ]);
+              for (const zip of payload.zips)
+                assert(
+                  !blocked.has(zip) &&
+                    first(
+                      db,
+                      "SELECT zip FROM new_zip_items WHERE row_id=? AND zip=?",
+                      [origin.id, zip],
+                    ),
+                  "A selected ZIP is no longer available. Refresh and review.",
+                );
+              const history = id();
+              db.run(
+                "INSERT INTO history_rows(id,subaccount_id,recorded_on,source,comment,created_at,status) VALUES (?,?,?,?,?,?,?)",
+                [
+                  history,
+                  account.id,
+                  recordDate(payload.date),
+                  "contacts",
+                  origin.comment,
+                  now(),
+                  "pending",
+                ],
+              );
+              for (const zip of payload.zips) {
+                db.run(
+                  "INSERT INTO history_zips(row_id,zip,already_used) VALUES (?,?,0)",
+                  [history, zip],
+                );
+                const copies = query(
+                  db,
+                  "SELECT n.id FROM new_zip_rows n JOIN new_zip_items z ON z.row_id=n.id WHERE n.subaccount_id=? AND z.zip=?",
+                  [account.id, zip],
+                );
+                for (const copy of copies)
+                  db.run("INSERT INTO pending_sources VALUES (?,?,?)", [
+                    history,
+                    copy.id,
+                    zip,
+                  ]);
+                db.run(
+                  "DELETE FROM new_zip_items WHERE zip=? AND row_id IN (SELECT id FROM new_zip_rows WHERE subaccount_id=?)",
+                  [zip, account.id],
+                );
+              }
+            } else if (
+              action === "edit_history" ||
+              action === "confirm_request"
+            ) {
+              const row = first(
+                db,
+                "SELECT * FROM history_rows WHERE id=? AND subaccount_id=?",
+                [payload.row, account.id],
+              );
+              assert(row, "This history entry no longer exists.");
+              if (action === "confirm_request")
+                assert(
+                  row.status === "pending",
+                  "This request is no longer pending.",
+                );
+              db.run(
+                "UPDATE history_rows SET recorded_on=?,comment=? WHERE id=? AND subaccount_id=?",
+                [
+                  recordDate(payload.date),
+                  comment(payload.comment),
+                  row.id,
+                  account.id,
+                ],
+              );
+              if (action === "confirm_request") {
+                const zips = query(
+                  db,
+                  "SELECT zip FROM history_zips WHERE row_id=?",
+                  [row.id],
+                ).map((z) => z.zip);
+                db.run(
+                  "UPDATE history_rows SET status='confirmed' WHERE id=? AND subaccount_id=?",
+                  [row.id, account.id],
+                );
+                consumeNew(db, account.id, zips);
+                db.run("DELETE FROM pending_sources WHERE history_id=?", [
+                  row.id,
+                ]);
+              }
+            } else if (action === "cancel_pending") {
+              const row = first(
+                db,
+                "SELECT id FROM history_rows WHERE id=? AND subaccount_id=? AND status='pending'",
+                [payload.row, account.id],
+              );
+              assert(row, "This pending request no longer exists.");
+              restorePending(db, account.id, row.id);
+              db.run(
+                "DELETE FROM history_rows WHERE id=? AND subaccount_id=?",
+                [row.id, account.id],
+              );
+            } else if (action === "edit_new") {
+              assert(
+                first(
+                  db,
+                  "SELECT id FROM new_zip_rows WHERE id=? AND subaccount_id=?",
+                  [payload.row, account.id],
+                ),
+                "This New entry no longer exists.",
+              );
+              db.run(
+                "UPDATE new_zip_rows SET recorded_on=?,comment=? WHERE id=? AND subaccount_id=?",
+                [
+                  recordDate(payload.date),
+                  comment(payload.comment),
+                  payload.row,
+                  account.id,
+                ],
+              );
+            } else if (action === "erase_new") {
+              const row = first(
+                db,
+                "SELECT id FROM new_zip_rows WHERE id=? AND subaccount_id=?",
+                [payload.row, account.id],
+              );
+              assert(row, "This New ZIP entry no longer exists.");
+              db.run("DELETE FROM new_zip_items WHERE row_id=?", [row.id]);
+              if (
+                !first(
+                  db,
+                  "SELECT history_id FROM pending_sources WHERE new_row_id=?",
+                  [row.id],
+                )
+              )
+                db.run(
+                  "DELETE FROM new_zip_rows WHERE id=? AND subaccount_id=?",
+                  [row.id, account.id],
+                );
             } else if (action === "delete") {
               assert(
                 [
@@ -4340,7 +4774,7 @@
                   z.city || null,
                 ]);
                 db.run(
-                  "UPDATE history_zips SET deleted_event_id=? WHERE zip=? AND deleted_event_id IS NULL AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
+                  "UPDATE history_zips SET deleted_event_id=? WHERE zip=? AND deleted_event_id IS NULL AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=? AND status='confirmed')",
                   [event, z.zip, account.id],
                 );
               }
@@ -4422,6 +4856,14 @@
                 "DELETE FROM deletion_events WHERE id=? AND subaccount_id=?",
                 [erased.id, account.id],
               );
+              const restored = new Set(
+                active(db, account.id).map((z) => z.zip),
+              );
+              consumeNew(
+                db,
+                account.id,
+                items.map((z) => z.zip).filter((z) => restored.has(z)),
+              );
             } else if (action === "erase_row") {
               assert(typeof payload.row === "string", "Invalid history row.");
               assert(
@@ -4432,11 +4874,26 @@
                 ),
                 "This history row no longer exists.",
               );
+              if (
+                first(
+                  db,
+                  "SELECT id FROM history_rows WHERE id=? AND subaccount_id=? AND status='pending'",
+                  [payload.row, account.id],
+                )
+              )
+                restorePending(db, account.id, payload.row);
               db.run(
                 "DELETE FROM history_rows WHERE id=? AND subaccount_id=?",
                 [payload.row, account.id],
               );
             } else if (action === "reset") {
+              db.run(
+                "DELETE FROM pending_sources WHERE history_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
+                [account.id],
+              );
+              db.run("DELETE FROM new_zip_rows WHERE subaccount_id=?", [
+                account.id,
+              ]);
               db.run("DELETE FROM history_rows WHERE subaccount_id=?", [
                 account.id,
               ]);
@@ -5016,6 +5473,156 @@
           return wrapper;
         }
 
+        const newSet = () =>
+          new Set((model.data?.incoming || []).flatMap((row) => row.zips));
+        const pendingSet = () => new Set(model.data?.pending_zips || []);
+        function renderNew() {
+          const target = $("zl-new-entries");
+          target.replaceChildren();
+          const rows = model.data.incoming || [];
+          $("zl-new-count").textContent = newSet().size;
+          if (!rows.length)
+            target.append(
+              el("p", { class: "zl-empty" }, "No new ZIPs waiting."),
+            );
+          rows.forEach((row, index) => {
+            const body = el("div", { class: "zl-row-body" });
+            body.append(
+              el(
+                "div",
+                { class: "zl-row-meta" },
+                el(
+                  "span",
+                  {},
+                  el("strong", {}, formatDate(row.recorded_on)),
+                  `${row.zips.length} ZIPs`,
+                ),
+                el(
+                  "div",
+                  { class: "zl-entry-actions" },
+                  el(
+                    "button",
+                    {
+                      type: "button",
+                      class: "zl-text-button",
+                      onclick: () => openEdit(row, "new"),
+                    },
+                    "Edit",
+                  ),
+                  el(
+                    "button",
+                    {
+                      type: "button",
+                      class: "zl-text-button",
+                      onclick: () => openErase("new", row),
+                    },
+                    "Erase (test)",
+                  ),
+                ),
+              ),
+            );
+            if (row.comment)
+              body.append(el("p", { class: "zl-row-note" }, row.comment));
+            for (let i = 0; i < row.zips.length; i += 10) {
+              const batch = row.zips.slice(i, i + 10);
+              body.append(
+                el(
+                  "div",
+                  { class: "zl-new-batch" },
+                  el(
+                    "div",
+                    { class: "zl-ten-zips" },
+                    batch.map((zip) =>
+                      el("span", { class: "zl-history-chip" }, zip),
+                    ),
+                  ),
+                  el(
+                    "div",
+                    { class: "zl-batch-actions" },
+                    el(
+                      "button",
+                      {
+                        type: "button",
+                        class: "zl-button",
+                        disabled: model.busy,
+                        onclick: () => void copyBatch(row, batch),
+                      },
+                      `Copy ${batch.length} to request contacts`,
+                    ),
+                  ),
+                ),
+              );
+            }
+            target.append(
+              el(
+                "article",
+                { class: "zl-new-row", "data-new-row-id": row.id },
+                el("div", { class: "zl-row-index" }, rows.length - index),
+                body,
+              ),
+            );
+          });
+        }
+        async function copyBatch(row, zips) {
+          if (model.busy) return;
+          const revision = model.data.revision;
+          let copied = false;
+          busy(true);
+          error("");
+          try {
+            await navigator.clipboard.writeText(zips.join(","));
+            copied = true;
+            await ZipStore.change(ACCOUNT, revision, "request_batch", {
+              row: row.id,
+              zips,
+              date: date(),
+            });
+            model.data = await ZipStore.snapshot(ACCOUNT);
+            model.selected.clear();
+            render();
+            toast(
+              `${zips.length} ZIPs copied. Pending history entry created; confirm it after contacts are requested.`,
+            );
+          } catch (e) {
+            try {
+              model.data = await ZipStore.snapshot(ACCOUNT);
+              render();
+            } catch {}
+            error(
+              (copied
+                ? "Copied, but the pending save was not confirmed. Refresh and review before requesting contacts. "
+                : "Copy failed; no ZIPs were moved. ") + e.message,
+            );
+          } finally {
+            busy(false);
+          }
+        }
+        function openEdit(row, kind = "history", confirm = false) {
+          if (model.busy) return;
+          model.edit = { row: row.id, kind, confirm };
+          model.dialogRevision = model.data.revision;
+          $("zl-edit-title").textContent = confirm
+            ? "Confirm contacts requested"
+            : kind === "new"
+              ? "Edit New ZIP entry"
+              : "Edit history entry";
+          $("zl-edit-description").textContent = confirm
+            ? "Confirm only after the contact request succeeded. These ZIPs will become Used."
+            : row.status === "pending"
+              ? "This entry stays pending until you confirm the contact request."
+              : "Update the date or comment for this entry.";
+          $("zl-edit-date").value = row.recorded_on;
+          $("zl-edit-comment").value = row.comment;
+          $("zl-edit-zips").textContent = (row.zips || [])
+            .map((z) => (typeof z === "string" ? z : z.zip))
+            .join(", ");
+          $("zl-edit-error").textContent = "";
+          $("zl-edit-save").textContent = confirm
+            ? "Confirm request"
+            : "Save changes";
+          $("zl-edit-dialog").showModal();
+        }
+
         function renderHistory() {
           const target = $("zl-history");
           target.replaceChildren();
@@ -5032,7 +5639,12 @@
             target.append(
               el(
                 "article",
-                { class: "zl-history-row", "data-row-id": r.id },
+                {
+                  class:
+                    "zl-history-row" +
+                    (r.status === "pending" ? " zl-pending-row" : ""),
+                  "data-row-id": r.id,
+                },
                 el(
                   "div",
                   { class: "zl-row-index" },
@@ -5060,15 +5672,52 @@
                         r.source === "ghl" ? "GHL" : "Request",
                       ),
                       `${r.zips.length} ZIPs`,
+                      r.status === "pending"
+                        ? el(
+                            "span",
+                            { class: "zl-pending-tag" },
+                            "Pending request",
+                          )
+                        : null,
                     ),
                     el(
-                      "button",
-                      {
-                        type: "button",
-                        class: "zl-text-button",
-                        onclick: () => openErase("row", r),
-                      },
-                      "Erase row (test)",
+                      "div",
+                      { class: "zl-entry-actions" },
+                      el(
+                        "button",
+                        {
+                          type: "button",
+                          class: "zl-text-button",
+                          onclick: () => openEdit(r),
+                        },
+                        "Edit",
+                      ),
+                      r.status === "pending"
+                        ? el(
+                            "button",
+                            {
+                              type: "button",
+                              class: "zl-text-button zl-confirm-request",
+                              onclick: () => openEdit(r, "history", true),
+                            },
+                            "Confirm request",
+                          )
+                        : null,
+                      el(
+                        "button",
+                        {
+                          type: "button",
+                          class: "zl-text-button",
+                          onclick: () =>
+                            openErase(
+                              r.status === "pending" ? "pending" : "row",
+                              r,
+                            ),
+                        },
+                        r.status === "pending"
+                          ? "Cancel request"
+                          : "Erase row (test)",
+                      ),
                     ),
                   ),
                   historyEntryView(r),
@@ -5168,7 +5817,7 @@
           const p = parse($("zl-check").value),
             set = usedSet(),
             matches = p.zips.filter((z) => set.has(z)),
-            fresh = p.zips.filter((z) => !set.has(z)),
+            fresh = p.zips.filter((z) => !set.has(z) && !pendingSet().has(z)),
             input = new Set(p.zips),
             other = p.zips.length
               ? model.data.used.map((z) => z.zip).filter((z) => !input.has(z))
@@ -5180,6 +5829,11 @@
           $("zl-copy-fresh").hidden = !$("zl-check").value.trim();
           $("zl-copy-other").hidden = !p.zips.length || !!p.invalid.length;
           $("zl-check-count").textContent = p.zips.length;
+          const pendingMatches = p.zips.filter((z) => pendingSet().has(z));
+          $("zl-check-pending").hidden = !pendingMatches.length;
+          $("zl-check-pending").textContent = pendingMatches.length
+            ? "Pending contact request: " + pendingMatches.join(", ")
+            : "";
           const invalid = !!p.invalid.length;
           for (const [id, count] of [
             ["zl-match-count", matches.length],
@@ -5203,7 +5857,7 @@
             ? "Correct invalid entries above before using these results."
             : waiting
               ? "—"
-              : fresh.join(", ") || "All pasted ZIPs are currently used.";
+              : fresh.join(", ") || "No unused ZIPs available in this list.";
           checker.values = {
             matches: invalid ? [] : matches,
             other: invalid ? [] : other,
@@ -5211,6 +5865,7 @@
           };
         }
         function render() {
+          renderNew();
           renderUsed();
           renderHistory();
           renderLog();
@@ -5327,7 +5982,11 @@
           });
         }
         function validateBulk() {
-          const seen = usedSet();
+          const unavailable = new Set([...usedSet(), ...pendingSet()]);
+          const seen =
+            model.addTarget === "new"
+              ? new Set([...usedSet(), ...pendingSet(), ...newSet()])
+              : usedSet();
           let invalid = 0,
             total = 0,
             overlap = 0;
@@ -5338,6 +5997,8 @@
               Number.isFinite(Date.parse(row.date)) &&
               new Date(row.date).toISOString().slice(0, 10) === row.date;
             const bad =
+              (model.addTarget === "new" &&
+                p.zips.some((z) => unavailable.has(z))) ||
               p.invalid.length > 0 ||
               !p.zips.length ||
               !validDate ||
@@ -5348,15 +6009,19 @@
             if (bad) invalid++;
             if (row.feedback) {
               row.element.classList.toggle("zl-bulk-invalid", bad);
-              row.feedback.textContent = p.invalid.length
-                ? "Invalid: " + p.invalid.slice(0, 5).join(", ")
-                : !p.zips.length
-                  ? "Add at least one ZIP."
-                  : !validDate
-                    ? "Choose a valid date."
-                    : row.comment.length > 3000
-                      ? "Comment exceeds 3,000 characters."
-                      : `${p.zips.length} ZIPs${matches.size ? " · " + matches.size + " already used" : ""}${p.duplicates ? " · " + p.duplicates + " repeats removed" : ""}${p.padded ? " · " + p.padded + " padded" : ""}`;
+              row.feedback.textContent =
+                model.addTarget === "new" &&
+                p.zips.some((z) => unavailable.has(z))
+                  ? "Remove Used or pending ZIPs from this row."
+                  : p.invalid.length
+                    ? "Invalid: " + p.invalid.slice(0, 5).join(", ")
+                    : !p.zips.length
+                      ? "Add at least one ZIP."
+                      : !validDate
+                        ? "Choose a valid date."
+                        : row.comment.length > 3000
+                          ? "Comment exceeds 3,000 characters."
+                          : `${p.zips.length} ZIPs${matches.size ? " · " + matches.size + (model.addTarget === "new" ? " already exist" : " already used") : ""}${p.duplicates ? " · " + p.duplicates + " repeats removed" : ""}${p.padded ? " · " + p.padded + " padded" : ""}`;
               row.preview.replaceChildren(
                 ...p.zips.slice(0, 24).map((z) =>
                   el(
@@ -5391,8 +6056,8 @@
           $("zl-bulk-feedback").textContent =
             model.bulkError ||
             (rows.length
-              ? `${rows.length} history rows · ${total.toLocaleString()} ZIP entries${overlap ? " · " + overlap + " already used or repeated in earlier rows" : ""}${invalid ? " · " + invalid + " rows need correction" : ""}${tooMany ? " · Maximum 50,000 ZIP entries per import" : ""}`
-              : "Paste one or two columns. Each spreadsheet row becomes a separate history entry.");
+              ? `${rows.length} ${model.addTarget === "new" ? "New ZIP entries" : "history rows"} · ${total.toLocaleString()} ZIP entries${overlap ? " · " + overlap + (model.addTarget === "new" ? " already exist or repeat earlier rows" : " already used or repeated in earlier rows") : ""}${invalid ? " · " + invalid + " rows need correction" : ""}${tooMany ? " · Maximum 50,000 ZIP entries per import" : ""}`
+              : "Paste one or two columns. Each spreadsheet row becomes a separate entry.");
           $("zl-bulk-feedback").classList.toggle(
             "zl-invalid",
             !!model.bulkError || invalid > 0 || tooMany,
@@ -5400,7 +6065,13 @@
           $("zl-save-row").textContent =
             "Add " +
             (rows.length || "") +
-            (rows.length === 1 ? " history row" : " history rows");
+            (model.addTarget === "new"
+              ? rows.length === 1
+                ? " New ZIP entry"
+                : " New ZIP entries"
+              : rows.length === 1
+                ? " history row"
+                : " history rows");
           $("zl-save-row").disabled =
             model.busy ||
             !!model.bulkError ||
@@ -5433,18 +6104,29 @@
             validateBulk();
             return;
           }
-          $("zl-save-row").textContent = "Add history row";
+          $("zl-save-row").textContent =
+            model.addTarget === "new" ? "Add new ZIPs" : "Add history row";
           const p = parse($("zl-add-zips").value);
+          const unavailable = new Set([...usedSet(), ...pendingSet()]);
           feedback($("zl-add-feedback"), p);
-          const used = usedSet(),
+          const used =
+              model.addTarget === "new"
+                ? new Set([...usedSet(), ...pendingSet(), ...newSet()])
+                : usedSet(),
             overlap = p.zips.filter((z) => used.has(z));
+          const blocked =
+            model.addTarget === "new"
+              ? p.zips.filter((z) => unavailable.has(z))
+              : [];
           if (overlap.length)
             $("zl-add-feedback").append(
               el(
                 "span",
                 { class: "zl-warning" },
                 overlap.length +
-                  " already Used. They will be highlighted and kept in this new row; no other action is taken.",
+                  (model.addTarget === "new"
+                    ? " already exist. Remove Used or pending ZIPs before saving."
+                    : " already Used. They will be highlighted and kept in this new row; no other action is taken."),
               ),
             );
           $("zl-add-preview").replaceChildren(
@@ -5469,11 +6151,24 @@
               ),
             );
           $("zl-save-row").disabled =
-            model.busy || !p.zips.length || !!p.invalid.length;
+            model.busy ||
+            !p.zips.length ||
+            !!p.invalid.length ||
+            blocked.length > 0;
         }
-        function openAdd() {
+        function openAdd(target = "history") {
           if (model.busy || !model.data) return;
           model.dialogRevision = model.data.revision;
+          model.addTarget = target === "new" ? "new" : "history";
+          $("zl-add-title").textContent =
+            model.addTarget === "new" ? "Add new ZIPs" : "Add Used ZIP history";
+          document.querySelector(
+            "#zl-add-dialog .zl-dialog-description",
+          ).textContent =
+            model.addTarget === "new"
+              ? "Used or pending ZIPs must be removed. ZIPs already in another New entry are highlighted."
+              : "All valid ZIPs are recorded; existing Used ZIPs are highlighted.";
+          $("zl-source").closest("label").hidden = model.addTarget === "new";
           $("zl-add-form").reset();
           $("zl-date").value = date();
           $("zl-add-error").textContent = "";
@@ -5525,6 +6220,20 @@
           model.erase = { kind, row: row?.id };
           model.dialogRevision = model.data.revision;
           $("zl-erase-error").textContent = "";
+          if (kind === "pending" || kind === "new") {
+            $("zl-erase-title").textContent =
+              kind === "pending"
+                ? "Cancel pending request"
+                : "Erase New ZIP entry (test)";
+            $("zl-erase-description").textContent =
+              kind === "pending"
+                ? "Cancel this request and return its ZIPs to their original New entries? No contacts are cancelled on an external platform."
+                : "Erase the remaining ZIPs in this New entry? Pending requests are kept.";
+            $("zl-confirm-erase").textContent =
+              kind === "pending" ? "Cancel request" : "Erase entry";
+            $("zl-erase-dialog").showModal();
+            return;
+          }
           if (kind === "deletion") {
             $("zl-erase-title").textContent = "Undo & erase deletion (test)";
             $("zl-erase-description").textContent =
@@ -5536,7 +6245,7 @@
           $("zl-erase-description").textContent =
             kind === "row"
               ? `Erase this test history row (${row.zips.length} ZIPs) for ${ACCOUNT.name}? Its entries are permanently removed without adding an audit record. ZIPs that remain active in other rows stay Used. Existing deletion records are kept; use Reset ZIP data to erase all traces of test history.`
-              : `Reset everything for ${ACCOUNT.name}? This permanently erases ALL Used ZIPs, ALL history rows, ALL deletion records and the uploaded ZIP location mapping for this subaccount. Nothing from this test data is kept, and no reset record is created. Other subaccounts are not affected. This cannot be undone.`;
+              : `Reset everything for ${ACCOUNT.name}? This permanently erases ALL New ZIPs, pending requests, Used ZIPs, history rows, deletion records and the uploaded ZIP location mapping for this subaccount. Nothing from this test data is kept, and no reset record is created. Other subaccounts are not affected. This cannot be undone.`;
           $("zl-erase-title").textContent =
             kind === "row"
               ? "Erase history row (test)"
@@ -5563,6 +6272,27 @@
         $("zl-add-zips").addEventListener("paste", handleHistoryPaste);
         $("zl-source").addEventListener("change", validateAdd);
         $("zl-add").addEventListener("click", openAdd);
+        $("zl-add-new").addEventListener("click", () => openAdd("new"));
+        $("zl-edit-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (model.busy) return;
+          void change(
+            model.edit.kind === "new"
+              ? "edit_new"
+              : model.edit.confirm
+                ? "confirm_request"
+                : "edit_history",
+            {
+              row: model.edit.row,
+              date: $("zl-edit-date").value,
+              comment: $("zl-edit-comment").value,
+            },
+            "zl-edit-error",
+            model.edit.confirm
+              ? "Contacts confirmed; ZIPs are now Used."
+              : "Entry updated.",
+          );
+        });
         $("zl-add-zips").addEventListener("input", validateAdd);
         $("zl-add-form").addEventListener("submit", (e) => {
           e.preventDefault();
@@ -5570,17 +6300,20 @@
             const result = validateBulk();
             if (model.busy || !result.valid) return;
             void change(
-              "bulk_add",
+              model.addTarget === "new" ? "bulk_add_new" : "bulk_add",
               { rows: result.rows },
               "zl-add-error",
-              result.rows.length + " history rows added. Used ZIPs updated.",
+              result.rows.length +
+                (model.addTarget === "new"
+                  ? " New ZIP entries added."
+                  : " history rows added. Used ZIPs updated."),
             );
             return;
           }
           const p = parse($("zl-add-zips").value);
           if (model.busy || p.invalid.length || !p.zips.length) return;
           void change(
-            "add",
+            model.addTarget === "new" ? "add_new" : "add",
             {
               zips: p.zips,
               date: $("zl-date").value,
@@ -5588,7 +6321,9 @@
               comment: $("zl-add-comment").value,
             },
             "zl-add-error",
-            "History row added. Used ZIPs updated.",
+            model.addTarget === "new"
+              ? "New ZIPs added."
+              : "History row added. Used ZIPs updated.",
           );
         });
         $("zl-delete-form").addEventListener("submit", (e) => {
@@ -5605,18 +6340,26 @@
           e.preventDefault();
           if (!model.busy)
             void change(
-              model.erase.kind === "deletion"
-                ? "undo_deletion"
-                : model.erase.kind === "row"
-                  ? "erase_row"
-                  : "reset",
+              model.erase.kind === "pending"
+                ? "cancel_pending"
+                : model.erase.kind === "new"
+                  ? "erase_new"
+                  : model.erase.kind === "deletion"
+                    ? "undo_deletion"
+                    : model.erase.kind === "row"
+                      ? "erase_row"
+                      : "reset",
               { row: model.erase.row, event: model.erase.row },
               "zl-erase-error",
-              model.erase.kind === "deletion"
-                ? "Deletion undone and its record erased."
-                : model.erase.kind === "row"
-                  ? "Test history row erased."
-                  : "All ZIP test data for this subaccount erased.",
+              model.erase.kind === "pending"
+                ? "Pending request cancelled; ZIPs returned to New."
+                : model.erase.kind === "new"
+                  ? "New entry erased."
+                  : model.erase.kind === "deletion"
+                    ? "Deletion undone and its record erased."
+                    : model.erase.kind === "row"
+                      ? "Test history row erased."
+                      : "All ZIP test data for this subaccount erased.",
             );
         });
         document.querySelectorAll(".zl-dialog [data-close]").forEach((b) =>
