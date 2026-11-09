@@ -2948,6 +2948,14 @@
         display: flex;
         justify-content: flex-end;
       }
+      .zl-log-record-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 7px;
+      }
+      .zl-log-record-actions button {
+        color: #98634d;
+      }
     </style>
   </head>
   <body>
@@ -3970,6 +3978,44 @@
               } finally {
                 stmt.free();
               }
+            } else if (action === "undo_deletion") {
+              assert(
+                typeof payload.event === "string",
+                "Invalid deletion record.",
+              );
+              const erased = first(
+                db,
+                "SELECT *,rowid AS sequence FROM deletion_events WHERE id=? AND subaccount_id=?",
+                [payload.event, account.id],
+              );
+              assert(erased, "This deletion record no longer exists.");
+              const items = query(
+                db,
+                "SELECT zip FROM deletion_items WHERE event_id=?",
+                [erased.id],
+              );
+              for (const item of items) {
+                // If a ZIP was deleted again later, keep that later deletion in force.
+                const later = first(
+                  db,
+                  `SELECT d.id FROM deletion_events d JOIN deletion_items i ON i.event_id=d.id WHERE d.subaccount_id=? AND i.zip=? AND (d.created_at>? OR (d.created_at=? AND d.rowid>?)) ORDER BY d.created_at DESC,d.rowid DESC LIMIT 1`,
+                  [
+                    account.id,
+                    item.zip,
+                    erased.created_at,
+                    erased.created_at,
+                    erased.sequence,
+                  ],
+                );
+                db.run(
+                  "UPDATE history_zips SET deleted_event_id=? WHERE zip=? AND deleted_event_id=? AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
+                  [later?.id || null, item.zip, erased.id, account.id],
+                );
+              }
+              db.run(
+                "DELETE FROM deletion_events WHERE id=? AND subaccount_id=?",
+                [erased.id, account.id],
+              );
             } else if (action === "erase_row") {
               assert(typeof payload.row === "string", "Invalid history row.");
               assert(
@@ -4518,22 +4564,6 @@
           const target = $("zl-log");
           target.replaceChildren();
           $("zl-log-count").textContent = model.data.events.length;
-          if (model.data.events.length)
-            target.append(
-              el(
-                "div",
-                { class: "zl-reset-log-tools" },
-                el(
-                  "button",
-                  {
-                    type: "button",
-                    class: "zl-button zl-danger-outline",
-                    onclick: () => openErase("all"),
-                  },
-                  "Reset everything (test)",
-                ),
-              ),
-            );
           if (!model.data.events.length)
             target.append(
               el("p", { class: "zl-empty" }, "No Used ZIP deletions recorded."),
@@ -4577,6 +4607,19 @@
                   "p",
                   { class: "zl-zip-text" },
                   e.zips.map((z) => z.zip).join(", "),
+                ),
+                el(
+                  "div",
+                  { class: "zl-log-record-actions" },
+                  el(
+                    "button",
+                    {
+                      type: "button",
+                      class: "zl-text-button",
+                      onclick: () => openErase("deletion", e),
+                    },
+                    "Undo & erase (test)",
+                  ),
                 ),
               ),
             );
@@ -4955,6 +4998,14 @@
           model.erase = { kind, row: row?.id };
           model.dialogRevision = model.data.revision;
           $("zl-erase-error").textContent = "";
+          if (kind === "deletion") {
+            $("zl-erase-title").textContent = "Undo & erase deletion (test)";
+            $("zl-erase-description").textContent =
+              `Undo this deletion of ${row.zips.length} ZIPs for ${ACCOUNT.name} and erase its record? ZIPs still present in Used History become active again and lose this deletion mark. Any later deletions remain in effect. This entry and its comment are permanently removed, without creating another log. Other history rows and subaccounts are not erased.`;
+            $("zl-confirm-erase").textContent = "Undo & erase";
+            $("zl-erase-dialog").showModal();
+            return;
+          }
           $("zl-erase-description").textContent =
             kind === "row"
               ? `Erase this test history row (${row.zips.length} ZIPs) for ${ACCOUNT.name}? Its entries are permanently removed without adding an audit record. ZIPs that remain active in other rows stay Used. Existing deletion records are kept; use Reset ZIP data to erase all traces of test history.`
@@ -5027,12 +5078,18 @@
           e.preventDefault();
           if (!model.busy)
             void change(
-              model.erase.kind === "row" ? "erase_row" : "reset",
-              { row: model.erase.row },
+              model.erase.kind === "deletion"
+                ? "undo_deletion"
+                : model.erase.kind === "row"
+                  ? "erase_row"
+                  : "reset",
+              { row: model.erase.row, event: model.erase.row },
               "zl-erase-error",
-              model.erase.kind === "row"
-                ? "Test history row erased."
-                : "All ZIP test data for this subaccount erased.",
+              model.erase.kind === "deletion"
+                ? "Deletion undone and its record erased."
+                : model.erase.kind === "row"
+                  ? "Test history row erased."
+                  : "All ZIP test data for this subaccount erased.",
             );
         });
         document.querySelectorAll(".zl-dialog [data-close]").forEach((b) =>
