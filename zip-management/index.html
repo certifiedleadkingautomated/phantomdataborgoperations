@@ -5122,14 +5122,15 @@
             matches = p.zips.filter((z) => set.has(z)),
             fresh = p.zips.filter((z) => !set.has(z)),
             input = new Set(p.zips),
-            other = model.data.used
-              .map((z) => z.zip)
-              .filter((z) => !input.has(z));
+            other = p.zips.length
+              ? model.data.used.map((z) => z.zip).filter((z) => !input.has(z))
+              : [];
           feedback($("zl-check-feedback"), p);
           $("zl-check-feedback").hidden = !$("zl-check").value.trim();
           $("zl-clear-check").hidden = !$("zl-check").value.trim();
           $("zl-copy-matches").hidden = !$("zl-check").value.trim();
           $("zl-copy-fresh").hidden = !$("zl-check").value.trim();
+          $("zl-copy-other").hidden = !p.zips.length || !!p.invalid.length;
           $("zl-check-count").textContent = p.zips.length;
           const invalid = !!p.invalid.length;
           for (const [id, count] of [
@@ -5138,16 +5139,18 @@
             ["zl-other-count", other.length],
           ])
             $(id).textContent = invalid ? "—" : count;
-          const waiting = !$("zl-check").value.trim();
+          const waiting = !p.zips.length && !invalid;
           $("zl-matches").textContent = invalid
             ? "Correct invalid entries above before using these results."
             : waiting
               ? "—"
               : matches.join(", ") ||
                 "None of the pasted ZIPs are currently used.";
-          $("zl-other").textContent = invalid
-            ? "Correct invalid entries above before using these results."
-            : other.join(", ") || "No other used ZIPs.";
+          $("zl-other").textContent = waiting
+            ? ""
+            : invalid
+              ? "Correct invalid entries above before using these results."
+              : other.join(", ") || "No other used ZIPs.";
           $("zl-fresh").textContent = invalid
             ? "Correct invalid entries above before using these results."
             : waiting
