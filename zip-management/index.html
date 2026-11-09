@@ -3456,7 +3456,17 @@
           letter-spacing: -0.5px;
         }
       }
-    .zl-fresh-actions{display:flex;justify-content:flex-end;padding-top:8px}.zl-fresh-actions:has(button[hidden]){display:none}.zl-fresh-actions .zl-button{font-size:11px}
+      .zl-fresh-actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 8px;
+      }
+      .zl-fresh-actions:has(button[hidden]) {
+        display: none;
+      }
+      .zl-fresh-actions .zl-button {
+        font-size: 11px;
+      }
 
       /* One compact, selectable text surface per New entry. */
       .zl-new-textbox {
@@ -3481,7 +3491,11 @@
       }
       .zl-new-line {
         display: block;
-        font: 10px/23px ui-monospace, SFMono-Regular, Consolas, monospace;
+        font:
+          10px/23px ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
         color: #4d6481;
         white-space: nowrap;
         user-select: text;
@@ -3495,7 +3509,7 @@
         color: #7b8da4;
         padding: 3px 4px;
         margin: 0;
-        font: 9px/17px inherit;
+
         font-family: inherit;
         font-size: 9px;
         line-height: 17px;
@@ -3507,12 +3521,130 @@
         background: #eef3f9;
         color: #2d527e;
       }
-      .zl-inline-copy:focus-visible { outline: 2px solid #95b1ea; outline-offset: 1px; }
-      @media (max-width: 600px) {
-        .zl-copy-context { display: none; }
-        .zl-new-textbox { column-gap: 8px; }
+      .zl-inline-copy:focus-visible {
+        outline: 2px solid #95b1ea;
+        outline-offset: 1px;
       }
-</style>
+      @media (max-width: 600px) {
+        .zl-copy-context {
+          display: none;
+        }
+        .zl-new-textbox {
+          column-gap: 8px;
+        }
+      }
+
+      #zl-log {
+        max-height: 560px;
+        overflow: auto;
+        scrollbar-width: thin;
+      }
+      .zl-deleted-zip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        max-height: 180px;
+        overflow: auto;
+        margin: 9px 0;
+        scrollbar-width: thin;
+      }
+      .zl-deleted-zip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 1px solid #e5c9c0;
+        border-radius: 4px;
+        padding: 3px 5px;
+        background: #fff8f5;
+        color: #8f5d4c;
+        font:
+          10px/1.5 ui-monospace,
+          Consolas,
+          monospace;
+      }
+      .zl-deleted-zip label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .zl-deleted-zip input {
+        width: 12px;
+        height: 12px;
+        margin: 0;
+      }
+      .zl-one-restore {
+        border: 0;
+        background: transparent;
+        color: #65866b;
+        font-size: 16px;
+        line-height: 1;
+        padding: 0 2px;
+        cursor: pointer;
+      }
+      .zl-restored-zip {
+        background: #edf6ee;
+        border-color: #c7ddca;
+        color: #5e8363;
+      }
+      .zl-restore-unavailable {
+        background: #f4f5f7;
+        border-color: #e0e4e9;
+        color: #9ca5b2;
+      }
+      .zl-restore-actions {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 8px;
+      }
+      .zl-restore-actions .zl-button {
+        font-size: 10px;
+        min-height: 27px;
+      }
+      .zl-restore-note {
+        font-size: 10px;
+        color: #8a7a61;
+        margin-top: 6px;
+      }
+      .zl-restoration-audit {
+        font-size: 10px;
+        margin-top: 10px;
+        border-top: 1px solid #eef0f3;
+        padding-top: 8px;
+      }
+      .zl-restoration-audit > div {
+        margin-top: 8px;
+        padding-left: 8px;
+        border-left: 2px solid #c9ddcf;
+      }
+      .zl-test-tools {
+        font-size: 9px;
+        color: #a0a7b3;
+        margin-top: 10px;
+      }
+      .zl-test-tools button {
+        font-size: 9px;
+        margin-top: 5px;
+      }
+      .zl-was-deleted,
+      .zl-history-chip.zl-was-deleted {
+        background: #f1e9f8;
+        border-color: #cbb6dd;
+        color: #85659e;
+        border-radius: 3px;
+        text-decoration: underline dotted #bba2d0;
+        text-underline-offset: 2px;
+      }
+      .zl-new-line .zl-was-deleted {
+        padding: 1px 0;
+      }
+      .zl-past-deletion-feedback {
+        display: block;
+        color: #85659e;
+        font-size: 10px;
+      }
+    </style>
   </head>
   <body>
     <aside class="sidebar" aria-label="Portal sidebar (design only)">
@@ -3996,7 +4128,17 @@
                     Paste a list above to check.
                   </p>
                   <p id="zl-check-pending" class="zl-pending-check" hidden></p>
-                  <div class="zl-fresh-actions"><button type="button" id="zl-add-checked-new" class="zl-button zl-primary" hidden disabled>Add to New ZIPs</button></div>
+                  <div class="zl-fresh-actions">
+                    <button
+                      type="button"
+                      id="zl-add-checked-new"
+                      class="zl-button zl-primary"
+                      hidden
+                      disabled
+                    >
+                      Add to New ZIPs
+                    </button>
+                  </div>
                 </div>
               </section>
             </aside>
@@ -4228,6 +4370,51 @@
             </footer>
           </form>
         </dialog>
+        <dialog
+          id="zl-restore-dialog"
+          class="zl-dialog"
+          aria-labelledby="zl-restore-title"
+        >
+          <form id="zl-restore-form">
+            <header class="zl-dialog-head">
+              <h2 id="zl-restore-title">Restore deleted ZIPs</h2>
+              <button
+                type="button"
+                class="zl-close"
+                data-close
+                aria-label="Close restoration confirmation"
+              >
+                ×
+              </button>
+            </header>
+            <p id="zl-restore-description" class="zl-dialog-description"></p>
+            <p id="zl-restore-zips" class="zl-zip-text zl-edit-zips"></p>
+            <label
+              >Restoration comment <span class="zl-optional">optional</span
+              ><textarea
+                id="zl-restore-comment"
+                rows="3"
+                maxlength="3000"
+                placeholder="For example: deleted by mistake"
+              ></textarea>
+            </label>
+            <p class="zl-helper">
+              The original deletion and this restoration remain in the audit
+              trail.
+            </p>
+            <p id="zl-restore-error" class="zl-form-error" role="alert"></p>
+            <footer class="zl-dialog-actions">
+              <button type="button" class="zl-button" data-close>Cancel</button
+              ><button
+                type="submit"
+                class="zl-button zl-primary"
+                id="zl-confirm-restore"
+              >
+                Restore ZIPs
+              </button>
+            </footer>
+          </form>
+        </dialog>
         <div id="zl-toast" role="status" aria-live="polite" hidden></div>
       </main>
     </div>
@@ -4252,6 +4439,8 @@
     CREATE TABLE IF NOT EXISTS new_zip_items(row_id TEXT NOT NULL REFERENCES new_zip_rows(id) ON DELETE CASCADE,zip TEXT NOT NULL CHECK(length(zip)=5 AND zip NOT GLOB '*[^0-9]*'),PRIMARY KEY(row_id,zip));
     CREATE TABLE IF NOT EXISTS pending_sources(history_id TEXT NOT NULL REFERENCES history_rows(id) ON DELETE CASCADE,new_row_id TEXT NOT NULL REFERENCES new_zip_rows(id) ON DELETE CASCADE,zip TEXT NOT NULL,PRIMARY KEY(history_id,new_row_id,zip));
     CREATE INDEX IF NOT EXISTS new_zip_account ON new_zip_rows(subaccount_id);
+    CREATE TABLE IF NOT EXISTS restoration_events(id TEXT PRIMARY KEY,subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),deletion_id TEXT NOT NULL REFERENCES deletion_events(id) ON DELETE CASCADE,created_at TEXT NOT NULL,comment TEXT NOT NULL,zips TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS restoration_account ON restoration_events(subaccount_id,deletion_id);
     PRAGMA user_version=1;
   `;
         let enginePromise, storagePromise;
@@ -4340,6 +4529,14 @@
             db.run(
               "ALTER TABLE history_rows ADD COLUMN status TEXT NOT NULL DEFAULT 'confirmed' CHECK(status IN ('pending','confirmed'))",
             );
+          const deletionColumns = query(
+            db,
+            "PRAGMA table_info(deletion_items)",
+          );
+          if (!deletionColumns.some((c) => c.name === "restored_at"))
+            db.run("ALTER TABLE deletion_items ADD COLUMN restored_at TEXT");
+          if (!deletionColumns.some((c) => c.name === "restoration_id"))
+            db.run("ALTER TABLE deletion_items ADD COLUMN restoration_id TEXT");
           return { db, version: r?.version || 0 };
         }
         const now = () => new Date().toISOString();
@@ -4463,13 +4660,25 @@
             );
             const deleted = query(
               db,
-              "SELECT i.* FROM deletion_items i JOIN deletion_events d ON d.id=i.event_id WHERE d.subaccount_id=? ORDER BY i.zip",
+              "SELECT i.*,r.comment AS restoration_comment,(SELECT count(*) FROM history_zips z JOIN history_rows h ON h.id=z.row_id WHERE h.subaccount_id=d.subaccount_id AND z.zip=i.zip AND z.deleted_event_id=d.id) AS history_count FROM deletion_items i JOIN deletion_events d ON d.id=i.event_id LEFT JOIN restoration_events r ON r.id=i.restoration_id AND r.subaccount_id=d.subaccount_id WHERE d.subaccount_id=? ORDER BY i.zip",
               [account.id],
             );
             const byEvent = new Map();
             for (const z of deleted) {
               if (!byEvent.has(z.event_id)) byEvent.set(z.event_id, []);
               byEvent.get(z.event_id).push(z);
+            }
+            const restorationMap = new Map();
+            for (const row of query(
+              db,
+              "SELECT * FROM restoration_events WHERE subaccount_id=? ORDER BY created_at DESC,rowid DESC",
+              [account.id],
+            )) {
+              if (!restorationMap.has(row.deletion_id))
+                restorationMap.set(row.deletion_id, []);
+              restorationMap
+                .get(row.deletion_id)
+                .push({ ...row, zips: JSON.parse(row.zips) });
             }
             const incoming = query(
               db,
@@ -4492,12 +4701,16 @@
                 zips: incomingMap.get(n.id) || [],
               })),
               pending_zips: pendingCodes(db, account.id),
+              previously_deleted: [
+                ...new Set(deleted.map((z) => z.zip)),
+              ].sort(),
               revision,
               used: active(db, account.id),
               rows: rows.map((r) => ({ ...r, zips: byRow.get(r.id) || [] })),
               events: events.map((e) => ({
                 ...e,
                 zips: byEvent.get(e.id) || [],
+                restorations: restorationMap.get(e.id) || [],
               })),
               places: first(
                 db,
@@ -4824,12 +5037,10 @@
                 now(),
               ]);
               for (const z of targets) {
-                db.run("INSERT INTO deletion_items VALUES (?,?,?,?)", [
-                  event,
-                  z.zip,
-                  z.state_name || null,
-                  z.city || null,
-                ]);
+                db.run(
+                  "INSERT INTO deletion_items(event_id,zip,state_name,city) VALUES (?,?,?,?)",
+                  [event, z.zip, z.state_name || null, z.city || null],
+                );
                 db.run(
                   "UPDATE history_zips SET deleted_event_id=? WHERE zip=? AND deleted_event_id IS NULL AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=? AND status='confirmed')",
                   [event, z.zip, account.id],
@@ -4875,6 +5086,87 @@
               } finally {
                 stmt.free();
               }
+            } else if (action === "restore_deleted") {
+              assert(
+                typeof payload.event === "string",
+                "Choose a deletion record.",
+              );
+              checkZips(payload.zips);
+              const event = first(
+                db,
+                "SELECT *,rowid AS sequence FROM deletion_events WHERE id=? AND subaccount_id=?",
+                [payload.event, account.id],
+              );
+              assert(event, "This deletion record no longer exists.");
+              const pending = new Set(pendingCodes(db, account.id));
+              const selected = [];
+              for (const zip of payload.zips) {
+                const item = first(
+                  db,
+                  "SELECT * FROM deletion_items WHERE event_id=? AND zip=?",
+                  [event.id, zip],
+                );
+                assert(
+                  item && !item.restored_at,
+                  "A selected ZIP was already restored or does not belong to this deletion.",
+                );
+                assert(
+                  !pending.has(zip),
+                  "Cancel or confirm the pending contact request for " +
+                    zip +
+                    " before restoring it.",
+                );
+                assert(
+                  first(
+                    db,
+                    "SELECT z.row_id FROM history_zips z JOIN history_rows h ON h.id=z.row_id WHERE h.subaccount_id=? AND z.zip=? AND z.deleted_event_id=?",
+                    [account.id, zip, event.id],
+                  ),
+                  "The original history entries for " +
+                    zip +
+                    " no longer exist.",
+                );
+                selected.push(zip);
+              }
+              const restoration = id(),
+                at = now();
+              db.run("INSERT INTO restoration_events VALUES (?,?,?,?,?,?)", [
+                restoration,
+                account.id,
+                event.id,
+                at,
+                comment(payload.comment),
+                JSON.stringify(selected.sort()),
+              ]);
+              for (const zip of selected) {
+                const later = first(
+                  db,
+                  `SELECT d.id FROM deletion_events d JOIN deletion_items i ON i.event_id=d.id WHERE d.subaccount_id=? AND i.zip=? AND i.restored_at IS NULL AND (d.created_at>? OR (d.created_at=? AND d.rowid>?)) ORDER BY d.created_at DESC,d.rowid DESC LIMIT 1`,
+                  [
+                    account.id,
+                    zip,
+                    event.created_at,
+                    event.created_at,
+                    event.sequence,
+                  ],
+                );
+                db.run(
+                  "UPDATE history_zips SET deleted_event_id=? WHERE zip=? AND deleted_event_id=? AND row_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
+                  [later?.id || null, zip, event.id, account.id],
+                );
+                db.run(
+                  "UPDATE deletion_items SET restored_at=?,restoration_id=? WHERE event_id=? AND zip=?",
+                  [at, restoration, event.id, zip],
+                );
+              }
+              const activeNow = new Set(
+                active(db, account.id).map((z) => z.zip),
+              );
+              consumeNew(
+                db,
+                account.id,
+                selected.filter((z) => activeNow.has(z)),
+              );
             } else if (action === "undo_deletion") {
               assert(
                 typeof payload.event === "string",
@@ -4895,7 +5187,7 @@
                 // If a ZIP was deleted again later, keep that later deletion in force.
                 const later = first(
                   db,
-                  `SELECT d.id FROM deletion_events d JOIN deletion_items i ON i.event_id=d.id WHERE d.subaccount_id=? AND i.zip=? AND (d.created_at>? OR (d.created_at=? AND d.rowid>?)) ORDER BY d.created_at DESC,d.rowid DESC LIMIT 1`,
+                  `SELECT d.id FROM deletion_events d JOIN deletion_items i ON i.event_id=d.id WHERE d.subaccount_id=? AND i.zip=? AND i.restored_at IS NULL AND (d.created_at>? OR (d.created_at=? AND d.rowid>?)) ORDER BY d.created_at DESC,d.rowid DESC LIMIT 1`,
                   [
                     account.id,
                     item.zip,
@@ -5173,7 +5465,8 @@
           $("zl-select-all").checked = n > 0 && count === n;
           $("zl-select-all").indeterminate = count > 0 && count < n;
           $("zl-select-all").disabled = model.busy || !n;
-          $("zl-add-checked-new").disabled = model.busy || !(checker.values?.fresh?.length);
+          $("zl-add-checked-new").disabled =
+            model.busy || !checker.values?.fresh?.length;
           document
             .querySelectorAll("[data-zl-search-size]")
             .forEach((button) => {
@@ -5181,6 +5474,13 @@
                 model.busy || Number(button.dataset.zlSearchSize) === 0;
             });
           updateViewButtons("zl-group", model.usedView || "list");
+          document
+            .querySelectorAll("[data-restore-count]")
+            .forEach(
+              (button) =>
+                (button.disabled =
+                  model.busy || !Number(button.dataset.restoreCount)),
+            );
         }
         function usedChip(z) {
           return el(
@@ -5536,6 +5836,7 @@
         const pendingSet = () => new Set(model.data?.pending_zips || []);
         function renderNew() {
           const target = $("zl-new-entries");
+          const pastDeletions = previouslyDeletedSet();
           target.replaceChildren();
           const rows = model.data.incoming || [];
           $("zl-new-count").textContent = newSet().size;
@@ -5581,20 +5882,51 @@
             );
             if (row.comment)
               body.append(el("p", { class: "zl-row-note" }, row.comment));
-            const textBox = el("div", { class: "zl-new-textbox", role: "group", "aria-label": "New ZIPs in batches of ten" });
+            const textBox = el("div", {
+              class: "zl-new-textbox",
+              role: "group",
+              "aria-label": "New ZIPs in batches of ten",
+            });
             for (let i = 0; i < row.zips.length; i += 10) {
               const batch = row.zips.slice(i, i + 10);
               textBox.append(
-                el("div", { class: "zl-new-batch" },
-                  el("code", { class: "zl-new-line" }, batch.join(",")),
-                  el("button", {
-                    type: "button",
-                    class: "zl-inline-copy",
-                    title: `Copy ${batch.length} to request contacts`,
-                    "aria-label": `Copy ${batch.length} to request contacts`,
-                    disabled: model.busy,
-                    onclick: () => void copyBatch(row, batch),
-                  }, `Copy ${batch.length}`, el("span", { class: "zl-copy-context" }, " to request contacts")),
+                el(
+                  "div",
+                  { class: "zl-new-batch" },
+                  el(
+                    "code",
+                    { class: "zl-new-line" },
+                    batch.map((zip, i) => [
+                      i ? "," : "",
+                      el(
+                        "span",
+                        {
+                          class: pastDeletions.has(zip) ? "zl-was-deleted" : "",
+                          title: pastDeletions.has(zip)
+                            ? "Previously deleted. Eligible for a new contact request."
+                            : "",
+                        },
+                        zip,
+                      ),
+                    ]),
+                  ),
+                  el(
+                    "button",
+                    {
+                      type: "button",
+                      class: "zl-inline-copy",
+                      title: `Copy ${batch.length} to request contacts`,
+                      "aria-label": `Copy ${batch.length} to request contacts`,
+                      disabled: model.busy,
+                      onclick: () => void copyBatch(row, batch),
+                    },
+                    `Copy ${batch.length}`,
+                    el(
+                      "span",
+                      { class: "zl-copy-context" },
+                      " to request contacts",
+                    ),
+                  ),
                 ),
               );
             }
@@ -5775,6 +6107,21 @@
             ),
           );
         }
+        const previouslyDeletedSet = () =>
+          new Set(model.data?.previously_deleted || []);
+        function openRestore(event, zips) {
+          if (model.busy || !zips.length) return;
+          model.restore = { event: event.id, zips: [...zips] };
+          model.dialogRevision = model.data.revision;
+          $("zl-restore-description").textContent =
+            `Restore ${zips.length} ZIP${zips.length === 1 ? "" : "s"} to their original Used ZIP history entries? This reverses their mistaken deletion, without creating a new contact request. Later deletions remain in effect. Restored Used ZIPs are removed from New entries.`;
+          $("zl-restore-zips").textContent =
+            zips.slice(0, 200).join(", ") +
+            (zips.length > 200 ? " … " + (zips.length - 200) + " more" : "");
+          $("zl-restore-comment").value = "";
+          $("zl-restore-error").textContent = "";
+          $("zl-restore-dialog").showModal();
+        }
         function renderLog() {
           const target = $("zl-log");
           target.replaceChildren();
@@ -5783,61 +6130,228 @@
             target.append(
               el("p", { class: "zl-empty" }, "No Used ZIP deletions recorded."),
             );
-          for (const e of model.data.events)
-            target.append(
+          model.restoreSelections ||= new Map();
+          for (const event of model.data.events) {
+            const eligible = event.zips.filter(
+              (z) =>
+                !z.restored_at &&
+                z.history_count > 0 &&
+                !pendingSet().has(z.zip),
+            );
+            const allowed = new Set(eligible.map((z) => z.zip));
+            const selected = new Set(
+              [...(model.restoreSelections.get(event.id) || [])].filter((z) =>
+                allowed.has(z),
+              ),
+            );
+            model.restoreSelections.set(event.id, selected);
+            const restored = event.zips.filter((z) => z.restored_at).length;
+            const title =
+              event.mode === "search_matches"
+                ? "Deleted matching ZIPs from search"
+                : event.mode === "search_others"
+                  ? "Deleted other Used ZIPs (kept search matches)"
+                  : event.mode === "individual"
+                    ? "Individual ZIP selection"
+                    : event.mode === "state"
+                      ? "Deleted by state: " + event.group_label
+                      : "Deleted by city: " + event.group_label;
+            const record = el(
+              "article",
+              { class: "zl-log-item", "data-deletion-id": event.id },
+              el("strong", {}, title),
               el(
-                "article",
-                { class: "zl-log-item" },
+                "p",
+                {},
+                formatDate(event.created_at) +
+                  " · " +
+                  event.zips.length +
+                  " ZIPs" +
+                  (restored ? " · " + restored + " restored" : ""),
+              ),
+              event.comment ? el("p", {}, event.comment) : null,
+            );
+            if (event.mode.startsWith("search_"))
+              record.append(
                 el(
-                  "strong",
+                  "details",
                   {},
-                  e.mode === "search_matches"
-                    ? "Deleted matching ZIPs from search"
-                    : e.mode === "search_others"
-                      ? "Deleted other Used ZIPs (kept search matches)"
-                      : e.mode === "individual"
-                        ? "Individual ZIP selection"
-                        : e.mode === "state"
-                          ? "Deleted by state: " + e.group_label
-                          : "Deleted by city: " + e.group_label,
+                  el("summary", {}, "ZIP list used for this search"),
+                  el("p", { class: "zl-zip-text" }, event.group_label),
                 ),
-                el(
-                  "p",
-                  {},
-                  formatDate(e.created_at) +
-                    " · " +
-                    e.zips.length +
-                    " unique ZIPs",
-                ),
-                e.comment ? el("p", {}, e.comment) : el("p", {}, "No comment."),
-                e.mode.startsWith("search_")
-                  ? el(
-                      "details",
-                      {},
-                      el("summary", {}, "ZIP list used for this search"),
-                      el("p", { class: "zl-zip-text" }, e.group_label),
-                    )
-                  : null,
-                el(
-                  "p",
-                  { class: "zl-zip-text" },
-                  e.zips.map((z) => z.zip).join(", "),
-                ),
+              );
+            const restoreAll = el(
+              "button",
+              {
+                type: "button",
+                class: "zl-button",
+                "data-restore-count": String(eligible.length),
+                disabled: model.busy || !eligible.length,
+                onclick: () =>
+                  openRestore(
+                    event,
+                    eligible.map((z) => z.zip),
+                  ),
+              },
+              "Restore all (" + eligible.length + ")",
+            );
+            const restoreSelected = el(
+              "button",
+              {
+                type: "button",
+                class: "zl-button",
+                "data-restore-count": String(selected.size),
+                disabled: model.busy || !selected.size,
+                onclick: () => openRestore(event, [...selected].sort()),
+              },
+              "Restore selected (" + selected.size + ")",
+            );
+            const list = el("div", { class: "zl-deleted-zip-list" });
+            for (const item of event.zips) {
+              const permitted = allowed.has(item.zip);
+              const description = item.restored_at
+                ? "Restored " +
+                  formatDate(item.restored_at) +
+                  (item.restoration_comment
+                    ? " · " + item.restoration_comment
+                    : "")
+                : pendingSet().has(item.zip)
+                  ? "Cancel or confirm its pending contact request before restoring."
+                  : !item.history_count
+                    ? "The original history entries were erased; this ZIP cannot be restored."
+                    : "Restore to the original Used ZIP history entries.";
+              if (permitted) {
+                const checkbox = el("input", {
+                  type: "checkbox",
+                  checked: selected.has(item.zip),
+                  "aria-label": "Select deleted ZIP " + item.zip,
+                  onchange: (e) => {
+                    e.target.checked
+                      ? selected.add(item.zip)
+                      : selected.delete(item.zip);
+                    restoreSelected.dataset.restoreCount = String(
+                      selected.size,
+                    );
+                    restoreSelected.textContent =
+                      "Restore selected (" + selected.size + ")";
+                    restoreSelected.disabled = model.busy || !selected.size;
+                  },
+                });
+                list.append(
+                  el(
+                    "span",
+                    { class: "zl-deleted-zip", title: description },
+                    el("label", {}, checkbox, item.zip),
+                    el(
+                      "button",
+                      {
+                        type: "button",
+                        class: "zl-one-restore",
+                        "data-restore-count": "1",
+                        "aria-label": "Restore ZIP " + item.zip,
+                        title: "Restore ZIP " + item.zip,
+                        onclick: () => openRestore(event, [item.zip]),
+                      },
+                      "↶",
+                    ),
+                  ),
+                );
+              } else
+                list.append(
+                  el(
+                    "span",
+                    {
+                      class:
+                        "zl-deleted-zip" +
+                        (item.restored_at
+                          ? " zl-restored-zip"
+                          : " zl-restore-unavailable"),
+                      title: description,
+                      "aria-label":
+                        item.zip +
+                        (item.restored_at
+                          ? ", restored"
+                          : ", restore unavailable"),
+                    },
+                    item.zip,
+                    item.restored_at ? " ✓" : "",
+                  ),
+                );
+            }
+            record.append(list);
+            if (eligible.length)
+              record.append(
                 el(
                   "div",
-                  { class: "zl-log-record-actions" },
+                  { class: "zl-restore-actions" },
+                  restoreAll,
+                  restoreSelected,
+                ),
+              );
+            if (
+              event.zips.some((z) => !z.restored_at && pendingSet().has(z.zip))
+            )
+              record.append(
+                el(
+                  "p",
+                  { class: "zl-restore-note" },
+                  "Pending requests must be confirmed or cancelled before restoring their ZIPs.",
+                ),
+              );
+            if (event.zips.some((z) => !z.restored_at && !z.history_count))
+              record.append(
+                el(
+                  "p",
+                  { class: "zl-restore-note" },
+                  "Some original history entries were erased and cannot be restored.",
+                ),
+              );
+            if (event.restorations?.length)
+              record.append(
+                el(
+                  "details",
+                  { class: "zl-restoration-audit" },
                   el(
-                    "button",
-                    {
-                      type: "button",
-                      class: "zl-text-button",
-                      onclick: () => openErase("deletion", e),
-                    },
-                    "Undo & erase (test)",
+                    "summary",
+                    {},
+                    "Restoration history (" + event.restorations.length + ")",
                   ),
+                  event.restorations.map((r) =>
+                    el(
+                      "div",
+                      {},
+                      el(
+                        "p",
+                        {},
+                        formatDate(r.created_at) +
+                          " · " +
+                          r.zips.length +
+                          " ZIPs",
+                      ),
+                      r.comment ? el("p", {}, r.comment) : null,
+                      el("p", { class: "zl-zip-text" }, r.zips.join(", ")),
+                    ),
+                  ),
+                ),
+              );
+            record.append(
+              el(
+                "details",
+                { class: "zl-test-tools" },
+                el("summary", {}, "Test tools"),
+                el(
+                  "button",
+                  {
+                    type: "button",
+                    class: "zl-text-button",
+                    onclick: () => openErase("deletion", event),
+                  },
+                  "Undo & erase (test)",
                 ),
               ),
             );
+            target.append(record);
+          }
         }
         function feedback(target, p) {
           target.replaceChildren(
@@ -5910,7 +6424,8 @@
             fresh: invalid ? [] : fresh,
           };
           $("zl-add-checked-new").hidden = invalid || !fresh.length;
-          $("zl-add-checked-new").disabled = model.busy || invalid || !fresh.length;
+          $("zl-add-checked-new").disabled =
+            model.busy || invalid || !fresh.length;
         }
         function render() {
           renderNew();
@@ -6030,6 +6545,7 @@
           });
         }
         function validateBulk() {
+          const pastDeletions = previouslyDeletedSet();
           const unavailable = new Set([...usedSet(), ...pendingSet()]);
           const seen =
             model.addTarget === "new"
@@ -6070,6 +6586,14 @@
                         : row.comment.length > 3000
                           ? "Comment exceeds 3,000 characters."
                           : `${p.zips.length} ZIPs${matches.size ? " · " + matches.size + (model.addTarget === "new" ? " already exist" : " already used") : ""}${p.duplicates ? " · " + p.duplicates + " repeats removed" : ""}${p.padded ? " · " + p.padded + " padded" : ""}`;
+              if (model.addTarget === "new") {
+                const previous = p.zips.filter((z) => pastDeletions.has(z));
+                if (previous.length)
+                  row.feedback.textContent +=
+                    " · " +
+                    previous.length +
+                    " previously deleted (new requests allowed)";
+              }
               row.preview.replaceChildren(
                 ...p.zips.slice(0, 24).map((z) =>
                   el(
@@ -6077,7 +6601,14 @@
                     {
                       class:
                         "zl-history-chip" +
-                        (matches.has(z) ? " duplicate" : ""),
+                        (matches.has(z) ? " duplicate" : "") +
+                        (model.addTarget === "new" && pastDeletions.has(z)
+                          ? " zl-was-deleted"
+                          : ""),
+                      title:
+                        model.addTarget === "new" && pastDeletions.has(z)
+                          ? "Previously deleted. Eligible for a new request."
+                          : "",
                     },
                     z,
                   ),
@@ -6156,6 +6687,7 @@
             model.addTarget === "new" ? "Add new ZIPs" : "Add history row";
           const p = parse($("zl-add-zips").value);
           const unavailable = new Set([...usedSet(), ...pendingSet()]);
+          const pastDeletions = previouslyDeletedSet();
           feedback($("zl-add-feedback"), p);
           const used =
               model.addTarget === "new"
@@ -6177,12 +6709,33 @@
                     : " already Used. They will be highlighted and kept in this new row; no other action is taken."),
               ),
             );
+          if (model.addTarget === "new") {
+            const previous = p.zips.filter((z) => pastDeletions.has(z));
+            if (previous.length)
+              $("zl-add-feedback").append(
+                el(
+                  "span",
+                  { class: "zl-past-deletion-feedback" },
+                  previous.length +
+                    " previously deleted. These ZIPs may be added for a new contact request.",
+                ),
+              );
+          }
           $("zl-add-preview").replaceChildren(
             ...p.zips.slice(0, 200).map((z) =>
               el(
                 "span",
                 {
-                  class: "zl-history-chip" + (used.has(z) ? " duplicate" : ""),
+                  class:
+                    "zl-history-chip" +
+                    (used.has(z) ? " duplicate" : "") +
+                    (model.addTarget === "new" && pastDeletions.has(z)
+                      ? " zl-was-deleted"
+                      : ""),
+                  title:
+                    model.addTarget === "new" && pastDeletions.has(z)
+                      ? "Previously deleted. Eligible for a new request."
+                      : "",
                 },
                 z,
               ),
@@ -6431,6 +6984,16 @@
             if (model.busy) e.preventDefault();
           }),
         );
+        $("zl-restore-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (model.busy) return;
+          void change(
+            "restore_deleted",
+            { ...model.restore, comment: $("zl-restore-comment").value },
+            "zl-restore-error",
+            "Restoration saved. Original history and the audit trail are preserved.",
+          );
+        });
         $("zl-reset").addEventListener("click", () => openErase("all"));
         $("zl-refresh").addEventListener("click", () => void refresh());
         $("zl-group")
