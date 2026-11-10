@@ -3658,6 +3658,13 @@
       .zl-contact-loading::before { content:""; display:inline-block; vertical-align:-1px; width:9px; height:9px; margin-right:3px; border:1.5px solid currentColor; border-right-color:transparent; border-radius:50%; animation:zl-contact-spin .75s linear infinite; }
       @keyframes zl-contact-spin { to { transform:rotate(360deg); } }
       @media(prefers-reduced-motion:reduce){.zl-contact-loading::before{animation:none;border-style:dotted}}
+
+      /* History search is local to the already-loaded history; no database/provider reads. */
+      .zl-history-search-box { padding: 9px 10px; border-bottom: 1px solid #e5e9ee; background: #fff; }
+      .zl-history-search-box input { padding: 7px 8px; font-size: 11px; border-color: #dde2e9; border-radius: 6px; background: #fcfcfd; }
+      .zl-history-search-box .zl-feedback:empty { display: none; }
+      .zl-history-search-box .zl-feedback.zl-invalid { color: #ad3e32; }
+      .zl-history-chip.zl-history-search-match { outline: 2px solid #638aca; outline-offset: 1px; font-weight: 700; }
     </style>
   </head>
   <body>
@@ -4053,6 +4060,16 @@
                     </details>
                   </div>
                 </header>
+                <div class="zl-history-search-box">
+                  <div class="zl-search-label">
+                    <label for="zl-history-search">Find a ZIP in history</label>
+                    <button type="button" id="zl-clear-history-search" class="zl-text-button" hidden>Clear search</button>
+                  </div>
+                  <input type="search" id="zl-history-search" inputmode="numeric" maxlength="80"
+                    autocomplete="off" spellcheck="false" placeholder="Enter a ZIP, e.g. 33701"
+                    aria-describedby="zl-history-search-feedback" />
+                  <p id="zl-history-search-feedback" class="zl-feedback" role="status" aria-live="polite"></p>
+                </div>
                 <div id="zl-history"></div>
               </section>
               <details class="zl-section zl-audit">
@@ -6142,7 +6159,8 @@ class ZipContactCounts {
                   ? " deleted"
                   : z.already_used
                     ? " duplicate"
-                    : ""),
+                    : "") +
+                (z.zip === model.historySearchZip ? " zl-history-search-match" : ""),
               title,
               tabindex: "0",
               "aria-label": `${z.zip}${z.deleted_event_id ? ", deleted" : z.already_used ? ", already used when added" : ""}`,
@@ -6372,10 +6390,38 @@ class ZipContactCounts {
           $("zl-edit-dialog").showModal();
         }
 
+        // BEGIN HISTORY ZIP SEARCH
+        function searchHistoryRows(rows, text) {
+          const query = String(text ?? "").trim();
+          const entries = rows.map((row, index) => ({ row, index }));
+          if (!query) return { entries, zip: null, error: "" };
+          if (!/^\d{1,5}$/.test(query)) return {
+            entries, zip: null,
+            error: "Enter one ZIP (up to five digits). All history entries are shown.",
+          };
+          const zip = query.padStart(5, "0");
+          return {
+            entries: entries.filter(({ row }) => (row.zips || []).some(item =>
+              (typeof item === "string" ? item : item.zip) === zip)),
+            zip, error: "",
+          };
+        }
+        // END HISTORY ZIP SEARCH
+
         function renderHistory() {
           const target = $("zl-history");
           target.replaceChildren();
-          $("zl-history-count").textContent = model.data.rows.length + " rows";
+          const result = searchHistoryRows(model.data.rows, $("zl-history-search").value);
+          model.historySearchZip = result.zip;
+          $("zl-clear-history-search").hidden = !$("zl-history-search").value;
+          $("zl-history-search-feedback").textContent = result.error || (result.zip
+            ? `${result.entries.length} ${result.entries.length === 1 ? "entry contains" : "entries contain"} ${result.zip}. Includes deleted ZIPs and pending entries.`
+            : "");
+          $("zl-history-search-feedback").classList.toggle("zl-invalid", !!result.error);
+          $("zl-history-search").setAttribute("aria-invalid", String(!!result.error));
+          $("zl-history-count").textContent = result.zip
+            ? `${result.entries.length} / ${model.data.rows.length} rows`
+            : model.data.rows.length + " rows";
           if (!model.data.rows.length)
             target.append(
               el(
@@ -6384,7 +6430,9 @@ class ZipContactCounts {
                 "No history yet. Add a ZIP list or paste spreadsheet rows.",
               ),
             );
-          model.data.rows.forEach((r, i) =>
+          if (model.data.rows.length && !result.entries.length)
+            target.append(el("p", { class: "zl-empty" }, `No history entries contain ${result.zip}.`));
+          result.entries.forEach(({ row: r, index: i }) =>
             target.append(
               el(
                 "article",
@@ -7375,6 +7423,18 @@ class ZipContactCounts {
               renderUsed();
             }),
           );
+        $("zl-history-search").addEventListener("input", () => {
+          if (model.data) renderHistory();
+        });
+        function clearHistorySearch() {
+          $("zl-history-search").value = "";
+          if (model.data) renderHistory();
+          $("zl-history-search").focus();
+        }
+        $("zl-clear-history-search").addEventListener("click", clearHistorySearch);
+        $("zl-history-search").addEventListener("keydown", event => {
+          if (event.key === "Escape") { event.preventDefault(); clearHistorySearch(); }
+        });
         $("zl-used-search").addEventListener("input", () => {
           model.selected.clear();
           renderUsed();

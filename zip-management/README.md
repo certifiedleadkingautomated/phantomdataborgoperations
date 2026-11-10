@@ -59,3 +59,25 @@ With Node 20+ (no packages or real credentials needed):
 ```sh
 node --test zip-management/tests/contact-counts.test.mjs
 ```
+
+
+## Find a ZIP in Used ZIP history
+
+Use **Find a ZIP in history** within the Used ZIP history section. Enter one ZIP
+to show every matching entry, including deleted occurrences and pending requests.
+Short numeric ZIPs are padded with leading zeroes, consistently with ZIP entry.
+Matching ZIPs receive a blue outline; their existing deleted/duplicate styling
+remains visible. Each result keeps its original row number, date, source and
+comment/order number, plus the rest of the ZIPs in that entry. A GHL-tagged row
+is still a manually pasted GHL list, and Pending is not a confirmed order.
+
+**Clear search**, the input's clear control, or **Escape** restores all history.
+Invalid input (including ZIP+4, text or multiple ZIPs) shows a message and leaves
+all entries visible. The filter uses only the current history already loaded in
+memory: no new SQLite reads, GHL requests, storage writes or schema changes.
+
+Run all standalone regression tests with:
+
+```sh
+node --test zip-management/tests/*.test.mjs
+```
