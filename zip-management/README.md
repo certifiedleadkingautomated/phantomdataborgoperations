@@ -87,8 +87,9 @@ node --test zip-management/tests/*.test.mjs
 
 The **Sort** buttons offer ZIP lowest/highest first and Contacts highest/lowest
 first. Sorting also applies to each Used search-result subset. In By State and
-By City views it sorts ZIPs inside each group; geographic headings remain
-alphabetical. Contact-count ties use ascending ZIP order. Unknown, missing or
+By City views it sorts ZIPs inside each group. ZIP sorting keeps geographic
+headings alphabetical; contact sorting orders groups by their summed available
+contact counts as well. Contact-count ties use ascending ZIP order. Unknown, missing or
 invalid counts stay last in either direction; a verified zero is a real count.
 
 Contact sorting uses only the current connection's already available count
@@ -102,3 +103,19 @@ badges and observers. Disconnecting/changing the connection clears those counts.
 **Copy all** follows the selected ZIP/contact ordering. Sorting does not modify
 SQLite, history, assignments or deletion records. The selection is retained
 while changing views or refreshing this page's data; reloading defaults to ZIP ↑.
+
+
+## State and city contact totals
+
+Used ZIP state/city headings show the sum of available contact counts for the
+ZIPs displayed in that group. All counts known: **1,234 contacts**. Partial:
+**≥1,234 contacts · 2/3 ZIPs**. None known: **— contacts · 0/3 ZIPs**. A verified
+zero remains zero. Group sorting uses the available subtotal in the chosen
+direction, with no-count groups last and state/city names as stable ties.
+Totals and group/ZIP order update in place as counts arrive or a connection
+is cleared, without remounting count badges or restarting their observers.
+
+Search-result groups sum only the ZIPs in that result, not the entire state
+or city. Individual contact badges retain their existing stale/cache indicators;
+group sums use those available values. No extra provider requests, SQLite reads
+or schema changes are introduced for these totals. History grouping is unchanged.

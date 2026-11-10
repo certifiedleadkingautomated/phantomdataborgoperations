@@ -3673,6 +3673,9 @@
       .zl-sort-buttons button[aria-pressed="true"] { border-color: #dbe3ed; background: #f1f5fa; color: #294d7a; }
       .zl-sort-buttons button:hover:not(:disabled) { background: #f3f6fa; }
       .zl-sort-note { width: 100%; margin: 0; color: #7b8797; font-size: 9px; line-height: 1.5; }
+
+      .zl-group-heading .zl-group-contacts { color: #718098; font-size: 10px; font-weight: 400; font-variant-numeric: tabular-nums; }
+      .zl-group-heading .zl-group-contacts-partial { color: #927446; }
     </style>
   </head>
   <body>
@@ -3986,8 +3989,8 @@
                   <div id="zl-used-sort" class="zl-sort-buttons" role="group" aria-label="Used ZIP sort order">
                     <button type="button" data-sort="zip-asc" aria-pressed="true" aria-label="ZIP: lowest first" title="ZIP: lowest first">ZIP ↑</button>
                     <button type="button" data-sort="zip-desc" aria-pressed="false" aria-label="ZIP: highest first" title="ZIP: highest first">ZIP ↓</button>
-                    <button type="button" data-sort="contacts-desc" aria-pressed="false" aria-label="Contacts: highest first" title="Available contact counts: highest first. ZIPs without counts stay last. State/city headings stay alphabetical.">Contacts ↓</button>
-                    <button type="button" data-sort="contacts-asc" aria-pressed="false" aria-label="Contacts: lowest first" title="Available contact counts: lowest first. ZIPs without counts stay last. State/city headings stay alphabetical.">Contacts ↑</button>
+                    <button type="button" data-sort="contacts-desc" aria-pressed="false" aria-label="Contacts: highest first" title="Available contact counts: highest first. ZIPs without counts stay last. State/city groups sort by their available contact totals.">Contacts ↓</button>
+                    <button type="button" data-sort="contacts-asc" aria-pressed="false" aria-label="Contacts: lowest first" title="Available contact counts: lowest first. ZIPs without counts stay last. State/city groups sort by their available contact totals.">Contacts ↑</button>
                   </div>
                   <p id="zl-sort-note" class="zl-sort-note" role="status" aria-live="polite" hidden></p>
                 </div>
@@ -5817,7 +5820,7 @@ class ZipContactCounts {
             selectionControls();
             validateAdd();
             contactCounts.controls();
-            if ((model.usedSort || "").startsWith("contacts-")) reorderUsedLists();
+            if ((model.usedSort || "").startsWith("contacts-") || model.usedView === "state" || model.usedView === "city") reorderUsedLists();
           }
         }
         async function refresh() {
@@ -5878,8 +5881,43 @@ class ZipContactCounts {
             return (order === "contacts-asc" ? left - right : right - left) || zipOrder;
           });
         }
+        function sumZipContacts(items, counts = new Map()) {
+          const zips = [...new Set(items.map(item => item.zip))];
+          let total = 0, known = 0;
+          for (const zip of zips) {
+            const count = knownContactTotal(counts.get(zip));
+            if (count === null) continue;
+            known++; total += count;
+          }
+          const overflow = !Number.isSafeInteger(total);
+          return { total: known && !overflow ? total : null, known, size: zips.length,
+            complete: zips.length > 0 && known === zips.length && !overflow, overflow };
+        }
+        function sortUsedZipGroups(groups, order = "zip-asc", counts = new Map()) {
+          const alphabetical = (a, b) => !a.state ? (b.state ? 1 : 0) : !b.state ? -1
+            : a.state.localeCompare(b.state) || (a.city || "").localeCompare(b.city || "");
+          return groups.map(group => ({ group, sum: sumZipContacts(group.zips, counts) }))
+            .sort((a, b) => {
+              if (!order.startsWith("contacts-")) return alphabetical(a.group, b.group);
+              const left = a.sum.total, right = b.sum.total;
+              if (left === null) return right === null ? alphabetical(a.group, b.group) : 1;
+              if (right === null) return -1;
+              return (order === "contacts-asc" ? left - right : right - left) || alphabetical(a.group, b.group);
+            }).map(item => item.group);
+        }
         // END USED ZIP SORT
 
+        function paintGroupContactTotal(node, items) {
+          const sum = sumZipContacts(items, contactCounts.entries);
+          node.textContent = sum.total === null
+            ? ` · — contacts · ${sum.known}/${sum.size} ZIPs`
+            : sum.complete ? ` · ${sum.total.toLocaleString()} contacts`
+              : ` · ≥${sum.total.toLocaleString()} contacts · ${sum.known}/${sum.size} ZIPs`;
+          node.classList.toggle("zl-group-contacts-partial", sum.total !== null && !sum.complete);
+          node.title = sum.overflow ? "The available counts exceed the supported total range."
+            : sum.complete ? `Sum of available contact counts for all ${sum.size} ZIPs in this group. Cached values may be older; see individual ZIP badges.`
+              : `Known subtotal from ${sum.known} of ${sum.size} ZIPs. Missing counts are not zero. Sorting uses the available subtotal; it updates as counts arrive.`;
+        }
         let usedSortTimer = null;
         function updateUsedSortControls() {
           const order = model.usedSort || "zip-asc";
@@ -5892,7 +5930,7 @@ class ZipContactCounts {
           if (!note.hidden) {
             const total = model.data?.used.length || 0;
             const known = (model.data?.used || []).filter(z => knownContactTotal(contactCounts.entries.get(z.zip)) !== null).length;
-            note.textContent = `${known} of ${total} counts available · unknown counts last`;
+            note.textContent = `${known} of ${total} counts available · unknown counts last${model.usedView === "state" || model.usedView === "city" ? " · partial group totals marked ≥" : ""}`;
           }
         }
         function reorderUsedLists() {
@@ -5905,13 +5943,23 @@ class ZipContactCounts {
             if (ordered.some((z, index) => nodes[index].dataset.usedZip !== z.zip))
               for (const z of ordered) list.append(byZip.get(z.zip));
           });
+          root.querySelectorAll(".zl-zip-groups").forEach(container => {
+            const groups = [...container.children].filter(node => node.dataset.usedGroup).map(node => ({
+              node, state: node.dataset.groupState || "", city: node.dataset.groupCity || "",
+              zips: [...node.querySelectorAll("[data-used-zip]")].map(chip => ({ zip: chip.dataset.usedZip })),
+            }));
+            for (const group of groups) paintGroupContactTotal(group.node.querySelector("[data-group-contacts]"), group.zips);
+            const ordered = sortUsedZipGroups(groups, model.usedSort, contactCounts.entries);
+            if (ordered.some((group, index) => group.node !== groups[index].node))
+              for (const group of ordered) container.append(group.node);
+          });
           if (focused && root.contains(focused) && document.activeElement !== focused) focused.focus({ preventScroll: true });
           root.scrollTop = scrollTop;
           updateUsedSortControls();
         }
         function scheduleUsedSort() {
           clearTimeout(usedSortTimer);
-          if (!(model.usedSort || "").startsWith("contacts-")) return;
+          if (!(model.usedSort || "").startsWith("contacts-") && model.usedView !== "state" && model.usedView !== "city") return;
           usedSortTimer = setTimeout(() => reorderUsedLists(), 120);
         }
         function selectionControls() {
@@ -5978,7 +6026,7 @@ class ZipContactCounts {
           return el(
             "div",
             { class: "zl-group-heading" },
-            el("h4", {}, name + " · " + zips.length),
+            el("h4", {}, name + " · " + zips.length + (zips.length === 1 ? " ZIP" : " ZIPs")),
             state && (!city || city !== "Unmapped city")
               ? el(
                   "button",
@@ -6013,75 +6061,26 @@ class ZipContactCounts {
           if (order) items = sortUsedZipItems(items, order, contactCounts.entries);
           if (kind === "list") return chips(items.map(makeChip));
           const result = el("div", { class: "zl-zip-groups" });
-          const heading = (title, values, mode, state, city) =>
-            allowDelete
-              ? groupHeading(title, values, mode, state, city)
-              : el(
-                  "div",
-                  { class: "zl-group-heading" },
-                  el("h4", {}, title),
-                  el("span", { class: "zl-count" }, values.length),
-                );
-          if (kind === "city") {
-            const cities = new Map();
-            for (const zip of items) {
-              const state = zip.state_name || "",
-                city = zip.city || "";
-              const key = JSON.stringify([state, city]);
-              if (!cities.has(key)) cities.set(key, { state, city, zips: [] });
-              cities.get(key).zips.push(zip);
-            }
-            const groups = [...cities.values()].sort((a, b) =>
-              !a.state
-                ? b.state
-                  ? 1
-                  : 0
-                : !b.state
-                  ? -1
-                  : a.state.localeCompare(b.state) ||
-                    a.city.localeCompare(b.city),
-            );
-            for (const group of groups) {
-              const title =
-                group.city && group.state
-                  ? group.city + ", " + group.state
-                  : group.state
-                    ? group.state + " · Unmapped city"
-                    : "Unmapped";
-              result.append(
-                el(
-                  "section",
-                  { class: "zl-group" },
-                  heading(
-                    title,
-                    group.zips,
-                    "city",
-                    group.state,
-                    group.city || "Unmapped city",
-                  ),
-                  chips(group.zips.map(makeChip)),
-                ),
-              );
-            }
-            return result;
-          }
-          const states = new Map();
+          const groups = new Map();
           for (const zip of items) {
-            const state = zip.state_name || "";
-            if (!states.has(state)) states.set(state, []);
-            states.get(state).push(zip);
+            const state = zip.state_name || "", city = kind === "city" ? zip.city || "" : "";
+            const key = JSON.stringify([state, city]);
+            if (!groups.has(key)) groups.set(key, { state, city, zips: [] });
+            groups.get(key).zips.push(zip);
           }
-          for (const [state, zips] of [...states].sort((a, b) =>
-            !a[0] ? (b[0] ? 1 : 0) : !b[0] ? -1 : a[0].localeCompare(b[0]),
-          ))
-            result.append(
-              el(
-                "section",
-                { class: "zl-group" },
-                heading(state || "Unmapped", zips, "state", state),
-                chips(zips.map(makeChip)),
-              ),
-            );
+          for (const group of sortUsedZipGroups([...groups.values()], order || "zip-asc", order ? contactCounts.entries : new Map())) {
+            const title = kind === "city" && group.city && group.state
+              ? `${group.city}, ${group.state}` : kind === "city" && group.state
+                ? `${group.state} · Unmapped city` : group.state || "Unmapped";
+            const heading = allowDelete ? groupHeading(title, group.zips, kind, group.state, kind === "city" ? group.city || "Unmapped city" : undefined)
+              : el("div", { class: "zl-group-heading" }, el("h4", {}, title), el("span", { class: "zl-count" }, group.zips.length));
+            if (order) {
+              const total = el("span", { class: "zl-group-contacts", "data-group-contacts": "" });
+              paintGroupContactTotal(total, group.zips);
+              heading.querySelector("h4").append(total);
+            }
+            result.append(el("section", { class: "zl-group", ...(order ? { "data-used-group": "true", "data-group-state": group.state, "data-group-city": group.city } : {}) }, heading, chips(group.zips.map(makeChip))));
+          }
           return result;
         }
 
