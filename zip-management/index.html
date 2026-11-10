@@ -3695,7 +3695,7 @@
       .zl-chip[data-used-zip] > label > input { grid-column: 1; grid-row: 1; justify-self: center; }
       .zl-chip[data-used-zip] .zl-used-zip-code { grid-column: 2; grid-row: 1; text-align: center; line-height: 17px; }
       .zl-chip[data-used-zip] > button { grid-column: 3; grid-row: 1; justify-self: end; }
-      .zl-chip[data-used-zip] > .zl-contact-count {
+      .zl-chip[data-used-zip] .zl-contact-count {
         grid-column: 1 / -1;
         grid-row: 2;
         display: block;
@@ -3715,8 +3715,8 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .zl-chip[data-used-zip] > .zl-contact-count.zl-contact-stale { color: #8b6b39; }
-      .zl-chip[data-used-zip] > .zl-contact-count.zl-contact-error { color: #aa5146; }
+      .zl-chip[data-used-zip] .zl-contact-count.zl-contact-stale { color: #8b6b39; }
+      .zl-chip[data-used-zip] .zl-contact-count.zl-contact-error { color: #aa5146; }
     </style>
   </head>
   <body>
@@ -5678,8 +5678,6 @@ class ZipContactCounts {
     node.classList.toggle('zl-contact-stale', !!stale);
     node.classList.toggle('zl-contact-pending', !!waiting);
     node.classList.toggle('zl-contact-error', item?.state === 'error');
-    const reasons = { access_denied: 'GHL returned 401/403. Further requests are stopped; verify the test token and location using Connection.', rate_limited: 'GHL rate limited the count request. Retry-After is respected.', temporary: 'GHL is temporarily unavailable.', invalid_response: 'GHL did not return a valid total.', request_refused: 'GHL refused the count request.', network_error: 'The browser could not complete the GHL request (network or CORS).', unavailable: 'Contact count unavailable.' };
-    node.title = item?.error ? reasons[item.error] || reasons.unavailable : known ? `${item.total.toLocaleString()} contacts in the configured GHL test subaccount. Checked ${new Date(item.fetched_at * 1000).toLocaleString()}${waiting ? ' · refreshing' : stale ? ' · cached, refreshing when visible' : ' · cached'}` : 'Contact count for this ZIP in the configured GHL test subaccount. Fetched when visible.';
     node.setAttribute('aria-label', `Contacts in ZIP ${node.dataset.contactZip}: ${known ? item.total : item?.state === 'error' ? 'unavailable' : 'loading'}`);
   }
   repaint() { this.root()?.querySelectorAll('[data-contact-zip]').forEach(node => this.paint(node)); this.onCountsChanged(); }
@@ -6045,8 +6043,8 @@ class ZipContactCounts {
                 },
               }),
               el("span", { class: "zl-used-zip-code" }, z.zip),
+              contactCounts.badge(z.zip),
             ),
-            contactCounts.badge(z.zip),
             el(
               "button",
               {
