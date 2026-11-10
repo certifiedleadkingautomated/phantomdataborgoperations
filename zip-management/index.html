@@ -5430,7 +5430,7 @@ class GhlCountCache {
       catch { this.available = false; resolve(null); }
     }) : this.memory.get(key);
     const memory = this.memory.get(key);
-    const saved = memory && (!value || memory.fetched_at > value.fetched_at) ? memory : value;
+    const saved = db && this.available ? value : memory || value;
     return saved && saved.scope === scope && saved.zip === zip && Number.isSafeInteger(saved.total) && saved.total >= 0 && Number.isFinite(saved.fetched_at) && Number.isFinite(saved.expires_at) ? saved : null;
   }
   async put(value) {
@@ -5443,12 +5443,13 @@ class GhlCountCache {
   }
 }
 class GhlZipCountEngine {
-  constructor({ cache = new GhlCountCache(), fetcher = (...args) => fetch(...args), locks = navigator.locks, interval = 500, ttl = 3600, forceInterval = 60, onUpdate = () => {}, onProblem = () => {} } = {}) {
+  constructor({ cache = new GhlCountCache(), fetcher = (...args) => fetch(...args), locks = navigator.locks, interval = 500, forceInterval = 60, onUpdate = () => {}, onProblem = () => {}, onAccount = () => {} } = {}) {
     this.cache = cache; this.fetcher = fetcher; this.locks = locks; this.interval = interval;
-    this.ttl = ttl; this.forceInterval = forceInterval; this.onUpdate = onUpdate; this.onProblem = onProblem;
+    this.forceInterval = forceInterval; this.onUpdate = onUpdate; this.onProblem = onProblem; this.onAccount = onAccount;
     this.context = null; this.token = ''; this.generation = 0; this.jobs = new Map(); this.checks = new Map();
     this.queue = []; this.active = 0; this.wanted = null; this.controllers = new Set(); this.cooldown = 0;
     this.blocked = null; this.failures = 0; this.channel = null;
+    this.account = null; this.accountState = 'disconnected'; this.validation = null; this.used = new Set(); this.background = []; this.pumping = false;
   }
   async connect(token, locationId) {
     if (!token.trim() || !/^[A-Za-z0-9_-]{5,100}$/.test(locationId)) throw Error('Enter a token and valid location ID.');
@@ -5458,10 +5459,21 @@ class GhlZipCountEngine {
     const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(locationId + '|' + token.trim() + '|postalCode:eq:v1'));
     if (generation !== this.generation) return null;
     const scope = [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2, '0')).join('');
-    this.token = token.trim(); this.context = { scope, location_id: locationId, cache_ttl: this.ttl };
+    this.token = token.trim(); this.context = { scope, location_id: locationId, cache_mode: 'account_total' };
+    this.accountState = 'checking';
     if (typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel('zl-ghl-counts:' + scope);
-      this.channel.onmessage = e => { if (e.data?.type === 'blocked' && e.data.scope === scope) { this.blocked = e.data.kind; this.onProblem(e.data.kind); } };
+      this.channel.onmessage = e => {
+        if (e.data?.scope !== scope) return;
+        if (e.data.type === 'blocked') { this.blocked = e.data.kind; this.onProblem(e.data.kind); }
+        if (e.data.type === 'account' && this.accountState === 'ready') {
+          // Read shared storage rather than trusting message order or payloads.
+          const generation = this.generation;
+          void this.cache.get(scope, '@account').then(row => {
+            if (generation === this.generation && row && row.cache_generation !== this.account?.cache_generation) this.acceptAccount(row);
+          });
+        }
+      };
     }
     return this.context;
   }
@@ -5469,13 +5481,92 @@ class GhlZipCountEngine {
     this.generation++; this.context = null; this.token = ''; this.blocked = null; this.failures = 0;
     this.controllers.forEach(c => c.abort()); this.controllers.clear(); this.channel?.close(); this.channel = null;
     this.jobs.clear(); this.checks.clear(); this.queue = []; this.cooldown = 0;
+    this.account = null; this.accountState = 'disconnected'; this.validation = null; this.background = []; this.used.clear();
   }
-  setWanted(zips) { this.wanted = new Set(zips); }
+  setWanted(zips) {
+    this.wanted = new Set(zips);
+    this.background.sort((a, b) => Number(this.wanted.has(b)) - Number(this.wanted.has(a)));
+    this.queue.sort((a, b) => Number(this.wanted.has(b.zip)) - Number(this.wanted.has(a.zip)));
+  }
+  setUsed(zips) {
+    const next = new Set(zips.filter(zip => /^[0-9]{5}$/.test(zip)));
+    if (next.size === this.used.size && [...next].every(zip => this.used.has(zip))) return;
+    this.used = next; this.background = [...next]; if (this.wanted) this.setWanted(this.wanted); void this.pumpBackground();
+  }
+  async pumpBackground() {
+    if (this.pumping || this.accountState !== 'ready' || this.blocked) return;
+    this.pumping = true; const generation = this.generation;
+    try {
+      while (this.background.length && this.queue.length < 100 && generation === this.generation && this.accountState === 'ready' && !this.blocked) {
+        const zip = this.background.shift();
+        if (this.used.has(zip)) {
+          const cacheGeneration = this.account?.cache_generation;
+          const item = await this.ensure(zip, false);
+          if (generation === this.generation && cacheGeneration === this.account?.cache_generation && this.accountState === 'ready' && this.used.has(zip)) this.onUpdate(item);
+        }
+      }
+    } finally { this.pumping = false; }
+  }
+  acceptAccount(row) {
+    if (!row || !Number.isSafeInteger(row.total) || row.total < 0 || typeof row.cache_generation !== 'string') return;
+    const changed = this.account?.cache_generation !== row.cache_generation;
+    this.account = row; this.accountState = 'ready';
+    if (changed) {
+      this.jobs.clear(); this.checks.clear(); this.queue = []; this.background = [...this.used]; if (this.wanted) this.setWanted(this.wanted);
+    }
+    this.onAccount({ state: 'ready', total: row.total, checked_at: row.fetched_at, cache_generation: row.cache_generation });
+    void this.pumpBackground();
+  }
+  validateAccount() {
+    if (this.validation) return this.validation;
+    if (!this.context) return Promise.resolve(false);
+    const context = this.context, generation = this.generation;
+    this.accountState = 'checking'; this.blocked = null; this.failures = 0;
+    this.onAccount({ state: 'checking' });
+    const promise = this.locks.request('zl-ghl-account:' + context.scope, async () => {
+      // Each page/connection performs its own total request; only ZIP work is coalesced.
+      const job = { context, generation, accountRequest: true };
+      let total;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try { total = await this.limitedRequest(job); break; }
+        catch (error) {
+          if (generation !== this.generation) return false;
+          if (error.kind === 'rate_limited') this.setCooldown(context.location_id, error.retryAfter || 10);
+          if (attempt === 0 && ['rate_limited', 'temporary'].includes(error.kind)) {
+            await new Promise(resolve => setTimeout(resolve, (error.retryAfter || 2) * 1000)); continue;
+          }
+          throw error;
+        }
+      }
+      if (generation !== this.generation) return false;
+      const previous = await this.cache.get(context.scope, '@account');
+      if (generation !== this.generation) return false;
+      const row = { key: context.scope + ':@account', scope: context.scope, zip: '@account', total,
+        fetched_at: Date.now() / 1000, expires_at: Number.MAX_SAFE_INTEGER,
+        cache_generation: previous?.total === total && typeof previous.cache_generation === 'string' ? previous.cache_generation : crypto.randomUUID() };
+      await this.cache.put(row);
+      if (generation !== this.generation) return false;
+      this.acceptAccount(row);
+      this.channel?.postMessage({ type: 'account', scope: context.scope });
+      return true;
+    }).catch(error => {
+      if (generation === this.generation) {
+        this.accountState = 'error'; this.blocked = error.kind || 'unavailable';
+        this.onAccount({ state: 'error' }); this.onProblem(this.blocked);
+      }
+      return false;
+    }).finally(() => { if (this.validation === promise) this.validation = null; });
+    this.validation = promise; return promise;
+  }
+  fresh(cached) { return this.accountState === 'ready' && cached?.cache_generation === this.account?.cache_generation; }
   result(zip, cached, job) {
     const now = Date.now() / 1000;
-    return { zip, total: cached?.total ?? null, fetched_at: cached?.fetched_at ?? null, expires_at: cached?.expires_at ?? null,
-      stale: !!cached && (cached.expires_at <= now || !!this.blocked), state: this.blocked ? 'error' : job?.state || (cached?.expires_at > now ? 'fresh' : 'deferred'),
-      error: this.blocked || job?.error || null, retry_after: Math.max(1, Math.ceil((job?.retry_at || now + 1) - now)) };
+    // No count leaves the cache until this page validates the account total.
+    const usable = this.fresh(cached) ? cached : null;
+    const state = this.accountState === 'error' || this.blocked ? 'error' : this.accountState !== 'ready' ? 'loading' : job?.state || (usable ? 'fresh' : 'deferred');
+    return { zip, total: usable?.total ?? null, fetched_at: usable?.fetched_at ?? null, expires_at: usable?.expires_at ?? null,
+      stale: !!usable && !!this.blocked, state, error: this.blocked || job?.error || null,
+      retry_after: Math.max(1, Math.ceil((job?.retry_at || now + 1) - now)) };
   }
   async batch(zips, force = false) {
     if (!this.context || !Array.isArray(zips) || zips.length > 100 || zips.some(z => !/^[0-9]{5}$/.test(z)) || new Set(zips).size !== zips.length) throw Error('Invalid ZIP batch.');
@@ -5490,15 +5581,21 @@ class GhlZipCountEngine {
   }
   async _ensure(zip, force) {
     const context = this.context, generation = this.generation;
+    if (this.accountState !== 'ready') return this.result(zip, null, null);
+    const account = await this.cache.get(context.scope, '@account');
+    if (generation !== this.generation) return { zip, total: null, state: 'deferred' };
+    if (this.accountState !== 'ready') return this.result(zip, null, null);
+    if (account && account.cache_generation !== this.account?.cache_generation) this.acceptAccount(account);
     const cached = await this.cache.get(context.scope, zip);
     if (generation !== this.generation) return { zip, total: null, state: 'deferred' };
+    if (this.accountState !== 'ready') return this.result(zip, null, null);
     let job = this.jobs.get(zip);
-    const fresh = cached && cached.expires_at > Date.now() / 1000;
-    const recent = cached && Date.now() / 1000 - cached.fetched_at < this.forceInterval;
+    const fresh = this.fresh(cached);
+    const recent = fresh && Date.now() / 1000 - cached.fetched_at < this.forceInterval;
     if (!this.blocked && !(job && ['queued', 'loading'].includes(job.state)) && (!fresh || force && !recent)) {
       if (!job?.error || force) {
         if (this.queue.length >= 256) return this.result(zip, cached, { state: 'deferred' });
-        job = { zip, cached, state: 'queued', error: null, force, generation, context };
+        job = { zip, cached, state: 'queued', error: null, force, generation, context, cache_generation: this.account.cache_generation };
         this.jobs.set(zip, job); this.queue.push(job); this.drain();
       }
     }
@@ -5507,29 +5604,39 @@ class GhlZipCountEngine {
   drain() {
     while (this.active < 2 && this.queue.length) {
       const job = this.queue.shift(); this.active++;
-      this.run(job).finally(() => { this.active--; this.drain(); });
+      this.run(job).finally(() => { this.active--; this.drain(); void this.pumpBackground(); });
     }
   }
   async run(job) {
     try {
-      if (job.generation !== this.generation) return;
-      if (this.wanted && !this.wanted.has(job.zip)) { job.state = 'deferred'; return; }
+      if (job.generation !== this.generation || job.cache_generation !== this.account?.cache_generation) return;
+      if (this.wanted && !this.wanted.has(job.zip) && !this.used.has(job.zip)) { job.state = 'deferred'; return; }
       job.state = 'loading'; this.onUpdate(this.result(job.zip, job.cached, job));
       await this.locks.request('zl-ghl-count:' + job.context.scope + ':' + job.zip, async () => {
-        if (job.generation !== this.generation) return;
+        if (job.generation !== this.generation || job.cache_generation !== this.account?.cache_generation) return;
         const cached = await this.cache.get(job.context.scope, job.zip);
-        if (cached && cached.expires_at > Date.now() / 1000 && (!job.force || Date.now() / 1000 - cached.fetched_at < this.forceInterval)) {
+        if (this.fresh(cached) && (!job.force || Date.now() / 1000 - cached.fetched_at < this.forceInterval)) {
           job.cached = cached; job.state = 'fresh'; return;
         }
         for (let attempt = 0; attempt < 2; attempt++) {
-          if (job.generation !== this.generation) return;
+          if (job.generation !== this.generation || job.cache_generation !== this.account?.cache_generation) return;
           if (this.blocked) throw new GhlCountFailure(this.blocked);
           try {
             const total = await this.limitedRequest(job);
-            if (job.generation !== this.generation) return;
+            if (job.generation !== this.generation || job.cache_generation !== this.account?.cache_generation) return;
             const now = Date.now() / 1000;
-            job.cached = { key: job.context.scope + ':' + job.zip, scope: job.context.scope, zip: job.zip, total, fetched_at: now, expires_at: now + this.ttl };
-            await this.cache.put(job.cached); job.state = 'fresh'; job.error = null; this.failures = 0; return;
+            await this.locks.request('zl-ghl-account:' + job.context.scope, async () => {
+              const latest = await this.cache.get(job.context.scope, '@account');
+              if (job.generation !== this.generation) return;
+              if (!latest || latest.cache_generation !== job.cache_generation) {
+                if (latest) this.acceptAccount(latest);
+                return;
+              }
+              job.cached = { key: job.context.scope + ':' + job.zip, scope: job.context.scope, zip: job.zip, total,
+                fetched_at: now, expires_at: Number.MAX_SAFE_INTEGER, cache_generation: job.cache_generation };
+              await this.cache.put(job.cached); job.state = 'fresh'; job.error = null; this.failures = 0;
+            });
+            return;
           } catch (e) {
             const kind = e.kind || 'network_error';
             const delay = e.retryAfter || 2;
@@ -5546,7 +5653,7 @@ class GhlZipCountEngine {
         }
       });
     } catch (e) { job.state = 'error'; job.error = e.kind || this.blocked || 'unavailable'; }
-    finally { if (job.generation === this.generation) this.onUpdate(this.result(job.zip, job.cached, job)); }
+    finally { if (job.generation === this.generation && job.cache_generation === this.account?.cache_generation) this.onUpdate(this.result(job.zip, job.cached, job)); }
   }
   setCooldown(locationId, seconds) {
     this.cooldown = Math.max(this.cooldown, Date.now() + seconds * 1000);
@@ -5572,10 +5679,11 @@ class GhlZipCountEngine {
     const controller = new AbortController(); this.controllers.add(controller);
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await this.fetcher('https://services.leadconnectorhq.com/contacts/search', {
-        method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
-        headers: { Authorization: 'Bearer ' + this.token, Version: '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: [{ field: 'postalCode', operator: 'eq', value: job.zip }] })
+      const url = job.accountRequest ? 'https://services.leadconnectorhq.com/contacts/?locationId=' + encodeURIComponent(job.context.location_id) + '&limit=1' : 'https://services.leadconnectorhq.com/contacts/search';
+      const response = await this.fetcher(url, {
+        method: job.accountRequest ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+        headers: { Authorization: 'Bearer ' + this.token, Version: job.accountRequest ? 'v3' : '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
+        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: [{ field: 'postalCode', operator: 'eq', value: job.zip }] }) })
       });
       if ([401, 403].includes(response.status)) throw new GhlCountFailure('access_denied');
       if (response.status === 429) {
@@ -5586,8 +5694,9 @@ class GhlZipCountEngine {
       if (!response.ok) throw new GhlCountFailure(response.status >= 500 ? 'temporary' : 'request_refused');
       let data;
       try { data = await response.json(); } catch { throw new GhlCountFailure('invalid_response'); }
-      if (!Number.isSafeInteger(data?.total) || data.total < 0) throw new GhlCountFailure('invalid_response');
-      return data.total;
+      const total = job.accountRequest ? data?.meta?.total : data?.total;
+      if (!Number.isSafeInteger(total) || total < 0) throw new GhlCountFailure('invalid_response');
+      return total;
     } catch (e) { if (e instanceof GhlCountFailure) throw e; throw new GhlCountFailure('network_error'); }
     finally { clearTimeout(timer); this.controllers.delete(controller); }
   }
@@ -5596,19 +5705,31 @@ class GhlZipCountEngine {
 
 // BEGIN ZIP CONTACT COUNT CLIENT
 class ZipContactCounts {
-  constructor({ root, status, refresh, isBusy = () => false, onCountsChanged = () => {} }) {
-    this.root = root; this.status = status; this.refreshButton = refresh; this.isBusy = isBusy; this.onCountsChanged = onCountsChanged;
+  constructor({ root, status, refresh, isBusy = () => false, onCountsChanged = () => {}, getUsedZips = () => [] }) {
+    this.getUsedZips = getUsedZips; this.root = root; this.status = status; this.refreshButton = refresh; this.isBusy = isBusy; this.onCountsChanged = onCountsChanged;
     this.context = null; this.entries = new Map(); this.visible = new Set();
     this.timer = null; this.debounce = null; this.loading = false; this.connecting = false;
     this.force = false; this.generation = 0; this.observer = null; this.nodesByZip = new Map();
-    this.engine = new GhlZipCountEngine({ onUpdate: item => {
+    this.engine = new GhlZipCountEngine({ onAccount: account => {
+      this.generation++; this.entries.clear(); this.repaint();
+      if (account.state === 'checking') this.status.textContent = 'Checking account contacts…';
+      else if (account.state === 'ready') {
+        this.status.textContent = `${account.total.toLocaleString()} account contacts`;
+        this.engine.setUsed(this.getUsedZips()); this.schedule();
+      } else this.status.textContent = 'Account total unavailable. Retry to load ZIP counts.';
+      this.controls();
+    }, onUpdate: item => {
       if (!this.context || this.context.scope !== this.engine.context?.scope) return;
       this.entries.set(item.zip, item); this.paintZip(item.zip); this.plan(); this.onCountsChanged();
     }, onProblem: kind => {
+      if (this.engine.accountState === 'error') {
+        this.status.textContent = kind === 'access_denied' ? 'Account total denied (401/403). Verify the token/location using Connection.' : 'Account total unavailable. Retry contact counts.';
+        this.controls(); return;
+      }
       this.status.textContent = kind === 'access_denied' ? 'GHL access denied (401/403). Check the token/location using Connection.' : kind === 'network_error' ? 'Browser request failed (network or CORS). Use Connection to retry; no zero counts are assumed.' : 'GHL counts paused. Check the connection and retry.';
       this.controls();
     } });
-    refresh.addEventListener('click', () => this.context && !this.engine.blocked ? this.refreshVisible() : this.openSetup());
+    refresh.addEventListener('click', () => this.context && this.engine.accountState === 'error' ? void this.engine.validateAccount() : this.context && !this.engine.blocked ? this.refreshVisible() : this.openSetup());
     document.getElementById('zl-ghl-connect').addEventListener('click', () => this.openSetup());
     const dialog = document.getElementById('zl-ghl-dialog');
     dialog.addEventListener('close', () => { document.getElementById('zl-ghl-token').value = ''; });
@@ -5628,8 +5749,8 @@ class ZipContactCounts {
         const context = await this.engine.connect(token, locationId);
         if (!context) return;
         this.context = context; this.entries.clear(); this.generation++; this.repaint(); this.engine.setWanted(this.visible);
-        this.status.textContent = `Contacts in GHL test location …${context.location_id.slice(-6)} · cached ${Math.round(context.cache_ttl / 60)} min`;
-        document.getElementById('zl-ghl-error').textContent = ''; dialog.close(); this.schedule();
+        this.engine.setUsed(this.getUsedZips());
+        document.getElementById('zl-ghl-error').textContent = ''; dialog.close(); void this.engine.validateAccount();
       } catch (error) { document.getElementById('zl-ghl-error').textContent = error.message; }
       finally { this.connecting = false; submit.disabled = false; this.controls(); }
     });
@@ -5640,8 +5761,8 @@ class ZipContactCounts {
     this.controls();
   }
   controls() {
-    this.refreshButton.disabled = this.isBusy() || this.connecting || this.loading || (!!this.context && !this.visible.size);
-    this.refreshButton.textContent = this.context && !this.engine.blocked ? 'Refresh visible counts' : 'Connect GHL';
+    this.refreshButton.disabled = this.isBusy() || this.connecting || this.loading || this.engine.accountState === 'checking' || (!!this.context && this.engine.accountState !== 'error' && !this.visible.size);
+    this.refreshButton.textContent = this.context && this.engine.accountState === 'error' ? 'Retry contact counts' : this.context && !this.engine.blocked ? 'Refresh visible counts' : 'Connect GHL';
   }
   openSetup() {
     const dialog = document.getElementById('zl-ghl-dialog');
@@ -5658,18 +5779,19 @@ class ZipContactCounts {
     this.paint(node); return node;
   }
   paint(node) {
-    const item = this.entries.get(node.dataset.contactZip);
+    const item = this.engine.accountState === 'ready' ? this.entries.get(node.dataset.contactZip) : null;
     const known = item && Number.isSafeInteger(item.total) && item.total >= 0;
+    const failed = this.engine.accountState === 'error';
     const waiting = item && ['queued', 'loading', 'deferred'].includes(item.state);
-    const stale = known && (item.stale || item.expires_at * 1000 <= Date.now());
-    node.textContent = known ? `${stale ? '~' : ''}${item.total.toLocaleString()}` : item?.state === 'error' ? '!' : this.context ? '' : '—';
-    const spinning = !!this.context && (!item || waiting);
+    const stale = known && item.stale;
+    node.textContent = known ? `${stale ? '~' : ''}${item.total.toLocaleString()}` : failed || item?.state === 'error' ? '!' : this.context ? '' : '—';
+    const spinning = !!this.context && !failed && (!item || waiting);
     node.classList.toggle('zl-contact-loading', spinning);
     node.setAttribute('aria-busy', String(spinning));
     node.classList.toggle('zl-contact-stale', !!stale);
     node.classList.toggle('zl-contact-pending', !!waiting);
-    node.classList.toggle('zl-contact-error', item?.state === 'error');
-    node.setAttribute('aria-label', `Contacts in ZIP ${node.dataset.contactZip}: ${known ? item.total : item?.state === 'error' ? 'unavailable' : 'loading'}`);
+    node.classList.toggle('zl-contact-error', failed || item?.state === 'error');
+    node.setAttribute('aria-label', `Contacts in ZIP ${node.dataset.contactZip}: ${known ? item.total : failed || item?.state === 'error' ? 'unavailable' : 'loading'}`);
   }
   repaint() { this.root()?.querySelectorAll('[data-contact-zip]').forEach(node => this.paint(node)); this.onCountsChanged(); }
   paintZip(zip) { this.nodesByZip.get(zip)?.forEach(node => this.paint(node)); }
@@ -5688,11 +5810,11 @@ class ZipContactCounts {
       }, { rootMargin: '60px' });
       nodes.forEach(node => this.observer.observe(node));
     }
-    this.engine.setWanted(this.visible); this.schedule(); this.controls();
+    this.engine.setUsed(this.getUsedZips()); this.engine.setWanted(this.visible); this.schedule(); this.controls();
   }
   schedule() {
     clearTimeout(this.debounce);
-    if (!this.context || document.hidden) return;
+    if (!this.context || this.engine.accountState !== 'ready' || document.hidden) return;
     this.debounce = setTimeout(() => void this.load(), 100);
   }
   refreshVisible() { this.force = true; this.schedule(); }
@@ -5700,21 +5822,20 @@ class ZipContactCounts {
     const item = this.entries.get(zip);
     if (!item) return true;
     if (item.state === 'error') return false; // explicit retry only; no error polling loop
-    return ['queued', 'loading', 'deferred'].includes(item.state) || !item.expires_at || item.expires_at * 1000 <= Date.now();
+    return ['queued', 'loading', 'deferred'].includes(item.state);
   }
   plan() {
     clearTimeout(this.timer);
-    if (!this.context || document.hidden || !this.visible.size) return;
+    if (!this.context || this.engine.accountState !== 'ready' || document.hidden || !this.visible.size || this.engine.blocked) return;
     let delay = Infinity;
     for (const zip of this.visible) {
       const item = this.entries.get(zip);
       if (!item || ['queued', 'loading', 'deferred'].includes(item.state)) delay = Math.min(delay, Math.max(1000, Math.min(30000, (item?.retry_after || 1) * 1000)));
-      else if (item.state !== 'error') delay = Math.min(delay, Math.max(1000, item.expires_at * 1000 - Date.now()));
     }
     if (Number.isFinite(delay)) this.timer = setTimeout(() => void this.load(), delay);
   }
   async load() {
-    if (this.loading || !this.context || document.hidden) return;
+    if (this.loading || !this.context || this.engine.accountState !== 'ready' || document.hidden) return;
     clearTimeout(this.timer);
     const force = this.force; this.force = false;
     const zips = [...this.visible].filter(zip => force || this.needs(zip));
@@ -5740,6 +5861,7 @@ class ZipContactCounts {
         if (data.counts.some(item => item.error === 'access_denied')) this.status.textContent = 'GHL access denied. Verify the test token/location using Connection.';
       }
     } catch {
+      if (generation !== this.generation) return;
       for (const zip of zips) { this.entries.set(zip, { ...this.entries.get(zip), state: 'error', error: 'unavailable' }); this.paintZip(zip); } this.status.textContent = 'Contact counts unavailable. ZIP management is unaffected; use Connection to retry.'; this.onCountsChanged();
     } finally { this.loading = false; this.controls(); this.plan(); }
   }
@@ -5758,7 +5880,7 @@ class ZipContactCounts {
           deletion: null,
           erase: null,
         };
-        const contactCounts = new ZipContactCounts({ root: () => $('zl-used'), status: $('zl-contact-status'), refresh: $('zl-contact-refresh'), isBusy: () => model.busy, onCountsChanged: scheduleUsedSort });
+        const contactCounts = new ZipContactCounts({ root: () => $('zl-used'), status: $('zl-contact-status'), refresh: $('zl-contact-refresh'), isBusy: () => model.busy, onCountsChanged: scheduleUsedSort, getUsedZips: () => (model.data?.used || []).map(z => z.zip) });
         function el(tag, attrs = {}, ...children) {
           const e = document.createElement(tag);
           for (const [k, v] of Object.entries(attrs)) {
@@ -5942,7 +6064,7 @@ class ZipContactCounts {
               : ` · ≥${sum.total.toLocaleString()} contacts · ${sum.known}/${sum.size} ZIPs`;
           node.classList.toggle("zl-group-contacts-partial", sum.total !== null && !sum.complete);
           node.title = sum.overflow ? "The available counts exceed the supported total range."
-            : sum.complete ? `Sum of available contact counts for all ${sum.size} ZIPs in this group. Cached values may be older; see individual ZIP badges.`
+            : sum.complete ? `Sum of available contact counts for all ${sum.size} ZIPs in this group. Counts validated against the latest account-total check.`
               : `Known subtotal from ${sum.known} of ${sum.size} ZIPs. Missing counts are not zero. Sorting uses the available subtotal; it updates as counts arrive.`;
         }
         let usedSortTimer = null;
@@ -7655,3 +7777,4 @@ class ZipContactCounts {
     </script>
   </body>
 </html>
+

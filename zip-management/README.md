@@ -13,7 +13,7 @@ self-contained HTML application; no Python server or local installation is neede
 
 The token stays in this tab's memory and is cleared from the input on submit or
 close. It is not saved to IndexedDB, SQLite, localStorage, URLs, or repository code.
-After a page reload, connect again; cached counts can then be reused. Disconnect
+After a page reload, connect again; every connection checks the account total before showing cached ZIP counts. The standalone cannot request GHL until the token is supplied again. Disconnect
 clears the in-memory connection without deleting existing ZIP data.
 
 Each badge uses the integer `total` from `POST /contacts/search`, with API version
@@ -26,22 +26,36 @@ edited, deleted, or stored by this feature.
 
 - ZIP rendering and SQLite mutations never wait for GHL. Count updates repaint
   only the matching badge and never disable ZIP editing controls.
-- Only visible Used ZIP badges are scheduled. Queued offscreen work is skipped.
-- Two workers per tab, with starts spaced at least 500 ms through a location-wide
-  Web Lock shared by tabs of this origin. This leaves headroom below 100/10 seconds.
-- A per-ZIP Web Lock and cache recheck coalesce duplicate requests across tabs.
-- Successful counts are cached for an hour, keyed by location, a one-way credential
-  fingerprint and the exact filter contract, in a separate IndexedDB store.
-  Changing view or re-rendering does not fetch fresh provider data unnecessarily.
-- **Refresh visible counts** refreshes only those ZIPs, at most once per minute
-  per ZIP. Cached values remain visible with a spinner during revalidation.
-- A `~` denotes an older cached count; hover for its checked time. `!` denotes an
-  unavailable count. Authorization or browser network/CORS failures pause the
-  queue instead of failing separately for hundreds of ZIPs.
-- HTTP 429 honors Retry-After, with at most one automatic retry. Other transient
-  errors are bounded; repeated failures pause the queue.
-- Overall-contact-total-based invalidation is deferred until the per-ZIP test is
-  verified. For this iteration use the cache lifetime or explicit visible refresh.
+- Every page connection requests `GET /contacts/?locationId=…&limit=1`, with
+  `Version: v3`, and reads the nonnegative integer `meta.total`. No pagination.
+  Counts stay hidden behind spinners until this request succeeds. A failed check
+  leaves the saved cache intact and shows **Retry contact counts**.
+- Account metadata and ZIP counts share the existing separate IndexedDB `counts`
+  store. The reserved `@account` record stores `total`, `fetched_at` (checked time)
+  and a random `cache_generation`, scoped to location, a one-way credential
+  fingerprint and the exact ZIP-filter contract. No schema upgrade is required.
+- An unchanged total reuses matching-generation ZIP counts indefinitely; there is
+  no hourly expiry. A changed total creates a new generation and hides every
+  previous-generation count. This also handles totals returning to an earlier
+  number without reusing obsolete counts. Legacy counts without a generation
+  are refreshed once. Missing ZIP counts are always fetched.
+- All current Used ZIPs are considered independently of search or grouping.
+  Visible ZIPs are prioritized, followed by the remaining Used ZIPs. The queue
+  is bounded and replenishes as work completes, including lists of hundreds.
+- Two workers per tab, with all request starts (account and ZIP) spaced at least
+  500 ms through a location-wide Web Lock shared by tabs of this origin.
+- Each page performs its own account-total check. A per-ZIP Web Lock and shared
+  cache recheck coalesce ZIP requests across tabs. An account lock protects
+  baseline updates and rejects old-generation responses that finish late.
+  BroadcastChannel notifies other connected tabs when the generation changes.
+- **Refresh visible counts** remains an explicit refresh, at most once per minute
+  per ZIP. Counts already validated against the current account generation can
+  remain visible during this optional manual refresh. Counts have no tooltips.
+- `!` denotes an unavailable count, never a verified zero. Authorization and
+  browser network/CORS failures pause the queue. HTTP 429 honors Retry-After,
+  with at most one automatic retry; repeated transient failures pause the queue.
+- Account totals cannot detect additions and deletions that cancel each other
+  out. Manual refresh remains available for this case.
 
 Current Chrome/Edge over HTTPS provides the required Web Locks coordination.
 Browser-to-GHL requests are subject to the provider's CORS and credential rules;
@@ -94,9 +108,9 @@ contact counts as well. Contact-count ties use ascending ZIP order. Unknown, mis
 invalid counts stay last in either direction; a verified zero is a real count.
 
 Contact sorting uses only the current connection's already available count
-cache, including displayed older cached values. The small availability indicator
+cache, after the current page validates the account total. The small availability indicator
 shows how many Used ZIPs currently have known totals. Sorting does not request
-counts for the entire list; the existing visible-ZIP loading, caching, pacing
+counts beyond the account-total refresh policy; the same caching, pacing
 and retry rules continue to apply. As counts arrive, chips move in place after
 a short debounce, retaining selection/focus/scroll and their existing count
 badges and observers. Disconnecting/changing the connection clears those counts.
@@ -127,5 +141,17 @@ or schema changes are introduced for these totals. History grouping is unchanged
 Used ZIPs use an equal **88 × 36 px** tile in individual, state, city and search
 views. The ZIP is centered on the first line, with its selection checkbox and
 delete control alongside. A smaller, italic contact count sits directly below the ZIP code. The ZIP code’s font size and weight are unchanged. The tile dimensions stay fixed as counts load or change length.
-Loading, stale and error indicators remain available; hover keeps the full count
-and timestamp explanation, and the count retains its accessible label.
+Loading and error indicators remain available. Clicking the contact count toggles the ZIP checkbox, using a hand cursor. The count retains its accessible label without a tooltip.
+
+
+## Later portal integration
+
+The engine separates provider requests, cache storage and the display adapter.
+For the portal, replace browser token entry/direct requests with the existing
+server-side connection resolver and authorization. Resolve the verified location
+from the current account; never expose PIT or OAuth tokens to this browser UI.
+Use a dedicated shared ZIP cache for the account baseline and per-ZIP generations
+so authorized users share refreshes. Reproduce the account/per-ZIP locking and
+location-wide pacing on the server; browser Web Locks coordinate only this origin.
+The reserved account record is a standalone storage detail, not a change to
+`portal_accounts`. No portal code, auth, migrations or Supabase data are changed here.
