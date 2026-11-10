@@ -3986,11 +3986,9 @@
                 </div>
                 <div class="zl-used-sort">
                   <span class="zl-sort-label">Sort</span>
-                  <div id="zl-used-sort" class="zl-sort-buttons" role="group" aria-label="Used ZIP sort order">
-                    <button type="button" data-sort="zip-asc" aria-pressed="true" aria-label="ZIP: lowest first" title="ZIP: lowest first">ZIP ↑</button>
-                    <button type="button" data-sort="zip-desc" aria-pressed="false" aria-label="ZIP: highest first" title="ZIP: highest first">ZIP ↓</button>
-                    <button type="button" data-sort="contacts-desc" aria-pressed="false" aria-label="Contacts: highest first" title="Available contact counts: highest first. ZIPs without counts stay last. State/city groups sort by their available contact totals.">Contacts ↓</button>
-                    <button type="button" data-sort="contacts-asc" aria-pressed="false" aria-label="Contacts: lowest first" title="Available contact counts: lowest first. ZIPs without counts stay last. State/city groups sort by their available contact totals.">Contacts ↑</button>
+                  <div id="zl-used-sort" class="zl-sort-buttons" role="group" aria-label="Sort Used ZIPs by contacts">
+                    <button type="button" data-sort="contacts-desc" aria-pressed="false" aria-label="Contacts: highest first" title="Available contact counts: highest first. ZIPs without counts stay last. State/city groups sort by their available contact totals. Click again to return to ZIP order, smallest first.">Contacts ↓</button>
+                    <button type="button" data-sort="contacts-asc" aria-pressed="false" aria-label="Contacts: lowest first" title="Available contact counts: lowest first. ZIPs without counts stay last. State/city groups sort by their available contact totals. Click again to return to ZIP order, smallest first.">Contacts ↑</button>
                   </div>
                   <p id="zl-sort-note" class="zl-sort-note" role="status" aria-live="polite" hidden></p>
                 </div>
@@ -5873,7 +5871,6 @@ class ZipContactCounts {
         function sortUsedZipItems(items, order = "zip-asc", counts = new Map()) {
           return [...items].sort((a, b) => {
             const zipOrder = a.zip.localeCompare(b.zip);
-            if (order === "zip-desc") return -zipOrder;
             if (!order.startsWith("contacts-")) return zipOrder;
             const left = knownContactTotal(counts.get(a.zip)), right = knownContactTotal(counts.get(b.zip));
             if (left === null) return right === null ? zipOrder : 1;
@@ -7511,7 +7508,7 @@ class ZipContactCounts {
         $("zl-used-sort").querySelectorAll("[data-sort]").forEach(button => {
           button.addEventListener("click", () => {
             if (model.busy || !model.data) return;
-            model.usedSort = button.dataset.sort;
+            model.usedSort = model.usedSort === button.dataset.sort ? "zip-asc" : button.dataset.sort;
             reorderUsedLists();
           });
         });

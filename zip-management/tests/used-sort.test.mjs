@@ -13,7 +13,7 @@ const counts = new Map([
 ]);
 test('ZIP order is numeric-equivalent for five-digit codes, including leading zeroes', () => {
   assert.deepEqual(zips(sort(items)), ['00601','00602','10001','33701','90210']);
-  assert.deepEqual(zips(sort(items, 'zip-desc')), ['90210','33701','10001','00602','00601']);
+  assert.deepEqual(zips(sort(items, 'zip-asc')), ['00601','00602','10001','33701','90210']);
 });
 test('contact sorting includes verified zeroes, orders numeric totals and uses ZIP ties', () => {
   assert.deepEqual(zips(sort(items, 'contacts-desc', counts)), ['33701','10001','90210','00601','00602']);
@@ -30,7 +30,7 @@ test('cached values remain sortable during loading or refresh failures', () => {
 });
 test('sorting never mutates the underlying ZIP data or cached counts', () => {
   const before = JSON.stringify(items), saved = JSON.stringify([...counts]);
-  sort(items,'contacts-desc',counts); sort(items,'zip-desc',counts);
+  sort(items,'contacts-desc',counts); sort(items,'zip-asc',counts);
   assert.equal(JSON.stringify(items),before); assert.equal(JSON.stringify([...counts]),saved);
   assert.deepEqual(zips(sort(items,'contacts-asc',new Map())), ['00601','00602','10001','33701','90210']);
 });
@@ -54,7 +54,7 @@ test('states and cities sort by summed available contact totals in either direct
   const names=result=>Array.from(result,g=>g.state);
   assert.deepEqual(names(groupApi.sortUsedZipGroups(groups,'contacts-desc',counts)),['B','A','C']);
   assert.deepEqual(names(groupApi.sortUsedZipGroups(groups,'contacts-asc',counts)),['A','B','C']);
-  assert.deepEqual(names(groupApi.sortUsedZipGroups(groups,'zip-desc',counts)),['A','B','C']);
+  assert.deepEqual(names(groupApi.sortUsedZipGroups(groups,'zip-asc',counts)),['A','B','C']);
 });
 test('equal totals use state/city labels as stable ties; unknown geography remains available', () => {
   const groups=[{state:'New York',city:'Z',zips:[{zip:'10001'}]},{state:'',city:'',zips:[{zip:'90210'}]},{state:'New York',city:'A',zips:[{zip:'90210'}]}];
@@ -72,3 +72,4 @@ test('unsafe group sums remain unavailable instead of reporting an inaccurate to
   const result=groupApi.sumZipContacts([{zip:'00601'},{zip:'90210'}],new Map([['00601',{total:Number.MAX_SAFE_INTEGER}],['90210',{total:1}]]));
   assert.equal(result.total,null);assert.equal(result.overflow,true);assert.equal(result.complete,false);
 });
+

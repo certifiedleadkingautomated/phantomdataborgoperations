@@ -85,8 +85,9 @@ node --test zip-management/tests/*.test.mjs
 
 ## Sort Used ZIPs
 
-The **Sort** buttons offer ZIP lowest/highest first and Contacts highest/lowest
-first. Sorting also applies to each Used search-result subset. In By State and
+Used ZIPs default to **smallest-to-largest ZIP order** in every view. The only
+sort buttons are **Contacts ↓** (highest first) and **Contacts ↑** (lowest first).
+Click the active contact-sort button again to clear it and restore ZIP order. Sorting also applies to each Used search-result subset. In By State and
 By City views it sorts ZIPs inside each group. ZIP sorting keeps geographic
 headings alphabetical; contact sorting orders groups by their summed available
 contact counts as well. Contact-count ties use ascending ZIP order. Unknown, missing or
@@ -102,7 +103,7 @@ badges and observers. Disconnecting/changing the connection clears those counts.
 
 **Copy all** follows the selected ZIP/contact ordering. Sorting does not modify
 SQLite, history, assignments or deletion records. The selection is retained
-while changing views or refreshing this page's data; reloading defaults to ZIP ↑.
+while changing views or refreshing this page's data; reloading defaults to smallest-to-largest ZIP order with neither contact button active.
 
 
 ## State and city contact totals
