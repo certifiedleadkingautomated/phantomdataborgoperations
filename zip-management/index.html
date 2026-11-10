@@ -3665,6 +3665,14 @@
       .zl-history-search-box .zl-feedback:empty { display: none; }
       .zl-history-search-box .zl-feedback.zl-invalid { color: #ad3e32; }
       .zl-history-chip.zl-history-search-match { outline: 2px solid #638aca; outline-offset: 1px; font-weight: 700; }
+
+      .zl-used-sort { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 0 10px 9px; border-bottom: 1px solid #eee5df; background: #fff; }
+      .zl-sort-label { font-size: 10px; color: #7b8797; }
+      .zl-sort-buttons { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+      .zl-sort-buttons button { border: 1px solid transparent; border-radius: 5px; background: transparent; color: #738198; padding: 4px 7px; font-size: 10px; line-height: 1.4; }
+      .zl-sort-buttons button[aria-pressed="true"] { border-color: #dbe3ed; background: #f1f5fa; color: #294d7a; }
+      .zl-sort-buttons button:hover:not(:disabled) { background: #f3f6fa; }
+      .zl-sort-note { width: 100%; margin: 0; color: #7b8797; font-size: 9px; line-height: 1.5; }
     </style>
   </head>
   <body>
@@ -3972,6 +3980,16 @@
                   >
                     Copy all
                   </button>
+                </div>
+                <div class="zl-used-sort">
+                  <span class="zl-sort-label">Sort</span>
+                  <div id="zl-used-sort" class="zl-sort-buttons" role="group" aria-label="Used ZIP sort order">
+                    <button type="button" data-sort="zip-asc" aria-pressed="true" aria-label="ZIP: lowest first" title="ZIP: lowest first">ZIP ↑</button>
+                    <button type="button" data-sort="zip-desc" aria-pressed="false" aria-label="ZIP: highest first" title="ZIP: highest first">ZIP ↓</button>
+                    <button type="button" data-sort="contacts-desc" aria-pressed="false" aria-label="Contacts: highest first" title="Available contact counts: highest first. ZIPs without counts stay last. State/city headings stay alphabetical.">Contacts ↓</button>
+                    <button type="button" data-sort="contacts-asc" aria-pressed="false" aria-label="Contacts: lowest first" title="Available contact counts: lowest first. ZIPs without counts stay last. State/city headings stay alphabetical.">Contacts ↑</button>
+                  </div>
+                  <p id="zl-sort-note" class="zl-sort-note" role="status" aria-live="polite" hidden></p>
                 </div>
                 <div class="zl-used-search-box">
                   <div class="zl-search-label">
@@ -5545,14 +5563,14 @@ class GhlZipCountEngine {
 
 // BEGIN ZIP CONTACT COUNT CLIENT
 class ZipContactCounts {
-  constructor({ root, status, refresh, isBusy = () => false }) {
-    this.root = root; this.status = status; this.refreshButton = refresh; this.isBusy = isBusy;
+  constructor({ root, status, refresh, isBusy = () => false, onCountsChanged = () => {} }) {
+    this.root = root; this.status = status; this.refreshButton = refresh; this.isBusy = isBusy; this.onCountsChanged = onCountsChanged;
     this.context = null; this.entries = new Map(); this.visible = new Set();
     this.timer = null; this.debounce = null; this.loading = false; this.connecting = false;
     this.force = false; this.generation = 0; this.observer = null; this.nodesByZip = new Map();
     this.engine = new GhlZipCountEngine({ onUpdate: item => {
       if (!this.context || this.context.scope !== this.engine.context?.scope) return;
-      this.entries.set(item.zip, item); this.paintZip(item.zip); this.plan();
+      this.entries.set(item.zip, item); this.paintZip(item.zip); this.plan(); this.onCountsChanged();
     }, onProblem: kind => {
       this.status.textContent = kind === 'access_denied' ? 'GHL access denied (401/403). Check the token/location using Connection.' : kind === 'network_error' ? 'Browser request failed (network or CORS). Use Connection to retry; no zero counts are assumed.' : 'GHL counts paused. Check the connection and retry.';
       this.controls();
@@ -5622,7 +5640,7 @@ class ZipContactCounts {
     node.title = item?.error ? reasons[item.error] || reasons.unavailable : known ? `${item.total.toLocaleString()} contacts in the configured GHL test subaccount. Checked ${new Date(item.fetched_at * 1000).toLocaleString()}${waiting ? ' · refreshing' : stale ? ' · cached, refreshing when visible' : ' · cached'}` : 'Contact count for this ZIP in the configured GHL test subaccount. Fetched when visible.';
     node.setAttribute('aria-label', `Contacts in ZIP ${node.dataset.contactZip}: ${known ? item.total : item?.state === 'error' ? 'unavailable' : 'loading'}`);
   }
-  repaint() { this.root()?.querySelectorAll('[data-contact-zip]').forEach(node => this.paint(node)); }
+  repaint() { this.root()?.querySelectorAll('[data-contact-zip]').forEach(node => this.paint(node)); this.onCountsChanged(); }
   paintZip(zip) { this.nodesByZip.get(zip)?.forEach(node => this.paint(node)); }
   observe() {
     this.observer?.disconnect(); this.visible.clear();
@@ -5687,10 +5705,11 @@ class ZipContactCounts {
               !(item.total === null || Number.isFinite(item.fetched_at) && Number.isFinite(item.expires_at))) throw Error('Invalid total');
         }
         for (const item of data.counts) { this.entries.set(item.zip, item); this.paintZip(item.zip); }
+        this.onCountsChanged();
         if (data.counts.some(item => item.error === 'access_denied')) this.status.textContent = 'GHL access denied. Verify the test token/location using Connection.';
       }
     } catch {
-      for (const zip of zips) { this.entries.set(zip, { ...this.entries.get(zip), state: 'error', error: 'unavailable' }); this.paintZip(zip); } this.status.textContent = 'Contact counts unavailable. ZIP management is unaffected; use Connection to retry.';
+      for (const zip of zips) { this.entries.set(zip, { ...this.entries.get(zip), state: 'error', error: 'unavailable' }); this.paintZip(zip); } this.status.textContent = 'Contact counts unavailable. ZIP management is unaffected; use Connection to retry.'; this.onCountsChanged();
     } finally { this.loading = false; this.controls(); this.plan(); }
   }
 }
@@ -5708,7 +5727,7 @@ class ZipContactCounts {
           deletion: null,
           erase: null,
         };
-        const contactCounts = new ZipContactCounts({ root: () => $('zl-used'), status: $('zl-contact-status'), refresh: $('zl-contact-refresh'), isBusy: () => model.busy });
+        const contactCounts = new ZipContactCounts({ root: () => $('zl-used'), status: $('zl-contact-status'), refresh: $('zl-contact-refresh'), isBusy: () => model.busy, onCountsChanged: scheduleUsedSort });
         function el(tag, attrs = {}, ...children) {
           const e = document.createElement(tag);
           for (const [k, v] of Object.entries(attrs)) {
@@ -5798,6 +5817,7 @@ class ZipContactCounts {
             selectionControls();
             validateAdd();
             contactCounts.controls();
+            if ((model.usedSort || "").startsWith("contacts-")) reorderUsedLists();
           }
         }
         async function refresh() {
@@ -5843,6 +5863,57 @@ class ZipContactCounts {
             busy(false);
           }
         }
+        // BEGIN USED ZIP SORT
+        function knownContactTotal(item) {
+          return Number.isSafeInteger(item?.total) && item.total >= 0 ? item.total : null;
+        }
+        function sortUsedZipItems(items, order = "zip-asc", counts = new Map()) {
+          return [...items].sort((a, b) => {
+            const zipOrder = a.zip.localeCompare(b.zip);
+            if (order === "zip-desc") return -zipOrder;
+            if (!order.startsWith("contacts-")) return zipOrder;
+            const left = knownContactTotal(counts.get(a.zip)), right = knownContactTotal(counts.get(b.zip));
+            if (left === null) return right === null ? zipOrder : 1;
+            if (right === null) return -1;
+            return (order === "contacts-asc" ? left - right : right - left) || zipOrder;
+          });
+        }
+        // END USED ZIP SORT
+
+        let usedSortTimer = null;
+        function updateUsedSortControls() {
+          const order = model.usedSort || "zip-asc";
+          $("zl-used-sort").querySelectorAll("[data-sort]").forEach(button => {
+            button.setAttribute("aria-pressed", String(button.dataset.sort === order));
+            button.disabled = model.busy;
+          });
+          const note = $("zl-sort-note");
+          note.hidden = !order.startsWith("contacts-");
+          if (!note.hidden) {
+            const total = model.data?.used.length || 0;
+            const known = (model.data?.used || []).filter(z => knownContactTotal(contactCounts.entries.get(z.zip)) !== null).length;
+            note.textContent = `${known} of ${total} counts available · unknown counts last`;
+          }
+        }
+        function reorderUsedLists() {
+          if (!model.data || model.busy) return;
+          const root = $("zl-used"), scrollTop = root.scrollTop, focused = document.activeElement;
+          root.querySelectorAll(".zl-chip-list").forEach(list => {
+            const nodes = [...list.children].filter(node => node.dataset.usedZip);
+            const byZip = new Map(nodes.map(node => [node.dataset.usedZip, node]));
+            const ordered = sortUsedZipItems(nodes.map(node => ({ zip: node.dataset.usedZip })), model.usedSort, contactCounts.entries);
+            if (ordered.some((z, index) => nodes[index].dataset.usedZip !== z.zip))
+              for (const z of ordered) list.append(byZip.get(z.zip));
+          });
+          if (focused && root.contains(focused) && document.activeElement !== focused) focused.focus({ preventScroll: true });
+          root.scrollTop = scrollTop;
+          updateUsedSortControls();
+        }
+        function scheduleUsedSort() {
+          clearTimeout(usedSortTimer);
+          if (!(model.usedSort || "").startsWith("contacts-")) return;
+          usedSortTimer = setTimeout(() => reorderUsedLists(), 120);
+        }
         function selectionControls() {
           const count = model.selected.size;
           const n = model.data?.used.length || 0;
@@ -5860,6 +5931,7 @@ class ZipContactCounts {
                 model.busy || Number(button.dataset.zlSearchSize) === 0;
             });
           updateViewButtons("zl-group", model.usedView || "list");
+          updateUsedSortControls();
           document
             .querySelectorAll("[data-restore-count]")
             .forEach(
@@ -5871,7 +5943,7 @@ class ZipContactCounts {
         function usedChip(z) {
           return el(
             "span",
-            { class: "zl-chip" },
+            { class: "zl-chip", "data-used-zip": z.zip },
             el(
               "label",
               {},
@@ -5937,7 +6009,8 @@ class ZipContactCounts {
               button.disabled = model.busy;
             });
         }
-        function zipCollection(items, kind, makeChip, allowDelete = false) {
+        function zipCollection(items, kind, makeChip, allowDelete = false, order = null) {
+          if (order) items = sortUsedZipItems(items, order, contactCounts.entries);
           if (kind === "list") return chips(items.map(makeChip));
           const result = el("div", { class: "zl-zip-groups" });
           const heading = (title, values, mode, state, city) =>
@@ -6077,6 +6150,7 @@ class ZipContactCounts {
                       model.usedView || "list",
                       usedChip,
                       false,
+                      model.usedSort || "zip-asc",
                     )
                   : el("p", { class: "zl-search-empty" }, emptyText),
               ),
@@ -6128,7 +6202,7 @@ class ZipContactCounts {
           if (!renderUsedSearch(box, data))
             box.append(
               data.length
-                ? zipCollection(data, kind, usedChip, true)
+                ? zipCollection(data, kind, usedChip, true, model.usedSort || "zip-asc")
                 : el(
                     "p",
                     { class: "zl-empty" },
@@ -7435,6 +7509,13 @@ class ZipContactCounts {
         $("zl-history-search").addEventListener("keydown", event => {
           if (event.key === "Escape") { event.preventDefault(); clearHistorySearch(); }
         });
+        $("zl-used-sort").querySelectorAll("[data-sort]").forEach(button => {
+          button.addEventListener("click", () => {
+            if (model.busy || !model.data) return;
+            model.usedSort = button.dataset.sort;
+            reorderUsedLists();
+          });
+        });
         $("zl-used-search").addEventListener("input", () => {
           model.selected.clear();
           renderUsed();
@@ -7458,7 +7539,7 @@ class ZipContactCounts {
         });
         $("zl-copy-used").addEventListener(
           "click",
-          () => void copy(model.data.used.map((z) => z.zip)),
+          () => void copy(sortUsedZipItems(model.data.used, model.usedSort, contactCounts.entries).map(z => z.zip)),
         );
         for (const key of ["matches", "other", "fresh"])
           $("zl-copy-" + key).addEventListener(

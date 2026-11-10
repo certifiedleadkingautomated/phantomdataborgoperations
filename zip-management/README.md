@@ -81,3 +81,24 @@ Run all standalone regression tests with:
 ```sh
 node --test zip-management/tests/*.test.mjs
 ```
+
+
+## Sort Used ZIPs
+
+The **Sort** buttons offer ZIP lowest/highest first and Contacts highest/lowest
+first. Sorting also applies to each Used search-result subset. In By State and
+By City views it sorts ZIPs inside each group; geographic headings remain
+alphabetical. Contact-count ties use ascending ZIP order. Unknown, missing or
+invalid counts stay last in either direction; a verified zero is a real count.
+
+Contact sorting uses only the current connection's already available count
+cache, including displayed older cached values. The small availability indicator
+shows how many Used ZIPs currently have known totals. Sorting does not request
+counts for the entire list; the existing visible-ZIP loading, caching, pacing
+and retry rules continue to apply. As counts arrive, chips move in place after
+a short debounce, retaining selection/focus/scroll and their existing count
+badges and observers. Disconnecting/changing the connection clears those counts.
+
+**Copy all** follows the selected ZIP/contact ordering. Sorting does not modify
+SQLite, history, assignments or deletion records. The selection is retained
+while changing views or refreshing this page's data; reloading defaults to ZIP ↑.
