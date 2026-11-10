@@ -120,3 +120,13 @@ Search-result groups sum only the ZIPs in that result, not the entire state
 or city. Individual contact badges retain their existing stale/cache indicators;
 group sums use those available values. No extra provider requests, SQLite reads
 or schema changes are introduced for these totals. History grouping is unchanged.
+
+
+## Uniform Used ZIP tiles
+
+Used ZIPs use an equal **88 × 44 px** tile in individual, state, city and search
+views. The ZIP is centered on the first line, with its selection checkbox and
+delete control alongside. A smaller, regular-weight contact count sits directly
+below it. The tile dimensions stay fixed as counts load or change length.
+Loading, stale and error indicators remain available; hover keeps the full count
+and timestamp explanation, and the count retains its accessible label.

@@ -3676,6 +3676,46 @@
 
       .zl-group-heading .zl-group-contacts { color: #718098; font-size: 10px; font-weight: 400; font-variant-numeric: tabular-nums; }
       .zl-group-heading .zl-group-contacts-partial { color: #927446; }
+
+      /* Uniform Used ZIP tiles: ZIP above, compact contact count below. */
+      .zl-chip[data-used-zip] {
+        display: grid;
+        grid-template-columns: 12px minmax(0, 1fr) 12px;
+        grid-template-rows: 17px 14px;
+        column-gap: 4px;
+        row-gap: 1px;
+        width: 88px;
+        min-width: 88px;
+        height: 44px;
+        padding: 5px 6px;
+        align-items: center;
+        flex: 0 0 88px;
+      }
+      .zl-chip[data-used-zip] > label { display: contents; }
+      .zl-chip[data-used-zip] > label > input { grid-column: 1; grid-row: 1; justify-self: center; }
+      .zl-chip[data-used-zip] .zl-used-zip-code { grid-column: 2; grid-row: 1; text-align: center; line-height: 17px; }
+      .zl-chip[data-used-zip] > button { grid-column: 3; grid-row: 1; justify-self: end; }
+      .zl-chip[data-used-zip] > .zl-contact-count {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: block;
+        width: 100%;
+        min-width: 0;
+        height: 14px;
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+        color: #667085;
+        font-size: 10px;
+        font-weight: 400;
+        line-height: 14px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .zl-chip[data-used-zip] > .zl-contact-count.zl-contact-stale { color: #8b6b39; }
+      .zl-chip[data-used-zip] > .zl-contact-count.zl-contact-error { color: #aa5146; }
     </style>
   </head>
   <body>
@@ -6003,7 +6043,7 @@ class ZipContactCounts {
                   selectionControls();
                 },
               }),
-              z.zip,
+              el("span", { class: "zl-used-zip-code" }, z.zip),
             ),
             contactCounts.badge(z.zip),
             el(
