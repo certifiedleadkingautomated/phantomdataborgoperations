@@ -3644,6 +3644,20 @@
         color: #85659e;
         font-size: 10px;
       }
+
+      .zl-contact-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0; font-size:11px; color:#718096; }
+      .zl-contact-toolbar span { flex:1; min-width:0; }
+      .zl-contact-toolbar button { flex-shrink:0; font-size:11px; }
+      .zl-contact-count { display:inline-block; min-width:18px; padding:0 4px; border-radius:4px; font-size:10px; font-weight:600; line-height:1.7; color:#5b6778; background:#e8edf3; font-variant-numeric:tabular-nums; cursor:help; }
+      .zl-contact-count.zl-contact-stale { color:#8b6b39; background:#f5efdf; }
+      .zl-contact-count.zl-contact-pending { opacity:.65; }
+      .zl-contact-count.zl-contact-error { color:#aa5146; background:#f9e8e5; }
+      #zl-ghl-form { display:grid; gap:10px; } #zl-ghl-form .zl-help { font-size:12px; color:#697589; line-height:1.6; }
+      @media(max-width:650px){.zl-contact-toolbar{flex-wrap:wrap}.zl-contact-toolbar span{flex-basis:100%}}
+
+      .zl-contact-loading::before { content:""; display:inline-block; vertical-align:-1px; width:9px; height:9px; margin-right:3px; border:1.5px solid currentColor; border-right-color:transparent; border-radius:50%; animation:zl-contact-spin .75s linear infinite; }
+      @keyframes zl-contact-spin { to { transform:rotate(360deg); } }
+      @media(prefers-reduced-motion:reduce){.zl-contact-loading::before{animation:none;border-style:dotted}}
     </style>
   </head>
   <body>
@@ -3974,6 +3988,7 @@
                     aria-live="polite"
                   ></div>
                 </div>
+                <div class="zl-contact-toolbar"><span id="zl-contact-status" role="status">Connect GHL for contact totals.</span><button type="button" id="zl-ghl-connect" class="zl-text-button">Connection</button><button type="button" id="zl-contact-refresh" class="zl-text-button" title="Refresh visible ZIP counts; each ZIP can be refreshed at most once per minute.">Connect GHL</button></div>
                 <div id="zl-used" class="zl-used-list"></div>
                 <div class="zl-selection">
                   <label
@@ -4418,6 +4433,18 @@
         <div id="zl-toast" role="status" aria-live="polite" hidden></div>
       </main>
     </div>
+
+    <dialog id="zl-ghl-dialog" class="zl-dialog" aria-labelledby="zl-ghl-title">
+      <form id="zl-ghl-form" autocomplete="off">
+        <header><h3 id="zl-ghl-title">GHL contact counts · test connection</h3></header>
+        <p class="zl-help">Counts are for the location below, regardless of ZIP assignment. The token stays in this tab's memory and is never saved. Only counts and check times are cached in this browser.</p>
+        <label for="zl-ghl-location">GHL location ID</label><input id="zl-ghl-location" value="eY6ixOOusQWUqjUEtKWg" required spellcheck="false" autocomplete="off" />
+        <label for="zl-ghl-token">Bearer token</label><input id="zl-ghl-token" type="password" placeholder="Paste the private integration token" autocomplete="off" spellcheck="false" />
+        <p class="zl-help">Uses the read-only contacts search request. No contacts are edited or deleted. Connecting does not change your ZIP history.</p>
+        <p id="zl-ghl-error" class="zl-error" role="alert"></p>
+        <footer class="zl-actions"><button id="zl-ghl-disconnect" class="zl-button" type="button">Disconnect</button><button id="zl-ghl-cancel" class="zl-button" type="button">Cancel</button><button id="zl-ghl-submit" class="zl-button zl-primary" type="submit">Connect</button></footer>
+      </form>
+    </dialog>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script>
@@ -5312,6 +5339,346 @@
         },
       };
 
+// BEGIN STATIC GHL COUNT ENGINE
+class GhlCountFailure extends Error {
+  constructor(kind, retryAfter = 0) { super(kind); this.kind = kind; this.retryAfter = retryAfter; }
+}
+class GhlCountCache {
+  constructor() { this.memory = new Map(); this.available = true; this.opening = null; }
+  open() {
+    if (!this.opening) this.opening = new Promise(resolve => {
+      if (!globalThis.indexedDB) { this.available = false; resolve(null); return; }
+      const req = indexedDB.open('clk-zip-ghl-counts-v1', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('counts', { keyPath: 'key' });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = req.onblocked = () => { this.available = false; resolve(null); };
+    });
+    return this.opening;
+  }
+  async get(scope, zip) {
+    const key = scope + ':' + zip, db = await this.open();
+    const value = db ? await new Promise(resolve => {
+      try { const req = db.transaction('counts').objectStore('counts').get(key); req.onsuccess = () => resolve(req.result || null); req.onerror = () => resolve(null); }
+      catch { this.available = false; resolve(null); }
+    }) : this.memory.get(key);
+    const memory = this.memory.get(key);
+    const saved = memory && (!value || memory.fetched_at > value.fetched_at) ? memory : value;
+    return saved && saved.scope === scope && saved.zip === zip && Number.isSafeInteger(saved.total) && saved.total >= 0 && Number.isFinite(saved.fetched_at) && Number.isFinite(saved.expires_at) ? saved : null;
+  }
+  async put(value) {
+    this.memory.set(value.key, value);
+    const db = await this.open(); if (!db) return;
+    await new Promise(resolve => {
+      try { const tx = db.transaction('counts', 'readwrite'); tx.objectStore('counts').put(value); tx.oncomplete = () => resolve(); tx.onabort = tx.onerror = () => { this.available = false; resolve(); }; }
+      catch { this.available = false; resolve(); }
+    });
+  }
+}
+class GhlZipCountEngine {
+  constructor({ cache = new GhlCountCache(), fetcher = (...args) => fetch(...args), locks = navigator.locks, interval = 500, ttl = 3600, forceInterval = 60, onUpdate = () => {}, onProblem = () => {} } = {}) {
+    this.cache = cache; this.fetcher = fetcher; this.locks = locks; this.interval = interval;
+    this.ttl = ttl; this.forceInterval = forceInterval; this.onUpdate = onUpdate; this.onProblem = onProblem;
+    this.context = null; this.token = ''; this.generation = 0; this.jobs = new Map(); this.checks = new Map();
+    this.queue = []; this.active = 0; this.wanted = null; this.controllers = new Set(); this.cooldown = 0;
+    this.blocked = null; this.failures = 0; this.channel = null;
+  }
+  async connect(token, locationId) {
+    if (!token.trim() || !/^[A-Za-z0-9_-]{5,100}$/.test(locationId)) throw Error('Enter a token and valid location ID.');
+    if (!this.locks?.request) throw Error('Use a current Chrome or Edge browser over HTTPS for coordinated count requests.');
+    this.disconnect();
+    const generation = this.generation;
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(locationId + '|' + token.trim() + '|postalCode:eq:v1'));
+    if (generation !== this.generation) return null;
+    const scope = [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2, '0')).join('');
+    this.token = token.trim(); this.context = { scope, location_id: locationId, cache_ttl: this.ttl };
+    if (typeof BroadcastChannel !== 'undefined') {
+      this.channel = new BroadcastChannel('zl-ghl-counts:' + scope);
+      this.channel.onmessage = e => { if (e.data?.type === 'blocked' && e.data.scope === scope) { this.blocked = e.data.kind; this.onProblem(e.data.kind); } };
+    }
+    return this.context;
+  }
+  disconnect() {
+    this.generation++; this.context = null; this.token = ''; this.blocked = null; this.failures = 0;
+    this.controllers.forEach(c => c.abort()); this.controllers.clear(); this.channel?.close(); this.channel = null;
+    this.jobs.clear(); this.checks.clear(); this.queue = []; this.cooldown = 0;
+  }
+  setWanted(zips) { this.wanted = new Set(zips); }
+  result(zip, cached, job) {
+    const now = Date.now() / 1000;
+    return { zip, total: cached?.total ?? null, fetched_at: cached?.fetched_at ?? null, expires_at: cached?.expires_at ?? null,
+      stale: !!cached && (cached.expires_at <= now || !!this.blocked), state: this.blocked ? 'error' : job?.state || (cached?.expires_at > now ? 'fresh' : 'deferred'),
+      error: this.blocked || job?.error || null, retry_after: Math.max(1, Math.ceil((job?.retry_at || now + 1) - now)) };
+  }
+  async batch(zips, force = false) {
+    if (!this.context || !Array.isArray(zips) || zips.length > 100 || zips.some(z => !/^[0-9]{5}$/.test(z)) || new Set(zips).size !== zips.length) throw Error('Invalid ZIP batch.');
+    const context = this.context;
+    const counts = await Promise.all(zips.map(zip => this.ensure(zip, force)));
+    return { ...context, counts };
+  }
+  ensure(zip, force) {
+    if (this.checks.has(zip)) return this.checks.get(zip);
+    const promise = this._ensure(zip, force).finally(() => { if (this.checks.get(zip) === promise) this.checks.delete(zip); });
+    this.checks.set(zip, promise); return promise;
+  }
+  async _ensure(zip, force) {
+    const context = this.context, generation = this.generation;
+    const cached = await this.cache.get(context.scope, zip);
+    if (generation !== this.generation) return { zip, total: null, state: 'deferred' };
+    let job = this.jobs.get(zip);
+    const fresh = cached && cached.expires_at > Date.now() / 1000;
+    const recent = cached && Date.now() / 1000 - cached.fetched_at < this.forceInterval;
+    if (!this.blocked && !(job && ['queued', 'loading'].includes(job.state)) && (!fresh || force && !recent)) {
+      if (!job?.error || force) {
+        if (this.queue.length >= 256) return this.result(zip, cached, { state: 'deferred' });
+        job = { zip, cached, state: 'queued', error: null, force, generation, context };
+        this.jobs.set(zip, job); this.queue.push(job); this.drain();
+      }
+    }
+    return this.result(zip, cached, job);
+  }
+  drain() {
+    while (this.active < 2 && this.queue.length) {
+      const job = this.queue.shift(); this.active++;
+      this.run(job).finally(() => { this.active--; this.drain(); });
+    }
+  }
+  async run(job) {
+    try {
+      if (job.generation !== this.generation) return;
+      if (this.wanted && !this.wanted.has(job.zip)) { job.state = 'deferred'; return; }
+      job.state = 'loading'; this.onUpdate(this.result(job.zip, job.cached, job));
+      await this.locks.request('zl-ghl-count:' + job.context.scope + ':' + job.zip, async () => {
+        if (job.generation !== this.generation) return;
+        const cached = await this.cache.get(job.context.scope, job.zip);
+        if (cached && cached.expires_at > Date.now() / 1000 && (!job.force || Date.now() / 1000 - cached.fetched_at < this.forceInterval)) {
+          job.cached = cached; job.state = 'fresh'; return;
+        }
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (job.generation !== this.generation) return;
+          if (this.blocked) throw new GhlCountFailure(this.blocked);
+          try {
+            const total = await this.limitedRequest(job);
+            if (job.generation !== this.generation) return;
+            const now = Date.now() / 1000;
+            job.cached = { key: job.context.scope + ':' + job.zip, scope: job.context.scope, zip: job.zip, total, fetched_at: now, expires_at: now + this.ttl };
+            await this.cache.put(job.cached); job.state = 'fresh'; job.error = null; this.failures = 0; return;
+          } catch (e) {
+            const kind = e.kind || 'network_error';
+            const delay = e.retryAfter || 2;
+            job.error = kind; job.retry_at = Date.now() / 1000 + delay;
+            if (kind === 'rate_limited') this.setCooldown(job.context.location_id, delay);
+            if (['access_denied', 'network_error', 'request_refused', 'invalid_response'].includes(kind)) {
+              this.blocked = kind; this.channel?.postMessage({ type: 'blocked', scope: job.context.scope, kind }); this.onProblem(kind);
+              throw e;
+            }
+            if (attempt === 0 && ['rate_limited', 'temporary'].includes(kind)) { job.state = 'queued'; await new Promise(resolve => setTimeout(resolve, delay * 1000)); job.state = 'loading'; continue; }
+            if (++this.failures >= 3) { this.blocked = 'temporary'; this.onProblem('temporary'); }
+            throw e;
+          }
+        }
+      });
+    } catch (e) { job.state = 'error'; job.error = e.kind || this.blocked || 'unavailable'; }
+    finally { if (job.generation === this.generation) this.onUpdate(this.result(job.zip, job.cached, job)); }
+  }
+  setCooldown(locationId, seconds) {
+    this.cooldown = Math.max(this.cooldown, Date.now() + seconds * 1000);
+    try { localStorage.setItem('zl-ghl-count-cooldown:' + locationId, String(this.cooldown)); } catch { /* memory fallback */ }
+  }
+  async limitedRequest(job) {
+    const packet = await this.locks.request('zl-ghl-count-rate:' + job.context.location_id, async () => {
+      let until = this.cooldown;
+      try { until = Math.max(until, Number(localStorage.getItem('zl-ghl-count-cooldown:' + job.context.location_id)) || 0); } catch { /* memory fallback */ }
+      if (until > Date.now()) await new Promise(resolve => setTimeout(resolve, until - Date.now()));
+      if (job.generation !== this.generation || this.blocked) throw new GhlCountFailure(this.blocked || 'unavailable');
+      // Start inside the cross-tab lock and keep it for 500 ms. The network wait
+      // is outside the lock, allowing at most two starts/sec across these tabs.
+      const result = this.request(job).then(value => ({ value }), error => ({ error }));
+      await new Promise(resolve => setTimeout(resolve, this.interval));
+      return { result };
+    });
+    const settled = await packet.result;
+    if (settled.error) throw settled.error;
+    return settled.value;
+  }
+  async request(job) {
+    const controller = new AbortController(); this.controllers.add(controller);
+    const timer = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await this.fetcher('https://services.leadconnectorhq.com/contacts/search', {
+        method: 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+        headers: { Authorization: 'Bearer ' + this.token, Version: '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: [{ field: 'postalCode', operator: 'eq', value: job.zip }] })
+      });
+      if ([401, 403].includes(response.status)) throw new GhlCountFailure('access_denied');
+      if (response.status === 429) {
+        const header = response.headers.get('Retry-After');
+        const seconds = header !== null && Number.isFinite(Number(header)) ? Number(header) : (Date.parse(header) - Date.now()) / 1000;
+        throw new GhlCountFailure('rate_limited', Math.max(1, Number.isFinite(seconds) ? seconds : 10));
+      }
+      if (!response.ok) throw new GhlCountFailure(response.status >= 500 ? 'temporary' : 'request_refused');
+      let data;
+      try { data = await response.json(); } catch { throw new GhlCountFailure('invalid_response'); }
+      if (!Number.isSafeInteger(data?.total) || data.total < 0) throw new GhlCountFailure('invalid_response');
+      return data.total;
+    } catch (e) { if (e instanceof GhlCountFailure) throw e; throw new GhlCountFailure('network_error'); }
+    finally { clearTimeout(timer); this.controllers.delete(controller); }
+  }
+}
+// END STATIC GHL COUNT ENGINE
+
+// BEGIN ZIP CONTACT COUNT CLIENT
+class ZipContactCounts {
+  constructor({ root, status, refresh, isBusy = () => false }) {
+    this.root = root; this.status = status; this.refreshButton = refresh; this.isBusy = isBusy;
+    this.context = null; this.entries = new Map(); this.visible = new Set();
+    this.timer = null; this.debounce = null; this.loading = false; this.connecting = false;
+    this.force = false; this.generation = 0; this.observer = null; this.nodesByZip = new Map();
+    this.engine = new GhlZipCountEngine({ onUpdate: item => {
+      if (!this.context || this.context.scope !== this.engine.context?.scope) return;
+      this.entries.set(item.zip, item); this.paintZip(item.zip); this.plan();
+    }, onProblem: kind => {
+      this.status.textContent = kind === 'access_denied' ? 'GHL access denied (401/403). Check the token/location using Connection.' : kind === 'network_error' ? 'Browser request failed (network or CORS). Use Connection to retry; no zero counts are assumed.' : 'GHL counts paused. Check the connection and retry.';
+      this.controls();
+    } });
+    refresh.addEventListener('click', () => this.context && !this.engine.blocked ? this.refreshVisible() : this.openSetup());
+    document.getElementById('zl-ghl-connect').addEventListener('click', () => this.openSetup());
+    const dialog = document.getElementById('zl-ghl-dialog');
+    dialog.addEventListener('close', () => { document.getElementById('zl-ghl-token').value = ''; });
+    document.getElementById('zl-ghl-cancel').addEventListener('click', () => dialog.close());
+    document.getElementById('zl-ghl-disconnect').addEventListener('click', () => {
+      this.engine.disconnect(); this.generation++; this.context = null; this.entries.clear(); this.repaint();
+      clearTimeout(this.timer); this.status.textContent = 'GHL disconnected. Connect to display contact totals.'; dialog.close(); this.controls();
+    });
+    document.getElementById('zl-ghl-form').addEventListener('submit', async event => {
+      event.preventDefault(); if (this.connecting) return;
+      const input = document.getElementById('zl-ghl-token');
+      const locationId = document.getElementById('zl-ghl-location').value.trim();
+      const token = input.value.trim() || (locationId === this.engine.context?.location_id ? this.engine.token : '');
+      input.value = ''; this.connecting = true; this.controls();
+      const submit = document.getElementById('zl-ghl-submit'); submit.disabled = true;
+      try {
+        const context = await this.engine.connect(token, locationId);
+        if (!context) return;
+        this.context = context; this.entries.clear(); this.generation++; this.repaint(); this.engine.setWanted(this.visible);
+        this.status.textContent = `Contacts in GHL test location …${context.location_id.slice(-6)} · cached ${Math.round(context.cache_ttl / 60)} min`;
+        document.getElementById('zl-ghl-error').textContent = ''; dialog.close(); this.schedule();
+      } catch (error) { document.getElementById('zl-ghl-error').textContent = error.message; }
+      finally { this.connecting = false; submit.disabled = false; this.controls(); }
+    });
+    document.addEventListener('visibilitychange', () => {
+      clearTimeout(this.timer);
+      if (!document.hidden) this.schedule();
+    });
+    this.controls();
+  }
+  controls() {
+    this.refreshButton.disabled = this.isBusy() || this.connecting || this.loading || (!!this.context && !this.visible.size);
+    this.refreshButton.textContent = this.context && !this.engine.blocked ? 'Refresh visible counts' : 'Connect GHL';
+  }
+  openSetup() {
+    const dialog = document.getElementById('zl-ghl-dialog');
+    document.getElementById('zl-ghl-token').value = '';
+    document.getElementById('zl-ghl-location').value = this.context?.location_id || 'eY6ixOOusQWUqjUEtKWg';
+    document.getElementById('zl-ghl-error').textContent = '';
+    if (!dialog.open) dialog.showModal();
+  }
+  async readBatch(body) { return this.engine.batch(body.zips, body.refresh); }
+  async start() { this.status.textContent = 'Connect GHL to display contact totals for this test subaccount.'; this.controls(); }
+  badge(zip) {
+    const node = document.createElement('span');
+    node.className = 'zl-contact-count'; node.dataset.contactZip = zip;
+    this.paint(node); return node;
+  }
+  paint(node) {
+    const item = this.entries.get(node.dataset.contactZip);
+    const known = item && Number.isSafeInteger(item.total) && item.total >= 0;
+    const waiting = item && ['queued', 'loading', 'deferred'].includes(item.state);
+    const stale = known && (item.stale || item.expires_at * 1000 <= Date.now());
+    node.textContent = known ? `${stale ? '~' : ''}${item.total.toLocaleString()}` : item?.state === 'error' ? '!' : this.context ? '' : '—';
+    const spinning = !!this.context && (!item || waiting);
+    node.classList.toggle('zl-contact-loading', spinning);
+    node.setAttribute('aria-busy', String(spinning));
+    node.classList.toggle('zl-contact-stale', !!stale);
+    node.classList.toggle('zl-contact-pending', !!waiting);
+    node.classList.toggle('zl-contact-error', item?.state === 'error');
+    const reasons = { access_denied: 'GHL returned 401/403. Further requests are stopped; verify the test token and location using Connection.', rate_limited: 'GHL rate limited the count request. Retry-After is respected.', temporary: 'GHL is temporarily unavailable.', invalid_response: 'GHL did not return a valid total.', request_refused: 'GHL refused the count request.', network_error: 'The browser could not complete the GHL request (network or CORS).', unavailable: 'Contact count unavailable.' };
+    node.title = item?.error ? reasons[item.error] || reasons.unavailable : known ? `${item.total.toLocaleString()} contacts in the configured GHL test subaccount. Checked ${new Date(item.fetched_at * 1000).toLocaleString()}${waiting ? ' · refreshing' : stale ? ' · cached, refreshing when visible' : ' · cached'}` : 'Contact count for this ZIP in the configured GHL test subaccount. Fetched when visible.';
+    node.setAttribute('aria-label', `Contacts in ZIP ${node.dataset.contactZip}: ${known ? item.total : item?.state === 'error' ? 'unavailable' : 'loading'}`);
+  }
+  repaint() { this.root()?.querySelectorAll('[data-contact-zip]').forEach(node => this.paint(node)); }
+  paintZip(zip) { this.nodesByZip.get(zip)?.forEach(node => this.paint(node)); }
+  observe() {
+    this.observer?.disconnect(); this.visible.clear();
+    const nodes = this.root()?.querySelectorAll('[data-contact-zip]') || [];
+    this.nodesByZip.clear();
+    nodes.forEach(node => { const zip = node.dataset.contactZip; if (!this.nodesByZip.has(zip)) this.nodesByZip.set(zip, []); this.nodesByZip.get(zip).push(node); });
+    if (typeof IntersectionObserver === 'undefined') {
+      // Older browsers: load only the first bounded group, not an unbounded list.
+      [...nodes].slice(0, 100).forEach(node => this.visible.add(node.dataset.contactZip));
+    } else {
+      this.observer = new IntersectionObserver(items => {
+        for (const item of items) item.isIntersecting ? this.visible.add(item.target.dataset.contactZip) : this.visible.delete(item.target.dataset.contactZip);
+        this.engine.setWanted(this.visible); this.schedule(); this.controls();
+      }, { rootMargin: '60px' });
+      nodes.forEach(node => this.observer.observe(node));
+    }
+    this.engine.setWanted(this.visible); this.schedule(); this.controls();
+  }
+  schedule() {
+    clearTimeout(this.debounce);
+    if (!this.context || document.hidden) return;
+    this.debounce = setTimeout(() => void this.load(), 100);
+  }
+  refreshVisible() { this.force = true; this.schedule(); }
+  needs(zip) {
+    const item = this.entries.get(zip);
+    if (!item) return true;
+    if (item.state === 'error') return false; // explicit retry only; no error polling loop
+    return ['queued', 'loading', 'deferred'].includes(item.state) || !item.expires_at || item.expires_at * 1000 <= Date.now();
+  }
+  plan() {
+    clearTimeout(this.timer);
+    if (!this.context || document.hidden || !this.visible.size) return;
+    let delay = Infinity;
+    for (const zip of this.visible) {
+      const item = this.entries.get(zip);
+      if (!item || ['queued', 'loading', 'deferred'].includes(item.state)) delay = Math.min(delay, Math.max(1000, Math.min(30000, (item?.retry_after || 1) * 1000)));
+      else if (item.state !== 'error') delay = Math.min(delay, Math.max(1000, item.expires_at * 1000 - Date.now()));
+    }
+    if (Number.isFinite(delay)) this.timer = setTimeout(() => void this.load(), delay);
+  }
+  async load() {
+    if (this.loading || !this.context || document.hidden) return;
+    clearTimeout(this.timer);
+    const force = this.force; this.force = false;
+    const zips = [...this.visible].filter(zip => force || this.needs(zip));
+    if (!zips.length) { this.plan(); return; }
+    this.loading = true; this.controls(); const generation = this.generation;
+    try {
+      for (let index = 0; index < zips.length; index += 100) {
+        const batch = zips.slice(index, index + 100);
+        const data = await this.readBatch({ zips: batch, refresh: force });
+        if (generation !== this.generation) return;
+        if (data.scope !== this.context.scope || data.location_id !== this.context.location_id) {
+          this.context = null; this.entries.clear(); this.generation++; this.repaint();
+          this.status.textContent = 'GHL count context changed. Reconnect using Connection.'; return;
+        }
+        if (!Array.isArray(data.counts) || data.counts.length !== batch.length || new Set(data.counts.map(item => item.zip)).size !== batch.length) throw Error('Invalid count response');
+        for (const item of data.counts) {
+          if (!batch.includes(item.zip) || !['fresh', 'queued', 'loading', 'deferred', 'error'].includes(item.state) ||
+              !(item.total === null || Number.isSafeInteger(item.total) && item.total >= 0) ||
+              !(item.total === null || Number.isFinite(item.fetched_at) && Number.isFinite(item.expires_at))) throw Error('Invalid total');
+        }
+        for (const item of data.counts) { this.entries.set(item.zip, item); this.paintZip(item.zip); }
+        if (data.counts.some(item => item.error === 'access_denied')) this.status.textContent = 'GHL access denied. Verify the test token/location using Connection.';
+      }
+    } catch {
+      for (const zip of zips) { this.entries.set(zip, { ...this.entries.get(zip), state: 'error', error: 'unavailable' }); this.paintZip(zip); } this.status.textContent = 'Contact counts unavailable. ZIP management is unaffected; use Connection to retry.';
+    } finally { this.loading = false; this.controls(); this.plan(); }
+  }
+}
+// END ZIP CONTACT COUNT CLIENT
+
       (() => {
         // Fixed to the subaccount currently represented by the page. No cross-account selector.
         const ACCOUNT = { id: "james-clement", name: "James Clement" };
@@ -5324,6 +5691,7 @@
           deletion: null,
           erase: null,
         };
+        const contactCounts = new ZipContactCounts({ root: () => $('zl-used'), status: $('zl-contact-status'), refresh: $('zl-contact-refresh'), isBusy: () => model.busy });
         function el(tag, attrs = {}, ...children) {
           const e = document.createElement(tag);
           for (const [k, v] of Object.entries(attrs)) {
@@ -5412,6 +5780,7 @@
           if (!value && model.data) {
             selectionControls();
             validateAdd();
+            contactCounts.controls();
           }
         }
         async function refresh() {
@@ -5502,6 +5871,7 @@
               }),
               z.zip,
             ),
+            contactCounts.badge(z.zip),
             el(
               "button",
               {
@@ -5755,6 +6125,7 @@
           $("zl-geo-status").textContent = model.data.places
             ? `${unknown} ZIPs have no location match.`
             : "Upload uszips.csv to group by location.";
+          contactCounts.observe();
         }
         function historyChip(z) {
           let title = z.already_used
@@ -7111,6 +7482,7 @@
             busy(false);
           }
         });
+        void contactCounts.start();
         void refresh();
       })();
     </script>
