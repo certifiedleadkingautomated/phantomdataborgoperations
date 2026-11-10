@@ -3645,15 +3645,17 @@
         font-size: 10px;
       }
 
-      .zl-contact-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:8px 0; font-size:11px; color:#718096; }
-      .zl-contact-toolbar span { flex:1; min-width:0; }
-      .zl-contact-toolbar button { flex-shrink:0; font-size:11px; }
-      .zl-contact-count { display:inline-block; min-width:18px; padding:0 4px; border-radius:4px; font-size:10px; font-weight:600; line-height:1.7; color:#5b6778; background:#e8edf3; font-variant-numeric:tabular-nums; cursor:pointer; }
-      .zl-contact-count.zl-contact-stale { color:#8b6b39; background:#f5efdf; }
-      .zl-contact-count.zl-contact-pending { opacity:.65; }
-      .zl-contact-count.zl-contact-error { color:#aa5146; background:#f9e8e5; }
-      #zl-ghl-form { display:grid; gap:10px; } #zl-ghl-form .zl-help { font-size:12px; color:#697589; line-height:1.6; }
-      @media(max-width:650px){.zl-contact-toolbar{flex-wrap:wrap}.zl-contact-toolbar span{flex-basis:100%}}
+      .zl-account-summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 20px; margin: 0 0 16px; border: 1px solid #dce3ec; border-radius: 12px; background: #fff; }
+      .zl-account-metric { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .zl-account-label { color: #56657a; font-size: 11px; font-weight: 500; }
+      #zl-account-total { color: #172b4d; font-size: 30px; font-weight: 650; line-height: 1.15; letter-spacing: -.7px; font-variant-numeric: tabular-nums; }
+      #zl-account-total[data-state="error"] { color: #8b5260; font-size: 20px; letter-spacing: 0; }
+      #zl-account-total[data-state="checking"], #zl-account-total[data-state="disconnected"] { color: #8995a6; }
+      .zl-account-connection { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; min-width: 0; color: #718096; font-size: 11px; }
+      .zl-account-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+      .zl-account-actions button { font-size: 11px; }
+      @media(max-width:650px) { .zl-account-summary { flex-wrap: wrap; gap: 14px; padding: 14px 16px; } .zl-account-connection { align-items: flex-start; } }
+
 
       .zl-contact-loading::before { content:""; display:inline-block; vertical-align:-1px; width:9px; height:9px; margin-right:3px; border:1.5px solid currentColor; border-right-color:transparent; border-radius:50%; animation:zl-contact-spin .75s linear infinite; }
       @keyframes zl-contact-spin { to { transform:rotate(360deg); } }
@@ -3985,6 +3987,19 @@
               </button>
             </div>
           </header>
+          <section class="zl-account-summary" aria-label="GHL account contacts">
+            <div class="zl-account-metric">
+              <span class="zl-account-label">Total contacts</span>
+              <strong id="zl-account-total" data-state="disconnected" aria-live="polite" aria-label="Total contacts: not connected">—</strong>
+            </div>
+            <div class="zl-account-connection">
+              <span id="zl-contact-status" role="status">Connect GHL for contact totals.</span>
+              <div class="zl-account-actions">
+                <button type="button" id="zl-ghl-connect" class="zl-text-button">Connection</button>
+                <button type="button" id="zl-contact-refresh" class="zl-text-button" title="Refresh visible ZIP counts; each ZIP can be refreshed at most once per minute.">Connect GHL</button>
+              </div>
+            </div>
+          </section>
           <p id="zl-error" class="zl-error" role="alert" hidden></p>
           <p id="zl-status" class="zl-status" role="status">Opening SQLite…</p>
           <div class="zl-columns">
@@ -4055,7 +4070,7 @@
                     aria-live="polite"
                   ></div>
                 </div>
-                <div class="zl-contact-toolbar"><span id="zl-contact-status" role="status">Connect GHL for contact totals.</span><button type="button" id="zl-ghl-connect" class="zl-text-button">Connection</button><button type="button" id="zl-contact-refresh" class="zl-text-button" title="Refresh visible ZIP counts; each ZIP can be refreshed at most once per minute.">Connect GHL</button></div>
+
                 <div id="zl-used" class="zl-used-list"></div>
                 <div class="zl-selection">
                   <label
@@ -5711,10 +5726,10 @@ class ZipContactCounts {
     this.timer = null; this.debounce = null; this.loading = false; this.connecting = false;
     this.force = false; this.generation = 0; this.observer = null; this.nodesByZip = new Map();
     this.engine = new GhlZipCountEngine({ onAccount: account => {
-      this.generation++; this.entries.clear(); this.repaint();
+      this.generation++; this.entries.clear(); this.repaint(); this.paintAccountTotal(account.state, account.total);
       if (account.state === 'checking') this.status.textContent = 'Checking account contacts…';
       else if (account.state === 'ready') {
-        this.status.textContent = `${account.total.toLocaleString()} account contacts`;
+        this.status.textContent = 'Account total verified';
         this.engine.setUsed(this.getUsedZips()); this.schedule();
       } else this.status.textContent = 'Account total unavailable. Retry to load ZIP counts.';
       this.controls();
@@ -5735,7 +5750,7 @@ class ZipContactCounts {
     dialog.addEventListener('close', () => { document.getElementById('zl-ghl-token').value = ''; });
     document.getElementById('zl-ghl-cancel').addEventListener('click', () => dialog.close());
     document.getElementById('zl-ghl-disconnect').addEventListener('click', () => {
-      this.engine.disconnect(); this.generation++; this.context = null; this.entries.clear(); this.repaint();
+      this.engine.disconnect(); this.generation++; this.context = null; this.entries.clear(); this.repaint(); this.paintAccountTotal('disconnected');
       clearTimeout(this.timer); this.status.textContent = 'GHL disconnected. Connect to display contact totals.'; dialog.close(); this.controls();
     });
     document.getElementById('zl-ghl-form').addEventListener('submit', async event => {
@@ -5770,6 +5785,13 @@ class ZipContactCounts {
     document.getElementById('zl-ghl-location').value = this.context?.location_id || 'eY6ixOOusQWUqjUEtKWg';
     document.getElementById('zl-ghl-error').textContent = '';
     if (!dialog.open) dialog.showModal();
+  }
+  paintAccountTotal(state, total) {
+    const node = document.getElementById('zl-account-total');
+    node.dataset.state = state;
+    node.setAttribute('aria-busy', String(state === 'checking'));
+    node.textContent = state === 'ready' ? total.toLocaleString() : state === 'checking' ? '…' : state === 'error' ? 'Unavailable' : '—';
+    node.setAttribute('aria-label', 'Total contacts: ' + (state === 'ready' ? total.toLocaleString() : state === 'checking' ? 'loading' : state === 'error' ? 'unavailable' : 'not connected'));
   }
   async readBatch(body) { return this.engine.batch(body.zips, body.refresh); }
   async start() { this.status.textContent = 'Connect GHL to display contact totals for this test subaccount.'; this.controls(); }
@@ -7777,4 +7799,5 @@ class ZipContactCounts {
     </script>
   </body>
 </html>
+
 
