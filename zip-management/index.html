@@ -3989,8 +3989,8 @@
           </header>
           <section class="zl-account-summary" aria-label="GHL account contacts">
             <div class="zl-account-metric">
-              <span class="zl-account-label">Total contacts</span>
-              <strong id="zl-account-total" data-state="disconnected" aria-live="polite" aria-label="Total contacts: not connected">—</strong>
+              <span class="zl-account-label">Total contacts in Go High Level</span>
+              <strong id="zl-account-total" data-state="disconnected" aria-live="polite" aria-label="Total contacts in Go High Level: not connected">—</strong>
             </div>
             <div class="zl-account-connection">
               <span id="zl-contact-status" role="status">Connect GHL for contact totals.</span>
@@ -5794,7 +5794,7 @@ class ZipContactCounts {
     node.dataset.state = state;
     node.setAttribute('aria-busy', String(state === 'checking'));
     node.textContent = state === 'ready' ? total.toLocaleString() : state === 'checking' ? '…' : state === 'error' ? 'Unavailable' : '—';
-    node.setAttribute('aria-label', 'Total contacts: ' + (state === 'ready' ? total.toLocaleString() : state === 'checking' ? 'loading' : state === 'error' ? 'unavailable' : 'not connected'));
+    node.setAttribute('aria-label', 'Total contacts in Go High Level: ' + (state === 'ready' ? total.toLocaleString() : state === 'checking' ? 'loading' : state === 'error' ? 'unavailable' : 'not connected'));
   }
   async readBatch(body) { return this.engine.batch(body.zips, body.refresh); }
   async start() { this.status.textContent = 'Connect GHL to display contact totals for this test subaccount.'; this.controls(); }
