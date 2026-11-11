@@ -3767,6 +3767,26 @@
         #zip-workspace .zl-left,
         #zip-workspace .zl-right { gap: 22px; }
       }
+
+      /* Used ZIPs fill each row instead of reserving a fixed-width strip. */
+      #zip-workspace .zl-used-list .zl-chip-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(76px, 100%), 1fr));
+        gap: 4px;
+        align-items: start;
+      }
+      #zip-workspace .zl-chip[data-used-zip] {
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        height: 32px;
+        grid-template-rows: 16px 10px;
+        column-gap: 3px;
+        padding: 2px 4px;
+        flex: initial;
+      }
+      #zip-workspace .zl-chip[data-used-zip] .zl-used-zip-code { line-height: 16px; }
+      #zip-workspace .zl-chip[data-used-zip] .zl-contact-count { height: 10px; line-height: 10px; }
     </style>
   </head>
   <body>
@@ -4024,7 +4044,7 @@
                 type="file"
                 accept=".csv,text/csv"
                 hidden
-              /><button type="button" class="zl-button" id="zl-refresh">
+              /><button type="button" class="zl-button" id="zl-refresh" hidden>
                 Refresh</button
               ><button
                 type="button"
@@ -4044,7 +4064,7 @@
               <span id="zl-contact-status" role="status">Connect GHL for contact totals.</span>
               <div class="zl-account-actions">
                 <button type="button" id="zl-ghl-connect" class="zl-text-button">Connection</button>
-                <button type="button" id="zl-contact-refresh" class="zl-text-button" title="Refresh visible ZIP counts; each ZIP can be refreshed at most once per minute.">Connect GHL</button>
+                <button type="button" id="zl-contact-refresh" hidden class="zl-text-button" title="Refresh visible ZIP counts; each ZIP can be refreshed at most once per minute.">Connect GHL</button>
               </div>
             </div>
           </section>
@@ -6081,7 +6101,7 @@ class ZipContactCounts {
           } catch (e) {
             error(e.message);
             $("zl-status").textContent =
-              "SQLite could not be opened. Check browser storage and your internet connection, then Refresh.";
+              "SQLite could not be opened. Check browser storage and your internet connection, then reload the page.";
           } finally {
             busy(false);
           }
