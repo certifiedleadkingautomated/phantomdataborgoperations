@@ -5464,7 +5464,7 @@ class GhlZipCountEngine {
     this.context = null; this.token = ''; this.generation = 0; this.jobs = new Map(); this.checks = new Map();
     this.queue = []; this.active = 0; this.wanted = null; this.controllers = new Set(); this.cooldown = 0;
     this.blocked = null; this.failures = 0; this.channel = null;
-    this.account = null; this.accountState = 'disconnected'; this.validation = null; this.used = new Set(); this.background = []; this.pumping = false;
+    this.account = null; this.accountState = 'disconnected'; this.validation = null; this.used = new Set(); this.verifiedZeros = new Set(); this.background = []; this.pumping = false;
   }
   async connect(token, locationId) {
     if (!token.trim() || !/^[A-Za-z0-9_-]{5,100}$/.test(locationId)) throw Error('Enter a token and valid location ID.');
@@ -5495,7 +5495,7 @@ class GhlZipCountEngine {
   disconnect() {
     this.generation++; this.context = null; this.token = ''; this.blocked = null; this.failures = 0;
     this.controllers.forEach(c => c.abort()); this.controllers.clear(); this.channel?.close(); this.channel = null;
-    this.jobs.clear(); this.checks.clear(); this.queue = []; this.cooldown = 0;
+    this.jobs.clear(); this.checks.clear(); this.queue = []; this.cooldown = 0; this.verifiedZeros.clear();
     this.account = null; this.accountState = 'disconnected'; this.validation = null; this.background = []; this.used.clear();
   }
   setWanted(zips) {
@@ -5527,6 +5527,7 @@ class GhlZipCountEngine {
     const changed = this.account?.cache_generation !== row.cache_generation;
     this.account = row; this.accountState = 'ready';
     if (changed) {
+      this.verifiedZeros.clear();
       this.jobs.clear(); this.checks.clear(); this.queue = []; this.background = [...this.used]; if (this.wanted) this.setWanted(this.wanted);
     }
     this.onAccount({ state: 'ready', total: row.total, checked_at: row.fetched_at, cache_generation: row.cache_generation });
@@ -5577,7 +5578,7 @@ class GhlZipCountEngine {
   result(zip, cached, job) {
     const now = Date.now() / 1000;
     // No count leaves the cache until this page validates the account total.
-    const usable = this.fresh(cached) ? cached : null;
+    const usable = this.fresh(cached) && (cached.total !== 0 || this.verifiedZeros.has(zip)) ? cached : null;
     const state = this.accountState === 'error' || this.blocked ? 'error' : this.accountState !== 'ready' ? 'loading' : job?.state || (usable ? 'fresh' : 'deferred');
     return { zip, total: usable?.total ?? null, fetched_at: usable?.fetched_at ?? null, expires_at: usable?.expires_at ?? null,
       stale: !!usable && !!this.blocked, state, error: this.blocked || job?.error || null,
@@ -5606,11 +5607,12 @@ class GhlZipCountEngine {
     if (this.accountState !== 'ready') return this.result(zip, null, null);
     let job = this.jobs.get(zip);
     const fresh = this.fresh(cached);
+    const zeroRetry = fresh && cached.total === 0 && !this.verifiedZeros.has(zip);
     const recent = fresh && Date.now() / 1000 - cached.fetched_at < this.forceInterval;
-    if (!this.blocked && !(job && ['queued', 'loading'].includes(job.state)) && (!fresh || force && !recent)) {
+    if (!this.blocked && !(job && ['queued', 'loading'].includes(job.state)) && (!fresh || zeroRetry || force && !recent)) {
       if (!job?.error || force) {
         if (this.queue.length >= 256) return this.result(zip, cached, { state: 'deferred' });
-        job = { zip, cached, state: 'queued', error: null, force, generation, context, cache_generation: this.account.cache_generation };
+        job = { zip, cached, state: 'queued', error: null, force, zeroRetry, generation, context, cache_generation: this.account.cache_generation };
         this.jobs.set(zip, job); this.queue.push(job); this.drain();
       }
     }
@@ -5630,7 +5632,8 @@ class GhlZipCountEngine {
       await this.locks.request('zl-ghl-count:' + job.context.scope + ':' + job.zip, async () => {
         if (job.generation !== this.generation || job.cache_generation !== this.account?.cache_generation) return;
         const cached = await this.cache.get(job.context.scope, job.zip);
-        if (this.fresh(cached) && (!job.force || Date.now() / 1000 - cached.fetched_at < this.forceInterval)) {
+        if (this.fresh(cached) && (!job.zeroRetry || cached.total !== 0 || cached.fetched_at !== job.cached?.fetched_at) && (!job.force || Date.now() / 1000 - cached.fetched_at < this.forceInterval)) {
+          if (cached.total === 0) this.verifiedZeros.add(job.zip);
           job.cached = cached; job.state = 'fresh'; return;
         }
         for (let attempt = 0; attempt < 2; attempt++) {
@@ -5649,7 +5652,7 @@ class GhlZipCountEngine {
               }
               job.cached = { key: job.context.scope + ':' + job.zip, scope: job.context.scope, zip: job.zip, total,
                 fetched_at: now, expires_at: Number.MAX_SAFE_INTEGER, cache_generation: job.cache_generation };
-              await this.cache.put(job.cached); job.state = 'fresh'; job.error = null; this.failures = 0;
+              await this.cache.put(job.cached); if (total === 0) this.verifiedZeros.add(job.zip); job.state = 'fresh'; job.error = null; this.failures = 0;
             });
             return;
           } catch (e) {

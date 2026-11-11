@@ -293,3 +293,30 @@ test('unpadded search uses a new cache scope so old padded-search counts are not
     new TextEncoder().encode('SyntheticLocation1|synthetic-private-token|postalCode:eq:v1'))).toString('hex');
   assert.notEqual(e.context.scope, old); e.disconnect();
 });
+
+test('cached zero is hidden and rechecked once on every connection even with unchanged total', async () => {
+  const cache = new Cache(); let calls = 0;
+  const a = await engine({ cache, fetcher: async () => { calls++; return response(0); } });
+  await a.batch(['00601']); await settle(a); assert.equal(calls, 1);
+  assert.equal((await a.batch(['00601'])).counts[0].total, 0); a.disconnect();
+  let release; const gate = new Promise(r => { release = r; });
+  const b = await engine({ cache, fetcher: async () => { calls++; await gate; return response(0); } });
+  const loading = (await b.batch(['00601'])).counts[0];
+  assert.equal(loading.total, null);
+  release(); await settle(b);
+  assert.equal((await b.batch(['00601'])).counts[0].total, 0); assert.equal(calls, 2);
+  for (let i = 0; i < 10; i++) await b.batch(['00601']);
+  await settle(b); assert.equal(calls, 2); b.disconnect();
+  const c = await engine({ cache, fetcher: async () => { calls++; return response(12); } });
+  assert.equal((await c.batch(['00601'])).counts[0].total, null); await settle(c);
+  assert.equal((await c.batch(['00601'])).counts[0].total, 12); assert.equal(calls, 3); c.disconnect();
+});
+test('failed zero recheck hides the old zero and does not automatically retry on subsequent batches', async () => {
+  const cache = new Cache(); const a = await engine({ cache, fetcher: async () => response(0) });
+  await a.batch(['00601']); await settle(a); a.disconnect();
+  let calls = 0; const b = await engine({ cache, fetcher: async () => { calls++; return response(null, 403); } });
+  assert.equal((await b.batch(['00601'])).counts[0].total, null); await settle(b);
+  const result = (await b.batch(['00601'])).counts[0];
+  assert.equal(result.total, null); assert.equal(result.state, 'error');
+  await settle(b); assert.equal(calls, 1); b.disconnect();
+});
