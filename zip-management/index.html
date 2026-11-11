@@ -3719,6 +3719,54 @@
       }
       .zl-chip[data-used-zip] .zl-contact-count.zl-contact-stale { color: #8b6b39; }
       .zl-chip[data-used-zip] .zl-contact-count.zl-contact-error { color: #aa5146; }
+
+      /* Section rhythm: room between cards, compact content within each card. */
+      #zip-workspace .zl-columns { gap: 28px; }
+      #zip-workspace .zl-left,
+      #zip-workspace .zl-right { gap: 26px; }
+      #zip-workspace .zl-section {
+        border-left-color: #cfd8e3;
+        border-right-color: #cfd8e3;
+        border-bottom-color: #cfd8e3;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px #18334b08;
+      }
+      #zip-workspace .zl-section-head,
+      #zip-workspace .zl-audit > summary {
+        min-height: 36px;
+        padding: 8px 11px;
+        border-bottom-color: #dce3eb;
+      }
+      #zip-workspace .zl-left > .zl-section:first-child > .zl-section-head { background: #fcf3ee; }
+      #zip-workspace .zl-new-section > .zl-section-head { background: #f0f5fc; }
+      #zip-workspace .zl-history-section > .zl-section-head { background: #f0f7f2; }
+      #zip-workspace .zl-audit > summary { background: #f6f1fa; }
+      #zip-workspace .zl-right > .zl-section:nth-child(1) > .zl-section-head { background: #eef7f8; }
+      #zip-workspace .zl-right > .zl-section:nth-child(2) > .zl-section-head { background: #fcf3ee; }
+      #zip-workspace .zl-right > .zl-section:nth-child(3) > .zl-section-head { background: #f1f7ed; }
+      #zip-workspace .zl-used-tools { padding: 7px 10px; gap: 7px; }
+      #zip-workspace .zl-used-sort { padding: 0 10px 6px; }
+      #zip-workspace .zl-used-search-box,
+      #zip-workspace .zl-history-search-box { padding: 7px 10px; }
+      #zip-workspace .zl-used-list { padding: 8px 10px; min-height: 60px; }
+      #zip-workspace .zl-selection { padding: 6px 10px; }
+      #zip-workspace .zl-row-body { padding: 8px 10px; }
+      #zip-workspace .zl-row-index { padding-top: 10px; }
+      #zip-workspace .zl-row-meta { margin-bottom: 5px; }
+      #zip-workspace .zl-entry-view-buttons { margin-bottom: 5px; }
+      #zip-workspace .zl-check-input { padding: 8px; }
+      #zip-workspace .zl-check-input textarea { min-height: 76px; }
+      #zip-workspace .zl-result { padding: 8px 10px; min-height: 44px; }
+      #zip-workspace .zl-result-remaining {
+        border-top: 1px solid #e6cfc4;
+        box-shadow: inset 0 1px #ffffffa6;
+      }
+      #zip-workspace .zl-account-summary { padding: 12px 16px; margin-bottom: 22px; }
+      @media (max-width: 850px) {
+        #zip-workspace .zl-columns { gap: 24px; }
+        #zip-workspace .zl-left,
+        #zip-workspace .zl-right { gap: 22px; }
+      }
     </style>
   </head>
   <body>
