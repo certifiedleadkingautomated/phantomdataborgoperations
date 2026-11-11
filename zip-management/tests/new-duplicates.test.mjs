@@ -18,19 +18,19 @@ function checkerFixture(input) {
   vm.runInContext('function checker(){'+checker+'\nfunction addCheckedToNew(){'+click+'\nchecker();',context);
   return {$,context};
 }
-test('checker retains unused results but transfers only ZIPs missing from New',()=>{
+test('checker passes the full unused list for review without silently filtering New ZIPs',()=>{
   const f=checkerFixture('601,90210');
   assert.equal(f.$('zl-fresh').textContent,'00601, 90210');
   assert.equal(f.$('zl-check-new').textContent,'1 already in New ZIPs.');
   vm.runInContext('addCheckedToNew()',f.context);
-  assert.equal(f.$('zl-add-zips').value,'90210');
+  assert.equal(f.$('zl-add-zips').value,'00601,90210');
 });
-test('checker offers no add action when all unused ZIPs are already New',()=>{
+test('an entirely already-New list still opens the same validation form',()=>{
   const f=checkerFixture('601,10001');
-  assert.equal(f.$('zl-add-checked-new').hidden,true);
-  assert.equal(f.$('zl-add-checked-new').disabled,true);
+  assert.equal(f.$('zl-add-checked-new').hidden,false);
+  assert.equal(f.$('zl-add-checked-new').disabled,false);
   vm.runInContext('addCheckedToNew()',f.context);
-  assert.equal(f.$('zl-add-zips').value,'');
+  assert.equal(f.$('zl-add-zips').value,'00601,10001');
 });
 function storeFixture() {
   const sqlite=new DatabaseSync(':memory:');sqlite.exec(html.match(/const SCHEMA = `([\s\S]*?)`;/)[1]);

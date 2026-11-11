@@ -6289,7 +6289,7 @@ class ZipContactCounts {
           $("zl-select-all").indeterminate = count > 0 && count < n;
           $("zl-select-all").disabled = model.busy || !n;
           $("zl-add-checked-new").disabled =
-            model.busy || !checker.values?.addable?.length;
+            model.busy || !checker.values?.fresh?.length;
           document
             .querySelectorAll("[data-zl-search-size]")
             .forEach((button) => {
@@ -7201,7 +7201,6 @@ class ZipContactCounts {
           const pendingMatches = p.zips.filter((z) => pendingSet().has(z));
           const incomingNew = newSet();
           const alreadyNew = fresh.filter(z => incomingNew.has(z));
-          const addable = fresh.filter(z => !incomingNew.has(z));
           $("zl-check-new").hidden = !alreadyNew.length;
           $("zl-check-new").textContent = alreadyNew.length ? alreadyNew.length + " already in New ZIPs." : "";
           $("zl-check-pending").hidden = !pendingMatches.length;
@@ -7236,11 +7235,10 @@ class ZipContactCounts {
             matches: invalid ? [] : matches,
             other: invalid ? [] : other,
             fresh: invalid ? [] : fresh,
-            addable: invalid ? [] : addable,
           };
-          $("zl-add-checked-new").hidden = invalid || !addable.length;
+          $("zl-add-checked-new").hidden = invalid || !fresh.length;
           $("zl-add-checked-new").disabled =
-            model.busy || invalid || !addable.length;
+            model.busy || invalid || !fresh.length;
         }
         function render() {
           renderNew();
@@ -7705,7 +7703,7 @@ class ZipContactCounts {
         function addCheckedToNew() {
           if (model.busy || !model.data) return;
           checker();
-          const zips = checker.values?.addable || [];
+          const zips = checker.values?.fresh || [];
           if (!zips.length) return;
           openAdd("new");
           $("zl-add-zips").value = zips.join(",");
