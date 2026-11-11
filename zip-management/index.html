@@ -4513,7 +4513,15 @@
               </button>
             </header>
             <p id="zl-edit-description" class="zl-dialog-description"></p>
-            <p id="zl-edit-zips" class="zl-zip-text zl-edit-zips"></p>
+            <div id="zl-edit-zips" class="zl-zip-text zl-edit-zips"></div>
+            <div class="zl-entry-actions" id="zl-edit-correction-actions" hidden>
+              <button type="button" class="zl-text-button" id="zl-edit-remove-all">Remove all ZIPs</button>
+              <button type="button" class="zl-text-button" id="zl-edit-undo-removals" hidden>Undo ZIP removals</button>
+            </div>
+            <p id="zl-edit-correction-note" class="zl-helper" hidden></p>
+            <label id="zl-edit-correction-confirm" class="zl-helper" hidden>
+              <input type="checkbox" id="zl-edit-correction-ack" style="width:auto" /> Confirm permanent removal from this entry
+            </label>
             <label>Date<input type="date" id="zl-edit-date" required /></label
             ><label
               >Comment / order number <span class="zl-optional">optional</span
@@ -4900,6 +4908,46 @@
             db.close();
           }
         }
+
+// BEGIN ENTRY CORRECTION CORE
+        function correctEntry(db, account, rowId, kind, remove) {
+          if (remove === undefined) return;
+          assert(Array.isArray(remove), "Invalid ZIP correction.");
+          if (!remove.length) return;
+          checkZips(remove);
+          const isNew = kind === "new", table = isNew ? "new_zip_items" : "history_zips";
+          const entry = first(db, isNew
+            ? "SELECT id FROM new_zip_rows WHERE id=? AND subaccount_id=?"
+            : "SELECT id,status FROM history_rows WHERE id=? AND subaccount_id=?", [rowId, account]);
+          assert(entry && (isNew || entry.status === "confirmed"), "Confirm or cancel pending requests before correcting ZIPs.");
+          assert(remove.every(zip => first(db, "SELECT zip FROM " + table + " WHERE row_id=? AND zip=?", [rowId, zip])), "The entry changed. Reload and review.");
+          for (const zip of remove) {
+            db.run("DELETE FROM " + table + " WHERE row_id=? AND zip=?", [rowId, zip]);
+            if (isNew) db.run("DELETE FROM pending_sources WHERE new_row_id=? AND zip=?", [rowId, zip]);
+            else db.run("DELETE FROM pending_sources WHERE history_id=? AND zip=?", [rowId, zip]);
+            if (!isNew && !first(db, "SELECT z.zip FROM history_zips z JOIN history_rows h ON h.id=z.row_id WHERE h.subaccount_id=? AND z.zip=?", [account, zip])) {
+              const events = query(db, "SELECT d.id FROM deletion_events d JOIN deletion_items i ON i.event_id=d.id WHERE d.subaccount_id=? AND i.zip=?", [account, zip]);
+              for (const event of events) {
+                db.run("DELETE FROM deletion_items WHERE event_id=? AND zip=?", [event.id, zip]);
+                const remaining = new Set(query(db, "SELECT zip FROM deletion_items WHERE event_id=?", [event.id]).map(item => item.zip));
+                for (const restoration of query(db, "SELECT id,zips FROM restoration_events WHERE deletion_id=? AND subaccount_id=?", [event.id, account])) {
+                  const zips = JSON.parse(restoration.zips).filter(code => remaining.has(code));
+                  if (zips.length) db.run("UPDATE restoration_events SET zips=? WHERE id=?", [JSON.stringify(zips), restoration.id]);
+                  else db.run("DELETE FROM restoration_events WHERE id=?", [restoration.id]);
+                }
+                if (!remaining.size) db.run("DELETE FROM deletion_events WHERE id=? AND subaccount_id=?", [event.id, account]);
+              }
+            }
+          }
+          if (!first(db, "SELECT zip FROM " + table + " WHERE row_id=?", [rowId])) {
+            if (isNew) {
+              if (!first(db, "SELECT history_id FROM pending_sources WHERE new_row_id=?", [rowId]))
+                db.run("DELETE FROM new_zip_rows WHERE id=? AND subaccount_id=?", [rowId, account]);
+            } else db.run("DELETE FROM history_rows WHERE id=? AND subaccount_id=?", [rowId, account]);
+          }
+        }
+// END ENTRY CORRECTION CORE
+
         async function change(account, revision, action, payload) {
           checkAccount(account);
           const { db, version } = await open();
@@ -5077,6 +5125,7 @@
                   account.id,
                 ],
               );
+              if (action === "edit_history") correctEntry(db, account.id, row.id, "history", payload.remove_zips);
               if (action === "confirm_request") {
                 const zips = query(
                   db,
@@ -5122,6 +5171,7 @@
                   account.id,
                 ],
               );
+              correctEntry(db, account.id, payload.row, "new", payload.remove_zips);
             } else if (action === "erase_new") {
               const row = first(
                 db,
@@ -6703,7 +6753,7 @@ class ZipContactCounts {
         }
         function openEdit(row, kind = "history", confirm = false) {
           if (model.busy) return;
-          model.edit = { row: row.id, kind, confirm };
+          model.edit = { row: row.id, kind, confirm, zips: (row.zips || []).map(z => typeof z === "string" ? z : z.zip), removed: new Set(), correctable: !confirm && (kind === "new" || row.status !== "pending") };
           model.dialogRevision = model.data.revision;
           $("zl-edit-title").textContent = confirm
             ? "Confirm contacts requested"
@@ -6714,12 +6764,11 @@ class ZipContactCounts {
             ? "Confirm only after the contact request succeeded. These ZIPs will become Used."
             : row.status === "pending"
               ? "This entry stays pending until you confirm the contact request."
-              : "Update the date or comment for this entry.";
+              : "Update this entry. Remove mistaken ZIPs here without creating a deletion record.";
           $("zl-edit-date").value = row.recorded_on;
           $("zl-edit-comment").value = row.comment;
-          $("zl-edit-zips").textContent = (row.zips || [])
-            .map((z) => (typeof z === "string" ? z : z.zip))
-            .join(", ");
+          $("zl-edit-correction-ack").checked = false;
+          renderEditCorrections();
           $("zl-edit-error").textContent = "";
           $("zl-edit-save").textContent = confirm
             ? "Confirm request"
@@ -7644,9 +7693,40 @@ class ZipContactCounts {
         }
         $("zl-add-checked-new").addEventListener("click", addCheckedToNew);
 
+
+        function renderEditCorrections() {
+          const edit = model.edit;
+          $("zl-edit-correction-actions").hidden = !edit.correctable;
+          $("zl-edit-zips").replaceChildren(...edit.zips.map(zip => edit.correctable ? el("button", {
+            type: "button", class: "zl-history-chip" + (edit.removed.has(zip) ? " deleted" : ""),
+            "aria-label": (edit.removed.has(zip) ? "Undo removal of ZIP " : "Remove ZIP ") + zip + (edit.removed.has(zip) ? "" : " from this entry"),
+            onclick: () => {
+              edit.removed.has(zip) ? edit.removed.delete(zip) : edit.removed.add(zip);
+              $("zl-edit-correction-ack").checked = false;
+              renderEditCorrections();
+            }
+          }, zip + (edit.removed.has(zip) ? " ↶" : " ×")) : el("span", {}, zip + " ")));
+          const count = edit.removed.size;
+          $("zl-edit-undo-removals").hidden = !count;
+          $("zl-edit-correction-note").hidden = !count;
+          $("zl-edit-correction-note").textContent = count + " ZIPs will be removed from this entry without a deletion record. Other entries stay unchanged." + (count === edit.zips.length ? " This entry will be removed." : "");
+          $("zl-edit-correction-confirm").hidden = !count;
+          $("zl-edit-save").disabled = !!count && !$("zl-edit-correction-ack").checked;
+        }
+        $("zl-edit-remove-all").addEventListener("click", () => {
+          if (model.busy || !model.edit?.correctable) return;
+          model.edit.removed = new Set(model.edit.zips);
+          $("zl-edit-correction-ack").checked = false; renderEditCorrections();
+        });
+        $("zl-edit-undo-removals").addEventListener("click", () => {
+          if (model.busy) return;
+          model.edit.removed.clear(); $("zl-edit-correction-ack").checked = false; renderEditCorrections();
+        });
+        $("zl-edit-correction-ack").addEventListener("change", renderEditCorrections);
+
         $("zl-edit-form").addEventListener("submit", (e) => {
           e.preventDefault();
-          if (model.busy) return;
+          if (model.busy || (model.edit.removed.size && !$("zl-edit-correction-ack").checked)) return;
           void change(
             model.edit.kind === "new"
               ? "edit_new"
@@ -7655,6 +7735,7 @@ class ZipContactCounts {
                 : "edit_history",
             {
               row: model.edit.row,
+              ...(model.edit.correctable && model.edit.removed.size ? { remove_zips: [...model.edit.removed] } : {}),
               date: $("zl-edit-date").value,
               comment: $("zl-edit-comment").value,
             },
