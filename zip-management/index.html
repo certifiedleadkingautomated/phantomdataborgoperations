@@ -4357,8 +4357,8 @@
                 ></textarea>
               </label>
               <p class="zl-paste-hint">
-                Pasting spreadsheet cells switches to multiple rows
-                automatically. Plain ZIP lists stay in one entry.
+                A column of ZIPs becomes one comma-separated list. Comment + ZIPs
+                spreadsheet columns become separate entries.
               </p>
             </div>
             <div id="zl-bulk-entry" hidden>
@@ -5426,6 +5426,28 @@
     <script>
       // Spreadsheet cells use TSV: commas inside a ZIP cell are not column separators.
       window.ZipPaste = {
+        column(text) {
+          if (typeof text !== "string" || text.length > 1500000 || !/[\r\n]/.test(text)) return null;
+          const lines = text.split(/\r\n|\r|\n/).map(line => line.trim()).filter(Boolean);
+          if (lines.length < 2) return null;
+          if (/^(zip|zips|zip\s*codes?)$/i.test(lines[0])) lines.shift();
+          // Only a single ZIP per cell qualifies. Comment + ZIP columns keep their row semantics.
+          if (!lines.length || lines.some(line => !/^[0-9]{1,5}$/.test(line))) return null;
+          return lines.join(",");
+        },
+        pasteColumn(event) {
+          const list = window.ZipPaste.column(event.clipboardData?.getData("text/plain") || "");
+          if (list === null) return false;
+          const field = event.currentTarget;
+          if (!field || typeof field.setRangeText !== "function") return false;
+          const start = field.selectionStart, end = field.selectionEnd;
+          const before = field.value.slice(0, start), after = field.value.slice(end);
+          const inserted = (/[0-9]$/.test(before) ? "," : "") + list + (/^[0-9]/.test(after) ? "," : "");
+          event.preventDefault();
+          field.setRangeText(inserted, start, end, "end");
+          field.dispatchEvent(new Event("input", { bubbles: true }));
+          return true;
+        },
         spreadsheet(text) {
           if (text.length > 1500000)
             throw Error("Paste is too large (1.5 million characters maximum).");
@@ -7221,6 +7243,7 @@ class ZipContactCounts {
             const zipInput = el("textarea", {
               rows: "2",
               "aria-label": "ZIPs for row " + (i + 1),
+              onpaste: (event) => ZipPaste.pasteColumn(event),
               oninput: (e) => {
                 row.raw = e.target.value;
                 validateBulk();
@@ -7377,6 +7400,7 @@ class ZipContactCounts {
           };
         }
         function handleHistoryPaste(event) {
+          if (ZipPaste.pasteColumn(event)) return;
           const text = event.clipboardData?.getData("text/plain") || "";
           const html = event.clipboardData?.getData("text/html") || "";
           const spreadsheetRows = html
@@ -7585,6 +7609,7 @@ class ZipContactCounts {
         $("zl-mode-bulk").addEventListener("click", () => setAddMode("bulk"));
         $("zl-bulk-paste").addEventListener("input", readBulkPaste);
         $("zl-add-zips").addEventListener("paste", handleHistoryPaste);
+        for (const id of ["zl-check", "zl-used-search"]) $(id).addEventListener("paste", event => ZipPaste.pasteColumn(event));
         $("zl-source").addEventListener("change", validateAdd);
         $("zl-add").addEventListener("click", openAdd);
         $("zl-add-new").addEventListener("click", () => openAdd("new"));
