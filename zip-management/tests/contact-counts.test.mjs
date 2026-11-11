@@ -272,3 +272,24 @@ test('returning to an earlier account total creates a new generation instead of 
   total = 100; await e.validateAccount(); assert.notEqual(e.account.cache_generation, original);
   assert.equal((await e.batch(['33701'])).counts[0].total, null); await settle(e); e.disconnect();
 });
+
+test('GHL search removes leading zeroes while cache and results keep five-digit ZIPs', async () => {
+  const values = []; const cache = new Cache();
+  const e = await engine({ cache, fetcher: async (_url, options) => {
+    values.push(JSON.parse(options.body).filters[0].value); return response(7);
+  } });
+  const zips = ['00601', '01234', '00001', '00000', '33701', '10101'];
+  await e.batch(zips); await settle(e);
+  assert.deepEqual(values.slice().sort(), ['601', '1234', '1', '0', '33701', '10101'].sort());
+  for (const zip of zips) {
+    assert.equal((await e.batch([zip])).counts[0].zip, zip);
+    assert.equal((await cache.get(e.context.scope, zip)).zip, zip);
+  }
+  e.disconnect();
+});
+test('unpadded search uses a new cache scope so old padded-search counts are not reused', async () => {
+  const e = await engine();
+  const old = Buffer.from(await webcrypto.subtle.digest('SHA-256',
+    new TextEncoder().encode('SyntheticLocation1|synthetic-private-token|postalCode:eq:v1'))).toString('hex');
+  assert.notEqual(e.context.scope, old); e.disconnect();
+});

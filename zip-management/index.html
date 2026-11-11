@@ -5471,7 +5471,7 @@ class GhlZipCountEngine {
     if (!this.locks?.request) throw Error('Use a current Chrome or Edge browser over HTTPS for coordinated count requests.');
     this.disconnect();
     const generation = this.generation;
-    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(locationId + '|' + token.trim() + '|postalCode:eq:v1'));
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(locationId + '|' + token.trim() + '|postalCode:eq:unpadded:v2'));
     if (generation !== this.generation) return null;
     const scope = [...new Uint8Array(digest)].map(n => n.toString(16).padStart(2, '0')).join('');
     this.token = token.trim(); this.context = { scope, location_id: locationId, cache_mode: 'account_total' };
@@ -5698,7 +5698,7 @@ class GhlZipCountEngine {
       const response = await this.fetcher(url, {
         method: job.accountRequest ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
         headers: { Authorization: 'Bearer ' + this.token, Version: job.accountRequest ? 'v3' : '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
-        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: [{ field: 'postalCode', operator: 'eq', value: job.zip }] }) })
+        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: [{ field: 'postalCode', operator: 'eq', value: job.zip.replace(/^0+(?=\d)/, '') }] }) })
       });
       if ([401, 403].includes(response.status)) throw new GhlCountFailure('access_denied');
       if (response.status === 429) {
