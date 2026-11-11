@@ -4294,6 +4294,7 @@
                     Paste a list above to check.
                   </p>
                   <p id="zl-check-pending" class="zl-pending-check" hidden></p>
+                  <p id="zl-check-new" class="zl-pending-check" hidden></p>
                   <div class="zl-fresh-actions">
                     <button
                       type="button"
@@ -5023,12 +5024,13 @@
               const blocked = new Set([
                 ...active(db, account.id).map((z) => z.zip),
                 ...pendingCodes(db, account.id),
+                ...query(db, "SELECT z.zip FROM new_zip_items z JOIN new_zip_rows n ON n.id=z.row_id WHERE n.subaccount_id=?", [account.id]).map(z => z.zip),
               ]);
               for (const entry of entries) {
                 checkZips(entry.zips);
                 assert(
                   !entry.zips.some((z) => blocked.has(z)),
-                  "Remove ZIPs already Used or pending before adding New ZIPs.",
+                  "Remove ZIPs already Used, pending, or in New ZIPs before saving.",
                 );
                 const row = id();
                 db.run("INSERT INTO new_zip_rows VALUES (?,?,?,?,?)", [
@@ -5038,8 +5040,10 @@
                   comment(entry.comment),
                   now(),
                 ]);
-                for (const zip of entry.zips)
+                for (const zip of entry.zips) {
                   db.run("INSERT INTO new_zip_items VALUES (?,?)", [row, zip]);
+                  blocked.add(zip);
+                }
               }
             } else if (action === "request_batch") {
               checkZips(payload.zips);
@@ -6285,7 +6289,7 @@ class ZipContactCounts {
           $("zl-select-all").indeterminate = count > 0 && count < n;
           $("zl-select-all").disabled = model.busy || !n;
           $("zl-add-checked-new").disabled =
-            model.busy || !checker.values?.fresh?.length;
+            model.busy || !checker.values?.addable?.length;
           document
             .querySelectorAll("[data-zl-search-size]")
             .forEach((button) => {
@@ -7195,6 +7199,11 @@ class ZipContactCounts {
           $("zl-copy-other").hidden = !p.zips.length || !!p.invalid.length;
           $("zl-check-count").textContent = p.zips.length;
           const pendingMatches = p.zips.filter((z) => pendingSet().has(z));
+          const incomingNew = newSet();
+          const alreadyNew = fresh.filter(z => incomingNew.has(z));
+          const addable = fresh.filter(z => !incomingNew.has(z));
+          $("zl-check-new").hidden = !alreadyNew.length;
+          $("zl-check-new").textContent = alreadyNew.length ? alreadyNew.length + " already in New ZIPs." : "";
           $("zl-check-pending").hidden = !pendingMatches.length;
           $("zl-check-pending").textContent = pendingMatches.length
             ? "Pending contact request: " + pendingMatches.join(", ")
@@ -7227,10 +7236,11 @@ class ZipContactCounts {
             matches: invalid ? [] : matches,
             other: invalid ? [] : other,
             fresh: invalid ? [] : fresh,
+            addable: invalid ? [] : addable,
           };
-          $("zl-add-checked-new").hidden = invalid || !fresh.length;
+          $("zl-add-checked-new").hidden = invalid || !addable.length;
           $("zl-add-checked-new").disabled =
-            model.busy || invalid || !fresh.length;
+            model.busy || invalid || !addable.length;
         }
         function render() {
           renderNew();
@@ -7352,7 +7362,6 @@ class ZipContactCounts {
         }
         function validateBulk() {
           const pastDeletions = previouslyDeletedSet();
-          const unavailable = new Set([...usedSet(), ...pendingSet()]);
           const seen =
             model.addTarget === "new"
               ? new Set([...usedSet(), ...pendingSet(), ...newSet()])
@@ -7368,7 +7377,7 @@ class ZipContactCounts {
               new Date(row.date).toISOString().slice(0, 10) === row.date;
             const bad =
               (model.addTarget === "new" &&
-                p.zips.some((z) => unavailable.has(z))) ||
+                p.zips.some((z) => seen.has(z))) ||
               p.invalid.length > 0 ||
               !p.zips.length ||
               !validDate ||
@@ -7381,8 +7390,8 @@ class ZipContactCounts {
               row.element.classList.toggle("zl-bulk-invalid", bad);
               row.feedback.textContent =
                 model.addTarget === "new" &&
-                p.zips.some((z) => unavailable.has(z))
-                  ? "Remove Used or pending ZIPs from this row."
+                p.zips.some((z) => seen.has(z))
+                  ? "Remove Used, pending, or already New ZIPs (including repeats in earlier rows)."
                   : p.invalid.length
                     ? "Invalid: " + p.invalid.slice(0, 5).join(", ")
                     : !p.zips.length
@@ -7493,7 +7502,6 @@ class ZipContactCounts {
           $("zl-save-row").textContent =
             model.addTarget === "new" ? "Add new ZIPs" : "Add history row";
           const p = parse($("zl-add-zips").value);
-          const unavailable = new Set([...usedSet(), ...pendingSet()]);
           const pastDeletions = previouslyDeletedSet();
           feedback($("zl-add-feedback"), p);
           const used =
@@ -7503,7 +7511,7 @@ class ZipContactCounts {
             overlap = p.zips.filter((z) => used.has(z));
           const blocked =
             model.addTarget === "new"
-              ? p.zips.filter((z) => unavailable.has(z))
+              ? p.zips.filter((z) => used.has(z))
               : [];
           if (overlap.length)
             $("zl-add-feedback").append(
@@ -7512,7 +7520,7 @@ class ZipContactCounts {
                 { class: "zl-warning" },
                 overlap.length +
                   (model.addTarget === "new"
-                    ? " already exist. Remove Used or pending ZIPs before saving."
+                    ? " already exist. Remove Used, pending, or already New ZIPs before saving."
                     : " already Used. They will be highlighted and kept in this new row; no other action is taken."),
               ),
             );
@@ -7574,7 +7582,7 @@ class ZipContactCounts {
             "#zl-add-dialog .zl-dialog-description",
           ).textContent =
             model.addTarget === "new"
-              ? "Used or pending ZIPs must be removed. ZIPs already in another New entry are highlighted."
+              ? "Used, pending, or already New ZIPs must be removed before saving."
               : "All valid ZIPs are recorded; existing Used ZIPs are highlighted.";
           $("zl-source").closest("label").hidden = model.addTarget === "new";
           $("zl-add-form").reset();
@@ -7697,7 +7705,7 @@ class ZipContactCounts {
         function addCheckedToNew() {
           if (model.busy || !model.data) return;
           checker();
-          const zips = checker.values?.fresh || [];
+          const zips = checker.values?.addable || [];
           if (!zips.length) return;
           openAdd("new");
           $("zl-add-zips").value = zips.join(",");
