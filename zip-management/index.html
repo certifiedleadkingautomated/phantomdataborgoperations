@@ -6649,9 +6649,9 @@ class ZipContactCounts {
                     {
                       type: "button",
                       class: "zl-text-button",
-                      onclick: () => openErase("new", row),
+                      onclick: () => openErase("correct_new", row),
                     },
-                    "Erase (test)",
+                    "Remove entry",
                   ),
                 ),
               ),
@@ -6893,13 +6893,13 @@ class ZipContactCounts {
                           class: "zl-text-button",
                           onclick: () =>
                             openErase(
-                              r.status === "pending" ? "pending" : "row",
+                              r.status === "pending" ? "pending" : "correct_history",
                               r,
                             ),
                         },
                         r.status === "pending"
                           ? "Cancel request"
-                          : "Erase row (test)",
+                          : "Remove entry",
                       ),
                     ),
                   ),
@@ -7625,9 +7625,21 @@ class ZipContactCounts {
         }
         function openErase(kind, row) {
           if (model.busy || !model.data) return;
-          model.erase = { kind, row: row?.id };
+          model.erase = { kind, row: row?.id,
+            correction: kind === "correct_history" || kind === "correct_new" ? {
+              date: row.recorded_on, comment: row.comment,
+              remove_zips: row.zips.map(z => typeof z === "string" ? z : z.zip)
+            } : null
+          };
           model.dialogRevision = model.data.revision;
           $("zl-erase-error").textContent = "";
+          if (kind === "correct_history" || kind === "correct_new") {
+            $("zl-erase-title").textContent = kind === "correct_new" ? "Remove New ZIP entry?" : "Remove history entry?";
+            $("zl-erase-description").textContent = "Permanently remove all " + row.zips.length + " ZIPs from this entry without creating a deletion record? ZIPs in other entries and valid pending requests remain unchanged.";
+            $("zl-confirm-erase").textContent = "Remove entry";
+            $("zl-erase-dialog").showModal();
+            return;
+          }
           if (kind === "pending" || kind === "new") {
             $("zl-erase-title").textContent =
               kind === "pending"
@@ -7788,31 +7800,28 @@ class ZipContactCounts {
               "ZIPs removed from Used. History and deletion records preserved.",
             );
         });
+
+// BEGIN ENTRY REMOVAL REQUEST
+        function entryRemovalRequest(erase) {
+          const actions = { correct_history: "edit_history", correct_new: "edit_new", pending: "cancel_pending", new: "erase_new", deletion: "undo_deletion", row: "erase_row", all: "reset" };
+          if (!Object.prototype.hasOwnProperty.call(actions, erase.kind)) throw Error("Unknown entry action.");
+          if ((erase.kind === "correct_history" || erase.kind === "correct_new") && (!erase.correction || !Array.isArray(erase.correction.remove_zips) || !erase.correction.remove_zips.length)) throw Error("The entry changed. Reload and review.");
+          return { action: actions[erase.kind], payload: { row: erase.row, event: erase.row, ...(erase.correction || {}) } };
+        }
+// END ENTRY REMOVAL REQUEST
         $("zl-erase-form").addEventListener("submit", (e) => {
           e.preventDefault();
-          if (!model.busy)
-            void change(
-              model.erase.kind === "pending"
-                ? "cancel_pending"
-                : model.erase.kind === "new"
-                  ? "erase_new"
-                  : model.erase.kind === "deletion"
-                    ? "undo_deletion"
-                    : model.erase.kind === "row"
-                      ? "erase_row"
-                      : "reset",
-              { row: model.erase.row, event: model.erase.row },
-              "zl-erase-error",
-              model.erase.kind === "pending"
-                ? "Pending request cancelled; ZIPs returned to New."
-                : model.erase.kind === "new"
-                  ? "New entry erased."
-                  : model.erase.kind === "deletion"
-                    ? "Deletion undone and its record erased."
-                    : model.erase.kind === "row"
-                      ? "Test history row erased."
-                      : "All ZIP test data for this subaccount erased.",
-            );
+          if (model.busy) return;
+          let request;
+          try { request = entryRemovalRequest(model.erase); }
+          catch (e) { $("zl-erase-error").textContent = e.message; return; }
+          void change(request.action, request.payload, "zl-erase-error",
+            model.erase.correction ? "Entry removed without a deletion record."
+              : model.erase.kind === "pending" ? "Pending request cancelled; ZIPs returned to New."
+              : model.erase.kind === "new" ? "New entry erased."
+              : model.erase.kind === "deletion" ? "Deletion undone and its record erased."
+              : model.erase.kind === "row" ? "Test history row erased."
+              : "All ZIP test data for this subaccount erased.");
         });
         document.querySelectorAll(".zl-dialog [data-close]").forEach((b) =>
           b.addEventListener("click", () => {
