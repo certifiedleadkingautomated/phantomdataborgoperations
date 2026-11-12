@@ -6250,8 +6250,9 @@ const ZipMap = (() => {
     pinLayer.clearLayers();projected=ZipMapCore.project(data,lookup,data.home_zip);legend();
     for(const point of projected.pins){
       const status=point.type==='used'?'Used':point.type==='new'?'New':'Home';
-      L.marker([point.lat,point.lng],{icon:icon(point.home?colors.home:colors[point.type],point.home),pmIgnore:true,zIndexOffset:point.home?1000:0,keyboard:true,title:point.zip+' · '+(point.home?'Home · ':'')+status})
-        .bindPopup(popup(point,(point.home?'Home ZIP'+(status==='Home'?'':' · '+status):status))).addTo(pinLayer);
+      const label=point.home?'Home ZIP'+(status==='Home'?'':' · '+status):status;
+      L.marker([point.lat,point.lng],{icon:icon(point.home?colors.home:colors[point.type],point.home),pmIgnore:true,zIndexOffset:point.home?1000:0,keyboard:true,title:point.zip+' · '+label})
+        .bindPopup(popup(point,label)).addTo(pinLayer);
     }
     if(fit){
       const points=projected.pins.map(p=>[p.lat,p.lng]);
@@ -6259,7 +6260,7 @@ const ZipMap = (() => {
       else if(points.length)map.fitBounds(points,{padding:[44,44],maxZoom:12});
       else map.setView([39.5,-98.35],4);
     }
-    const missing=projected.missing.used.length+projected.missing.new.length+(projected.homeMissing?1:0);
+    const missing=new Set([...projected.missing.used,...projected.missing.new,...(projected.homeMissing?[projected.homeZip]:[])]).size;
     $('zl-map-reference').textContent=lookup.size?lookup.size.toLocaleString()+' ZIP coordinates loaded'+(missing?' · '+missing+' listed/Home ZIPs have no coordinates.':'.'):'Upload uszips.csv with lat and lng columns to plot ZIPs and select additional areas. Older city/state-only uploads need to be uploaded again.';
   }
   function vertices(){return polygon?polygon.getLatLngs()[0].map(p=>({lat:p.lat,lng:p.lng})):[];}
