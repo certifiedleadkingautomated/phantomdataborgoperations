@@ -6226,7 +6226,7 @@ const ZipMapCore = (() => {
 
 const ZipMap = (() => {
   const $=id=>document.getElementById(id);
-  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, searchLayer;
+  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, searchLayer, radiusLayer;
   let session=0, selectionVersion=0, pinVersion=0, editTimer, selected=[], selectedSet=new Set(), baseMarkers=new Map(), areaMarkers=new Map();
   let searchedZip=null, radiusInfo=null, lastRadius=5;
   const colors={used:'#3388ff',new:'#f58a18',home:'#e04c68',selected:'#a855f7',search:'#089c9c'};
@@ -6283,6 +6283,13 @@ const ZipMap = (() => {
     L.circleMarker([point.lat,point.lng],{radius:20,weight:3,color:colors.search,fillColor:colors.search,fillOpacity:.12,interactive:false,pmIgnore:true}).addTo(searchLayer);
     if(focus){map.setView([point.lat,point.lng],Math.max(map.getZoom(),12));pin.openPopup();}
   }
+  function updateRadiusOrigin() {
+    if(!radiusLayer)return;
+    radiusLayer.clearLayers();
+    if(!polygon || !radiusInfo || radiusInfo.edited)return;
+    const point=lookup.get(radiusInfo.zip);if(!point)return;
+    L.circleMarker([point.lat,point.lng],{radius:24,weight:3,color:'#d59a15',fillColor:'#d59a15',fillOpacity:.10,interactive:false,pmIgnore:true,className:'zl-radius-origin'}).addTo(radiusLayer);
+  }
   function clearSearch() {
     searchedZip=null;$('zl-map-search').value='';$('zl-map-search-clear').hidden=true;
     if(searchLayer)searchLayer.clearLayers();if(map)renderAreaPins();
@@ -6325,7 +6332,7 @@ const ZipMap = (() => {
   }
   function vertices(){return polygon?polygon.getLatLngs()[0].map(p=>({lat:p.lat,lng:p.lng})):[];}
   function clearArea() {
-    clearTimeout(editTimer);selectionVersion++;pinVersion++;selected=[];selectedSet.clear();radiusInfo=null;
+    clearTimeout(editTimer);selectionVersion++;pinVersion++;selected=[];selectedSet.clear();radiusInfo=null;updateRadiusOrigin();
     if(map){map.pm.disableDraw();if(polygon)map.removeLayer(polygon);areaLayer.clearLayers();areaMarkers.clear();}
     polygon=null;drawing=false;$('zl-map-selected').value='';$('zl-map-copy').disabled=true;
     $('zl-map-measure').textContent='';$('zl-map-help').textContent='Double-click the map or choose Draw area. Drag the vertices to adjust your selection.';
@@ -6368,8 +6375,8 @@ const ZipMap = (() => {
   function attachArea(layer,origin=null) {
     polygon=layer;radiusInfo=origin;drawing=false;
     polygon.pm.enable({allowSelfIntersection:false,snappable:false});
-    const edited=()=>{if(radiusInfo)radiusInfo.edited=true;queueSelection();};
-    polygon.on('pm:edit',edited);polygon.on('pm:vertexadded',edited);polygon.on('pm:vertexremoved',edited);selectArea();
+    const edited=()=>{if(radiusInfo)radiusInfo.edited=true;updateRadiusOrigin();queueSelection();};
+    polygon.on('pm:edit',edited);polygon.on('pm:vertexadded',edited);polygon.on('pm:vertexremoved',edited);updateRadiusOrigin();selectArea();
   }
   function drawRadius(point,radius) {
     let ring;try{ring=ZipMapCore.radiusPolygon(point,radius);}catch(error){setError(error.message);return;}
@@ -6382,7 +6389,7 @@ const ZipMap = (() => {
     if(map)return;
     map=L.map('zl-map-canvas',{doubleClickZoom:false,worldCopyJump:true,preferCanvas:true}).setView([39.5,-98.35],4);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',pmIgnore:true}).addTo(map);
-    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);searchLayer=L.layerGroup().addTo(map);
+    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);searchLayer=L.layerGroup().addTo(map);radiusLayer=L.layerGroup().addTo(map);
     map.on('moveend zoomend',renderAreaPins);
     map.on('dblclick',()=>{if(!drawing)draw();});
     map.on('pm:create',event=>{
