@@ -24,17 +24,31 @@ miles, matching the supplied Apps Script behavior. The copied list contains
 additional ZIP centroids inside/on the polygon, excluding Used, New, and pending
 ZIPs. Drawing or copying does not add, delete, or change ZIP usage.
 
-Purple canvas points show additional ZIPs in the selected polygon; they render in
-small frame batches for larger selections. The full sorted list is retained and
+Purple pins show additional ZIPs in the selected polygon, matching the other
+pin icons. Visible pins render in small frame batches and are reused as the view
+moves, keeping their popups stable. The full sorted list is retained and
 copied without a display cap. The local reference is read once each time the map
 opens; edits use that in-memory lookup, with no sheet or provider requests.
 
-**Fit ZIPs** restores the view to the current Used/New/Home pins. Legend entries
+The initial view fits the current Used/New/Home pins. Legend entries
 expand to show mapped and missing ZIPs. **Clear area** removes only the polygon
 selection. Escape first clears an active polygon/drawing; otherwise it closes the
 dialog. A missing library/data source produces a visible retry instruction.
 
-ZIP search and an editable N-mile radius are deferred to the next feature.
+The **Find ZIP** field searches the local uploaded coordinate lookup and pads
+short ZIPs to five digits. It centers on the result, opens its popup and highlights
+it with a teal ring without changing an existing Used/New/Home color or status.
+ZIPs outside those lists receive a temporary search pin; searching never records
+ZIP usage. Missing coordinates produce a clear error without external geocoding.
+The clear-search button removes only that highlight, retaining the drawn area.
+
+Every individual pin's popup includes a radius in miles and **Draw radius**.
+This creates a 64-vertex geodesic polygon at the requested distance, replacing
+only the previous temporary selection. It starts circular but uses the same
+vertex/midpoint editing as a manually drawn polygon. Selected ZIPs and measurements
+update after edits. The help text distinguishes the original radius from the
+later edited area; editing does not claim the boundary is still a true circle.
+Valid radii are 0.1–5,000 miles. No ZIP records, GHL contacts or assignments change.
 
 `tests/fixtures/map-zips.csv` provides synthetic reference points for browser
 tests. `node --test zip-management/tests/*.test.mjs` runs all local regressions.

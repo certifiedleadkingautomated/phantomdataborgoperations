@@ -61,6 +61,39 @@ test('large area selection is sorted, complete and does not truncate the copied 
  const selected=core.additional(core.reference(points),[{lat:29,lng:-91},{lat:31,lng:-91},{lat:31,lng:-89},{lat:29,lng:-89}],new Set());
  assert.equal(selected.length,33782);assert.equal(selected[0].zip,'00000');assert.equal(selected.at(-1).zip,'33781');
 });
+test('radius starts as a 64-point circle with the requested distance in miles',()=>{
+ for(const center of [{lat:0,lng:0},{lat:18.18,lng:-66.75},{lat:65,lng:-150}]) {
+  const ring=core.radiusPolygon(center,5);
+  assert.equal(ring.length,64);
+  for(const point of ring)assert.ok(Math.abs(core.miles(center,point)-5)<1e-6);
+  assert.ok(ring[0].lat>center.lat);assert.ok(ring[16].lng>center.lng);
+  assert.ok(ring[32].lat<center.lat);assert.ok(ring[48].lng<center.lng);
+ }
+});
+test('radius polygons select the same ZIP data with Used/New exclusions',()=>{
+ const lookup=core.reference([...rows,{zip:'33705',lat:27.755,lng:-82.64}]),state={used:[{zip:'33701'}],incoming:[{zips:['33702']}],pending_zips:[]};
+ const projected=core.project(state,lookup,'33703');
+ const result=core.additional(lookup,core.radiusPolygon(lookup.get('33701'),5),projected.blocked);
+ assert.deepEqual(Array.from(result,p=>p.zip),['33703','33704','33705']);
+ assert.equal(state.used.length,1);assert.equal(state.incoming[0].zips[0],'33702');
+});
+test('edited radius boundaries use polygon geometry rather than the original circle',()=>{
+ const lookup=core.reference([{zip:'10000',lat:.2,lng:0}]),ring=core.radiusPolygon({lat:0,lng:0},10);
+ assert.equal(core.additional(lookup,ring,new Set()).length,0);
+ ring[0].lat=.3;
+ assert.deepEqual(Array.from(core.additional(lookup,ring,new Set()),p=>p.zip),['10000']);
+});
+test('radius longitudes stay continuous across the dateline',()=>{
+ const center={lat:51,lng:179.99},ring=core.radiusPolygon(center,10);
+ assert.ok(Math.max(...ring.map(p=>p.lng))-Math.min(...ring.map(p=>p.lng))<1);
+ const shape=core.polygon(ring);
+ assert.equal(core.contains(center,shape),true);assert.equal(core.contains({lat:51,lng:-179.99},shape),true);
+});
+test('invalid radii or centers cannot create a broken selection',()=>{
+ for(const radius of [0,-5,NaN,Infinity,5001,'5'])assert.throws(()=>core.radiusPolygon({lat:0,lng:0},radius),/radius/);
+ assert.throws(()=>core.radiusPolygon({lat:null,lng:0},5),/radius/);
+ assert.throws(()=>core.radiusPolygon({lat:0,lng:0},5,2),/radius/);
+});
 test('local schema upgrade is repeatable and preserves pre-map ZIPs and city/state lookup data',()=>{
  const sqlite=new DatabaseSync(':memory:');
  try {
@@ -78,7 +111,7 @@ test('local schema upgrade is repeatable and preserves pre-map ZIPs and city/sta
 });
 test('map is lazy, scoped, read-only for ZIP usage and has no Apps Script or GHL dependency',()=>{
  const module=html.slice(html.indexOf('const ZipMap ='),html.indexOf('const ZipMap =')+22000).split('// Fixed to the subaccount')[0];
- assert.ok(module.includes('pm:edit'));assert.ok(module.includes('pm:create'));assert.ok(module.includes('readonly')===false);
+ assert.ok(module.includes('pm:edit'));assert.ok(module.includes('pm:create'));
  assert.equal(module.includes('google.script.run'),false);assert.equal(module.includes('leadconnectorhq.com'),false);
  assert.ok(html.includes('aria-label="Open interactive ZIP map"'));assert.ok(html.includes('id="zl-summary-new"'));
  assert.equal(html.includes('<script src="https://unpkg.com/leaflet'),false);

@@ -3800,6 +3800,11 @@
 .zl-map-top h2{font-size:16px;margin:0 auto 0 0;white-space:nowrap}
 .zl-map-top form{display:flex;align-items:center;gap:7px;margin:0;font-size:11px;color:#64748b}
 .zl-map-top input{width:78px;padding:6px 7px;border:1px solid #d8e0e9;border-radius:6px;font-size:12px}
+.zl-map-top #zl-map-search{width:110px}
+.zl-map-radius-form{display:flex;align-items:flex-end;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid #e2e7ee}
+.zl-map-radius-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#607188}
+.zl-map-radius-form input{width:82px;min-height:29px;padding:5px 7px;border:1px solid #d8e0e9;border-radius:5px;font:inherit;color:#243b55}
+.zl-map-radius-form button{min-height:29px;padding:5px 9px;border:1px solid #ccd9e9;border-radius:5px;background:#f4f7fc;color:#345579;font-size:11px;white-space:nowrap}
 .zl-map-top button,.zl-map-panel button{font-size:11px;padding:7px 10px;border:1px solid #d9e1eb;border-radius:7px;background:#fff;color:#365272}
 .zl-map-top #zl-map-close{border:0;font-size:22px;line-height:1;padding:3px 6px}
 .zl-map-body{display:grid;grid-template-columns:minmax(0,1fr) 270px;min-height:0;flex:1}
@@ -4654,12 +4659,16 @@
 <dialog id="zl-map-dialog" class="zl-map-dialog" aria-labelledby="zl-map-title">
   <header class="zl-map-top">
     <h2 id="zl-map-title">ZIP map</h2>
+    <form id="zl-map-search-form" role="search" aria-label="Find a ZIP on the map">
+      <input id="zl-map-search" type="search" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="Find ZIP" aria-label="Find ZIP on map" />
+      <button type="submit" id="zl-map-search-submit">Find</button>
+      <button type="button" id="zl-map-search-clear" aria-label="Clear ZIP search" hidden>×</button>
+    </form>
     <form id="zl-map-home-form">
       <label for="zl-map-home">Home ZIP <span>(test)</span></label>
       <input id="zl-map-home" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="Optional" aria-label="Home ZIP for this test subaccount" />
       <button type="submit" id="zl-map-home-save">Save</button>
     </form>
-    <button type="button" id="zl-map-fit">Fit ZIPs</button>
     <button type="button" id="zl-map-close" aria-label="Close ZIP map">×</button>
   </header>
   <p id="zl-map-loading" role="status" hidden>Loading map and local ZIP coordinates…</p>
@@ -6198,15 +6207,28 @@ const ZipMapCore = (() => {
     const shape=polygon(vertices);if(!shape)return [];
     return [...lookup.values()].filter(p=>!blocked.has(p.zip)&&contains(p,shape)).sort((a,b)=>a.zip.localeCompare(b.zip));
   }
-  return {zip,validPoint,polygon,contains,miles,dimensions,reference,project,additional};
+  function radiusPolygon(center,radius,steps=64) {
+    if(!validPoint(center) || !Number.isFinite(radius) || radius<.1 || radius>5000 || !Number.isInteger(steps) || steps<12 || steps>256)
+      throw Error('Enter a radius from 0.1 to 5,000 miles.');
+    const rad=n=>n*Math.PI/180,deg=n=>n*180/Math.PI;
+    const latitude=rad(center.lat),lng=rad(center.lng),distance=radius/3958.7613;
+    return Array.from({length:steps},(_,i)=>{
+      const bearing=2*Math.PI*i/steps;
+      const lat=Math.asin(Math.max(-1,Math.min(1,Math.sin(latitude)*Math.cos(distance)+Math.cos(latitude)*Math.sin(distance)*Math.cos(bearing))));
+      const lon=lng+Math.atan2(Math.sin(bearing)*Math.sin(distance)*Math.cos(latitude),Math.cos(distance)-Math.sin(latitude)*Math.sin(lat));
+      return {lat:deg(lat),lng:center.lng+longitude(deg(lon)-center.lng)};
+    });
+  }
+  return {zip,validPoint,polygon,contains,miles,dimensions,reference,project,additional,radiusPolygon};
 })();
 // END ZIP MAP CORE
 
 const ZipMap = (() => {
   const $=id=>document.getElementById(id);
-  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, renderer;
-  let session=0, selectionVersion=0, editTimer, selected=[];
-  const colors={used:'#3388ff',new:'#f58a18',home:'#e04c68',selected:'#a855f7'};
+  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, searchLayer;
+  let session=0, selectionVersion=0, pinVersion=0, editTimer, selected=[], selectedSet=new Set(), baseMarkers=new Map(), areaMarkers=new Map();
+  let searchedZip=null, radiusInfo=null, lastRadius=5;
+  const colors={used:'#3388ff',new:'#f58a18',home:'#e04c68',selected:'#a855f7',search:'#089c9c'};
   function asset(tag,url) {
     return new Promise((resolve,reject)=>{
       const element=document.createElement(tag);let timer;
@@ -6229,12 +6251,48 @@ const ZipMap = (() => {
   function popup(point,label) {
     const div=node('div');div.append(node('strong',point.zip),node('div',label));
     if(point.city||point.state_name)div.append(node('div',[point.city,point.state_name].filter(Boolean).join(', ')));
-    div.append(node('small',point.lat.toFixed(5)+', '+point.lng.toFixed(5)));return div;
+    div.append(node('small',point.lat.toFixed(5)+', '+point.lng.toFixed(5)));
+    const form=node('form',undefined,'zl-map-radius-form'),field=node('input'),caption=node('label','Radius (miles)'),button=node('button','Draw radius');
+    field.type='number';field.min='.1';field.max='5000';field.step='any';field.required=true;field.value=String(lastRadius);
+    field.setAttribute('aria-label','Radius in miles around ZIP '+point.zip);caption.append(field);
+    button.type='submit';form.append(caption,button);div.append(form);
+    L.DomEvent.disableClickPropagation(form);
+    form.addEventListener('submit',event=>{event.preventDefault();drawRadius(point,Number(field.value));});
+    return div;
   }
   function icon(color,home=false) {
     return L.divIcon({className:'zl-map-marker',html:'<span style="--pin:'+color+'">'+(home?'⌂':'')+'</span>',iconSize:[24,30],iconAnchor:[12,29],popupAnchor:[0,-26]});
   }
   function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
+  function marker(point,color,label,home=false) {
+    return L.marker([point.lat,point.lng],{icon:icon(color,home),pmIgnore:true,zIndexOffset:home?1000:0,keyboard:true,title:point.zip+' · '+label})
+      .bindPopup(()=>popup(point,label));
+  }
+  function status(point) {
+    const base=projected.pins.find(p=>p.zip===point.zip);
+    if(base)return base.home?'Home ZIP'+(base.type==='home'?'':' · '+(base.type==='used'?'Used':'New')):(base.type==='used'?'Used':'New');
+    return (data.pending_zips||[]).includes(point.zip)?'Pending contact request':selectedSet.has(point.zip)?'Selected area':'Available ZIP';
+  }
+  function updateSearch(focus=false) {
+    if(!map)return;
+    searchLayer.clearLayers();
+    const point=lookup.get(searchedZip);if(!point)return;
+    const base=baseMarkers.get(searchedZip);
+    const pin=base || marker(point,selectedSet.has(point.zip)?colors.selected:colors.search,status(point)).addTo(searchLayer);
+    L.circleMarker([point.lat,point.lng],{radius:20,weight:3,color:colors.search,fillColor:colors.search,fillOpacity:.12,interactive:false,pmIgnore:true}).addTo(searchLayer);
+    if(focus){map.setView([point.lat,point.lng],Math.max(map.getZoom(),12));pin.openPopup();}
+  }
+  function clearSearch() {
+    searchedZip=null;$('zl-map-search').value='';$('zl-map-search-clear').hidden=true;
+    if(searchLayer)searchLayer.clearLayers();if(map)renderAreaPins();
+  }
+  function findZip() {
+    const code=ZipMapCore.zip($('zl-map-search').value);
+    if(!code){setError('Enter one ZIP code of up to five digits.');return;}
+    if(!lookup.has(code)){setError('ZIP '+code+' has no coordinates in the uploaded CSV.');return;}
+    setError('');searchedZip=code;$('zl-map-search').value=code;$('zl-map-search-clear').hidden=false;
+    renderAreaPins();updateSearch(true);
+  }
   function legend() {
     const target=$('zl-map-legend');target.replaceChildren();
     for(const [type,label]of [['used','Used'],['new','New']]){
@@ -6245,14 +6303,14 @@ const ZipMap = (() => {
     const home=node('div',undefined,'zl-map-home-legend'),dot=node('i',undefined,'zl-map-dot');dot.style.background=colors.home;
     home.append(dot,document.createTextNode(projected.homeZip?'Home '+projected.homeZip+(projected.homeMissing?' · no coordinates':''):'Home ZIP not set'));target.append(home);
     target.append(node('p','Purple: additional available ZIPs in the selected area.','zl-map-legend-help'));
+    target.append(node('p','Teal ring: searched ZIP.','zl-map-legend-help'));
   }
   function pins(fit) {
-    pinLayer.clearLayers();projected=ZipMapCore.project(data,lookup,data.home_zip);legend();
+    pinLayer.clearLayers();baseMarkers.clear();projected=ZipMapCore.project(data,lookup,data.home_zip);legend();
     for(const point of projected.pins){
       const status=point.type==='used'?'Used':point.type==='new'?'New':'Home';
       const label=point.home?'Home ZIP'+(status==='Home'?'':' · '+status):status;
-      L.marker([point.lat,point.lng],{icon:icon(point.home?colors.home:colors[point.type],point.home),pmIgnore:true,zIndexOffset:point.home?1000:0,keyboard:true,title:point.zip+' · '+label})
-        .bindPopup(popup(point,label)).addTo(pinLayer);
+      baseMarkers.set(point.zip,marker(point,point.home?colors.home:colors[point.type],label,point.home).addTo(pinLayer));
     }
     if(fit){
       const points=projected.pins.map(p=>[p.lat,p.lng]);
@@ -6262,30 +6320,41 @@ const ZipMap = (() => {
     }
     const missing=new Set([...projected.missing.used,...projected.missing.new,...(projected.homeMissing?[projected.homeZip]:[])]).size;
     $('zl-map-reference').textContent=lookup.size?lookup.size.toLocaleString()+' ZIP coordinates loaded'+(missing?' · '+missing+' listed/Home ZIPs have no coordinates.':'.'):'Upload uszips.csv with lat and lng columns to plot ZIPs and select additional areas. Older city/state-only uploads need to be uploaded again.';
+    updateSearch();
   }
   function vertices(){return polygon?polygon.getLatLngs()[0].map(p=>({lat:p.lat,lng:p.lng})):[];}
   function clearArea() {
-    clearTimeout(editTimer);selectionVersion++;selected=[];
-    if(map){map.pm.disableDraw();if(polygon)map.removeLayer(polygon);areaLayer.clearLayers();}
+    clearTimeout(editTimer);selectionVersion++;pinVersion++;selected=[];selectedSet.clear();radiusInfo=null;
+    if(map){map.pm.disableDraw();if(polygon)map.removeLayer(polygon);areaLayer.clearLayers();areaMarkers.clear();}
     polygon=null;drawing=false;$('zl-map-selected').value='';$('zl-map-copy').disabled=true;
     $('zl-map-measure').textContent='';$('zl-map-help').textContent='Double-click the map or choose Draw area. Drag the vertices to adjust your selection.';
+    updateSearch();
   }
   function selectArea() {
     if(!polygon || !$('zl-map-dialog').open)return;
     const revision=++selectionVersion,points=vertices(),dimensions=ZipMapCore.dimensions(points);
     $('zl-map-measure').textContent=dimensions?'Width '+dimensions.width.toFixed(1)+' mi · Height '+dimensions.height.toFixed(1)+' mi':'';
     selected=ZipMapCore.additional(lookup,points,projected.blocked);
+    selectedSet=new Set(selected.map(p=>p.zip));
     $('zl-map-selected').value=selected.map(p=>p.zip).join(',');$('zl-map-copy').disabled=!selected.length;
-    $('zl-map-help').textContent=lookup.size?selected.length.toLocaleString()+' additional ZIPs. Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
-    areaLayer.clearLayers();let i=0;
-    // Canvas and small animation-frame batches keep large selections responsive.
+    const origin=radiusInfo?(radiusInfo.edited?'Edited area around ZIP '+radiusInfo.zip+'. ':'Initial '+radiusInfo.miles+'-mile radius around ZIP '+radiusInfo.zip+'. '):'';
+    $('zl-map-help').textContent=lookup.size?origin+selected.length.toLocaleString()+' additional ZIPs. Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
+    renderAreaPins();updateSearch();
+  }
+  function renderAreaPins() {
+    if(!map)return;
+    const revision=++pinVersion;
+    const bounds=map.getBounds().pad(.1),visible=selected.filter(p=>p.zip!==projected.homeZip&&p.zip!==searchedZip&&bounds.contains([p.lat,p.lng]));let i=0;
+    const wanted=new Set(visible.map(p=>p.zip));
+    for(const [code,pin]of areaMarkers)if(!wanted.has(code)){areaLayer.removeLayer(pin);areaMarkers.delete(code);}
+    // Real pin icons, rendered in viewport-sized frame batches. The full ZIP
+    // selection is retained independently of which points are currently visible.
     const batch=()=>{
-      if(revision!==selectionVersion || !$('zl-map-dialog').open)return;
-      for(let n=0;n<400&&i<selected.length;n++,i++){
-        const p=selected[i];if(p.zip===projected.homeZip)continue;
-        L.circleMarker([p.lat,p.lng],{renderer,radius:5,color:'#fff',weight:1.3,fillColor:colors.selected,fillOpacity:.92,pmIgnore:true}).bindPopup(popup(p,'Selected area')).addTo(areaLayer);
+      if(revision!==pinVersion || !$('zl-map-dialog').open)return;
+      for(let n=0;n<150&&i<visible.length;n++,i++){
+        const p=visible[i];if(!areaMarkers.has(p.zip))areaMarkers.set(p.zip,marker(p,colors.selected,'Selected area').addTo(areaLayer));
       }
-      if(i<selected.length)requestAnimationFrame(batch);
+      if(i<visible.length)requestAnimationFrame(batch);
     };batch();
   }
   function queueSelection(){clearTimeout(editTimer);selectionVersion++;editTimer=setTimeout(selectArea,150);}
@@ -6295,18 +6364,30 @@ const ZipMap = (() => {
     drawing=true;$('zl-map-help').textContent='Click to place boundary points. Click the first point or double-click to finish.';
     map.pm.enableDraw('Polygon',{snappable:false,allowSelfIntersection:false,templineStyle:{color:colors.selected},hintlineStyle:{color:colors.selected,dashArray:[5,5]},pathOptions:{color:colors.selected,fillColor:colors.selected,fillOpacity:.13,weight:2}});
   }
+  function attachArea(layer,origin=null) {
+    polygon=layer;radiusInfo=origin;drawing=false;
+    polygon.pm.enable({allowSelfIntersection:false,snappable:false});
+    const edited=()=>{if(radiusInfo)radiusInfo.edited=true;queueSelection();};
+    polygon.on('pm:edit',edited);polygon.on('pm:vertexadded',edited);polygon.on('pm:vertexremoved',edited);selectArea();
+  }
+  function drawRadius(point,radius) {
+    let ring;try{ring=ZipMapCore.radiusPolygon(point,radius);}catch(error){setError(error.message);return;}
+    setError('');lastRadius=radius;map.closePopup();clearArea();
+    const layer=L.polygon(ring,{color:colors.selected,fillColor:colors.selected,fillOpacity:.13,weight:2}).addTo(map);
+    attachArea(layer,{zip:point.zip,miles:radius,edited:false});
+    map.fitBounds(layer.getBounds(),{padding:[38,38],maxZoom:18});
+  }
   function setup() {
     if(map)return;
     map=L.map('zl-map-canvas',{doubleClickZoom:false,worldCopyJump:true,preferCanvas:true}).setView([39.5,-98.35],4);
-    renderer=L.canvas({padding:.3});
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',pmIgnore:true}).addTo(map);
-    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);
+    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);searchLayer=L.layerGroup().addTo(map);
+    map.on('moveend zoomend',renderAreaPins);
     map.on('dblclick',()=>{if(!drawing)draw();});
     map.on('pm:create',event=>{
       if(event.shape!=='Polygon')return;
       if(polygon){map.removeLayer(event.layer);return;}
-      polygon=event.layer;drawing=false;polygon.pm.enable({allowSelfIntersection:false,snappable:false});
-      polygon.on('pm:edit',queueSelection);polygon.on('pm:vertexadded',queueSelection);polygon.on('pm:vertexremoved',queueSelection);selectArea();
+      attachArea(event.layer);
     });
     map.on('pm:drawend',()=>{drawing=false;});
   }
@@ -6318,7 +6399,7 @@ const ZipMap = (() => {
     try {
       const [,rows]=await Promise.all([libraries(),config.readReference()]);
       if(current!==session||!dialog.open)return;
-      data=config.getSnapshot();lookup=ZipMapCore.reference(rows);setup();clearArea();
+      data=config.getSnapshot();lookup=ZipMapCore.reference(rows);setup();clearArea();clearSearch();
       map.invalidateSize();pins(true);$('zl-map-draw').disabled=!lookup.size;
     } catch(error){if(current===session)setError(error.message);}
     finally {if(current===session)$('zl-map-loading').hidden=true;}
@@ -6327,7 +6408,9 @@ const ZipMap = (() => {
   $('zl-map-dialog').addEventListener('close',()=>{session++;clearTimeout(editTimer);selectionVersion++;if(map)clearArea();});
   $('zl-map-dialog').addEventListener('cancel',event=>{if(polygon||drawing){event.preventDefault();clearArea();}});
   $('zl-map-draw').addEventListener('click',draw);$('zl-map-clear').addEventListener('click',clearArea);
-  $('zl-map-fit').addEventListener('click',()=>{if(map)pins(true);});
+  $('zl-map-search-form').addEventListener('submit',event=>{event.preventDefault();if(map&&lookup.size)findZip();else setError('Upload ZIP coordinates before searching.');});
+  $('zl-map-search-clear').addEventListener('click',()=>{clearSearch();setError('');});
+  $('zl-map-search').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();clearSearch();setError('');}});
   $('zl-map-copy').addEventListener('click',async()=>{
     const value=$('zl-map-selected').value;if(!value)return;
     try{await navigator.clipboard.writeText(value);$('zl-map-help').textContent='ZIPs copied.';}
