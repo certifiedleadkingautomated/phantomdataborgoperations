@@ -3787,6 +3787,45 @@
       }
       #zip-workspace .zl-chip[data-used-zip] .zl-used-zip-code { line-height: 16px; }
       #zip-workspace .zl-chip[data-used-zip] .zl-contact-count { height: 10px; line-height: 10px; }
+/* ZIP summary and map are isolated from the decorative portal shell. */
+.zl-zip-summary{display:flex;align-items:center;gap:24px;margin-left:auto}
+.zl-zip-summary>div{display:flex;flex-direction:column;gap:4px;min-width:62px}
+.zl-zip-summary strong{font-size:25px;line-height:1.15;color:#172b4d;font-weight:650;font-variant-numeric:tabular-nums}
+.zl-map-launch{display:grid;place-items:center;width:40px;height:40px;background:#f5f7fb;color:#375983;border:1px solid #dce3ec;border-radius:10px}
+.zl-map-launch:hover{background:#eaf0fa}
+.zl-map-dialog{width:min(1500px,calc(100vw - 36px));height:calc(100dvh - 36px);max-width:none;max-height:none;padding:0;border:1px solid #d8e0eb;border-radius:14px;background:#fff;color:#23354d;box-shadow:0 20px 80px #13243c40;overflow:hidden}
+.zl-map-dialog::backdrop{background:#101b2d66;backdrop-filter:blur(2px)}
+.zl-map-dialog[open]{display:flex;flex-direction:column}
+.zl-map-top{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #e2e7ee;flex-wrap:wrap}
+.zl-map-top h2{font-size:16px;margin:0 auto 0 0;white-space:nowrap}
+.zl-map-top form{display:flex;align-items:center;gap:7px;margin:0;font-size:11px;color:#64748b}
+.zl-map-top input{width:78px;padding:6px 7px;border:1px solid #d8e0e9;border-radius:6px;font-size:12px}
+.zl-map-top button,.zl-map-panel button{font-size:11px;padding:7px 10px;border:1px solid #d9e1eb;border-radius:7px;background:#fff;color:#365272}
+.zl-map-top #zl-map-close{border:0;font-size:22px;line-height:1;padding:3px 6px}
+.zl-map-body{display:grid;grid-template-columns:minmax(0,1fr) 270px;min-height:0;flex:1}
+#zl-map-canvas{min-height:240px;height:100%;background:#edf1f5;z-index:0;outline:none}
+.zl-map-panel{padding:14px;overflow:auto;border-left:1px solid #e0e6ee;font-size:12px;background:#fff}
+.zl-map-panel h3{font-size:13px;margin:0 0 10px}
+.zl-map-panel p{font-size:11px;line-height:1.6;color:#6a7b8f}
+.zl-map-panel textarea{width:100%;min-height:110px;padding:8px;resize:vertical;font-size:11px;line-height:1.7;border:1px solid #d8e1eb;border-radius:7px;box-sizing:border-box;color:#334c69}
+.zl-map-panel-actions{display:flex;gap:6px;margin-top:8px}
+#zl-map-measure{font-size:11px;color:#475e79;min-height:18px;margin:8px 0;font-variant-numeric:tabular-nums}
+.zl-map-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:0;flex-shrink:0}
+#zl-map-legend{margin-top:20px;border-top:1px solid #e5eaf0;padding-top:12px}
+#zl-map-legend details{padding:7px 0}
+#zl-map-legend summary{cursor:pointer;font-weight:550;font-size:12px}
+#zl-map-legend details strong{display:block;font-size:10px;margin-top:12px;color:#62758d}
+#zl-map-legend details p{max-height:130px;overflow:auto;overflow-wrap:anywhere;margin:4px 0;user-select:text}
+.zl-map-home-legend{padding:8px 0;font-size:11px}
+#zl-map-reference{border-top:1px solid #e5eaf0;padding-top:12px}
+#zl-map-error,#zl-map-loading{margin:0;padding:9px 16px;font-size:12px;line-height:1.5;background:#f6f8fc}
+#zl-map-error{color:#ac3e45;background:#fff3f2}
+.zl-map-marker{background:none;border:none}
+.zl-map-marker>span{display:grid;place-items:center;position:relative;width:23px;height:23px;background:var(--pin);border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 4px #0005;color:white;font-size:16px;font-weight:bold}
+.zl-map-marker>span:empty:after{content:'';width:7px;height:7px;background:white;border-radius:50%}
+.zl-map-marker>span:not(:empty){font-size:17px}
+@media(max-width:760px){.zl-zip-summary{gap:14px}.zl-map-dialog{width:calc(100vw - 12px);height:calc(100dvh - 12px);border-radius:10px}.zl-map-top{gap:8px;padding:10px}.zl-map-body{grid-template-columns:1fr;grid-template-rows:minmax(240px,1fr) 225px}.zl-map-panel{border-left:0;border-top:1px solid #e0e6ee;display:grid;grid-template-columns:1fr 1fr;column-gap:18px}.zl-map-panel textarea{min-height:70px}#zl-map-legend{margin:0;padding:0;border:0}#zl-map-reference{grid-column:1/-1}.zl-account-connection{width:100%}}
+
     </style>
   </head>
   <body>
@@ -4059,6 +4098,13 @@
             <div class="zl-account-metric">
               <span class="zl-account-label">Total contacts in Go High Level</span>
               <strong id="zl-account-total" data-state="disconnected" aria-live="polite" aria-label="Total contacts in Go High Level: not connected">—</strong>
+            </div>
+            <div class="zl-zip-summary" aria-label="ZIP totals">
+              <div><span class="zl-account-label">Used ZIPs</span><strong id="zl-summary-used">0</strong></div>
+              <div><span class="zl-account-label">New ZIPs</span><strong id="zl-summary-new">0</strong></div>
+              <button type="button" id="zl-open-map" class="zl-map-launch" aria-label="Open interactive ZIP map" title="Open ZIP map">
+                <svg viewBox="0 0 24 24" width="23" height="23" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              </button>
             </div>
             <div class="zl-account-connection">
               <span id="zl-contact-status" role="status">Connect GHL for contact totals.</span>
@@ -4605,6 +4651,36 @@
         <footer class="zl-actions"><button id="zl-ghl-disconnect" class="zl-button" type="button">Disconnect</button><button id="zl-ghl-cancel" class="zl-button" type="button">Cancel</button><button id="zl-ghl-submit" class="zl-button zl-primary" type="submit">Connect</button></footer>
       </form>
     </dialog>
+<dialog id="zl-map-dialog" class="zl-map-dialog" aria-labelledby="zl-map-title">
+  <header class="zl-map-top">
+    <h2 id="zl-map-title">ZIP map</h2>
+    <form id="zl-map-home-form">
+      <label for="zl-map-home">Home ZIP <span>(test)</span></label>
+      <input id="zl-map-home" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="Optional" aria-label="Home ZIP for this test subaccount" />
+      <button type="submit" id="zl-map-home-save">Save</button>
+    </form>
+    <button type="button" id="zl-map-fit">Fit ZIPs</button>
+    <button type="button" id="zl-map-close" aria-label="Close ZIP map">×</button>
+  </header>
+  <p id="zl-map-loading" role="status" hidden>Loading map and local ZIP coordinates…</p>
+  <p id="zl-map-error" role="alert" hidden></p>
+  <div class="zl-map-body">
+    <div id="zl-map-canvas" aria-label="Interactive ZIP map"></div>
+    <aside class="zl-map-panel" aria-label="ZIP map selection and legend">
+      <div>
+        <h3>Selected ZIPs</h3>
+        <button type="button" id="zl-map-draw">Draw area</button>
+        <p id="zl-map-help">Double-click the map or choose Draw area.</p>
+        <p id="zl-map-measure" aria-live="polite"></p>
+        <textarea id="zl-map-selected" aria-label="Additional ZIPs in selected area" readonly placeholder="Additional available ZIPs inside the polygon"></textarea>
+        <div class="zl-map-panel-actions"><button type="button" id="zl-map-copy" disabled>Copy ZIPs</button><button type="button" id="zl-map-clear">Clear area</button></div>
+      </div>
+      <div id="zl-map-legend" aria-label="Map legend"></div>
+      <p id="zl-map-reference"></p>
+    </aside>
+  </div>
+</dialog>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.13.0/sql-wasm.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script>
@@ -4724,9 +4800,20 @@
             db.run("ALTER TABLE deletion_items ADD COLUMN restored_at TEXT");
           if (!deletionColumns.some((c) => c.name === "restoration_id"))
             db.run("ALTER TABLE deletion_items ADD COLUMN restoration_id TEXT");
+          migrateMapSchema(db);
           return { db, version: r?.version || 0 };
         }
         const now = () => new Date().toISOString();
+        // BEGIN ZIP MAP STORAGE
+        function migrateMapSchema(db) {
+          if (!query(db, "PRAGMA table_info(subaccounts)").some(c => c.name === "home_zip"))
+            db.run("ALTER TABLE subaccounts ADD COLUMN home_zip TEXT");
+          const placeColumns = query(db, "PRAGMA table_info(zip_places)");
+          for (const column of ["lat", "lng"])
+            if (!placeColumns.some(c => c.name === column))
+              db.run("ALTER TABLE zip_places ADD COLUMN " + column + " REAL");
+        }
+        // END ZIP MAP STORAGE
         const id = () => crypto.randomUUID();
         function checkAccount(a) {
           assert(
@@ -4892,6 +4979,7 @@
                 ...new Set(deleted.map((z) => z.zip)),
               ].sort(),
               revision,
+              home_zip: first(db, "SELECT home_zip FROM subaccounts WHERE id=?", [account.id])?.home_zip || "",
               used: active(db, account.id),
               rows: rows.map((r) => ({ ...r, zips: byRow.get(r.id) || [] })),
               events: events.map((e) => ({
@@ -5278,6 +5366,9 @@
                   [event, z.zip, account.id],
                 );
               }
+            } else if (action === "home_zip") {
+              assert(payload.zip === "" || /^\d{5}$/.test(payload.zip), "Enter a five-digit Home ZIP, or leave it blank.");
+              db.run("UPDATE subaccounts SET home_zip=? WHERE id=?", [payload.zip || null, account.id]);
             } else if (action === "places") {
               assert(
                 Array.isArray(payload.rows) &&
@@ -5299,12 +5390,15 @@
                   "CSV has an invalid or conflicting ZIP record.",
                 );
                 seen.add(r.zip);
+                assert((r.lat == null && r.lng == null) ||
+                  (Number.isFinite(r.lat) && Math.abs(r.lat) <= 90 && Number.isFinite(r.lng) && Math.abs(r.lng) <= 180),
+                  "CSV has invalid latitude or longitude.");
               }
               db.run("DELETE FROM zip_places WHERE subaccount_id=?", [
                 account.id,
               ]);
               const stmt = db.prepare(
-                "INSERT INTO zip_places VALUES (?,?,?,?)",
+                "INSERT INTO zip_places(subaccount_id,zip,city,state_name,lat,lng) VALUES (?,?,?,?,?,?)",
               );
               try {
                 for (const r of payload.rows) {
@@ -5313,6 +5407,8 @@
                     r.zip,
                     r.city.trim(),
                     r.state_name.trim(),
+                    r.lat ?? null,
+                    r.lng ?? null,
                   ]);
                 }
               } finally {
@@ -5468,6 +5564,7 @@
                 [payload.row, account.id],
               );
             } else if (action === "reset") {
+              db.run("UPDATE subaccounts SET home_zip=NULL WHERE id=?", [account.id]);
               db.run(
                 "DELETE FROM pending_sources WHERE history_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
                 [account.id],
@@ -5494,7 +5591,13 @@
             db.close();
           }
         }
-        return { snapshot, change };
+        async function mapReference(account) {
+          checkAccount(account);
+          const {db} = await open();
+          try { return query(db, "SELECT zip,city,state_name,lat,lng FROM zip_places WHERE subaccount_id=? ORDER BY zip", [account.id]); }
+          finally { db.close(); }
+        }
+        return { snapshot, change, mapReference };
       })();
     </script>
     <script>
@@ -6036,6 +6139,210 @@ class ZipContactCounts {
   }
 }
 // END ZIP CONTACT COUNT CLIENT
+
+// BEGIN ZIP MAP CORE
+const ZipMapCore = (() => {
+  const zip = value => /^\d{1,5}$/.test(String(value ?? '').trim()) ? String(value).trim().padStart(5, '0') : null;
+  const validPoint = p => p && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 && Number.isFinite(p.lng) && Math.abs(p.lng) <= 180;
+  const longitude = n => ((n + 180) % 360 + 360) % 360 - 180;
+  function polygon(vertices) {
+    if (!Array.isArray(vertices) || vertices.length < 3 || vertices.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lng) || Math.abs(p.lat) > 90)) return null;
+    const anchor = longitude(vertices[0].lng);
+    const ring = vertices.map(p => ({lat:p.lat,lng:anchor + longitude(p.lng-anchor)}));
+    return {ring,anchor,south:Math.min(...ring.map(p=>p.lat)),north:Math.max(...ring.map(p=>p.lat)),west:Math.min(...ring.map(p=>p.lng)),east:Math.max(...ring.map(p=>p.lng))};
+  }
+  function contains(point, shape) {
+    if (!validPoint(point) || !shape) return false;
+    const x=shape.anchor+longitude(point.lng-shape.anchor), y=point.lat, v=shape.ring;
+    if (y<shape.south || y>shape.north || x<shape.west || x>shape.east) return false;
+    let inside=false;
+    for(let i=0,j=v.length-1;i<v.length;j=i++) {
+      const a=v[j],b=v[i],cross=(x-a.lng)*(b.lat-a.lat)-(y-a.lat)*(b.lng-a.lng);
+      if(Math.abs(cross)<1e-10 && x>=Math.min(a.lng,b.lng)-1e-10 && x<=Math.max(a.lng,b.lng)+1e-10 && y>=Math.min(a.lat,b.lat)-1e-10 && y<=Math.max(a.lat,b.lat)+1e-10) return true;
+      if((a.lat>y)!==(b.lat>y) && x<(b.lng-a.lng)*(y-a.lat)/(b.lat-a.lat)+a.lng) inside=!inside;
+    }
+    return inside;
+  }
+  function miles(a,b) {
+    const r=n=>n*Math.PI/180, dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng);
+    const h=Math.min(1,Math.max(0,Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2));
+    return 3958.7613*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
+  }
+  function dimensions(vertices) {
+    const p=polygon(vertices);if(!p)return null;
+    const lat=(p.south+p.north)/2,lng=(p.west+p.east)/2;
+    return {width:miles({lat,lng:p.west},{lat,lng:p.east}),height:miles({lat:p.south,lng},{lat:p.north,lng})};
+  }
+  function reference(rows) {
+    const lookup=new Map();
+    for(const row of rows || []) { const code=zip(row.zip);if(code && validPoint(row))lookup.set(code,{zip:code,lat:row.lat,lng:row.lng,city:String(row.city||''),state_name:String(row.state_name||'')}); }
+    return lookup;
+  }
+  function project(data,lookup,home) {
+    const used=new Set((data.used||[]).map(p=>zip(p.zip)).filter(Boolean));
+    const incoming=new Set((data.incoming||[]).flatMap(e=>e.zips).map(zip).filter(Boolean));
+    const pending=new Set((data.pending_zips||[]).map(zip).filter(Boolean));
+    const shown={used:[],new:[]},missing={used:[],new:[]},pins=new Map();
+    for(const [type,codes] of [['used',used],['new',incoming]])for(const code of codes){
+      if(type==='new' && used.has(code))continue;
+      const point=lookup.get(code);
+      (point?shown:missing)[type].push(code);
+      if(point)pins.set(code,{...point,type,home:false});
+    }
+    for(const lists of [shown,missing])for(const type of ['used','new'])lists[type].sort();
+    const homeZip=zip(home);
+    if(homeZip && lookup.has(homeZip))pins.set(homeZip,{...lookup.get(homeZip),...(pins.get(homeZip)||{type:'home'}),home:true});
+    return {pins:[...pins.values()],shown,missing,homeZip,homeMissing:!!homeZip&&!lookup.has(homeZip),blocked:new Set([...used,...incoming,...pending])};
+  }
+  function additional(lookup,vertices,blocked) {
+    const shape=polygon(vertices);if(!shape)return [];
+    return [...lookup.values()].filter(p=>!blocked.has(p.zip)&&contains(p,shape)).sort((a,b)=>a.zip.localeCompare(b.zip));
+  }
+  return {zip,validPoint,polygon,contains,miles,dimensions,reference,project,additional};
+})();
+// END ZIP MAP CORE
+
+const ZipMap = (() => {
+  const $=id=>document.getElementById(id);
+  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, renderer;
+  let session=0, selectionVersion=0, editTimer, selected=[];
+  const colors={used:'#3388ff',new:'#f58a18',home:'#e04c68',selected:'#a855f7'};
+  function asset(tag,url) {
+    return new Promise((resolve,reject)=>{
+      const element=document.createElement(tag);let timer;
+      const fail=()=>{clearTimeout(timer);element.remove();reject(Error('Map libraries could not load. Check your connection and reopen the map.'));};
+      element.onload=()=>{clearTimeout(timer);resolve();};element.onerror=fail;
+      if(tag==='link'){element.rel='stylesheet';element.href=url;}else{element.src=url;element.async=true;}
+      timer=setTimeout(fail,18000);document.head.append(element);
+    });
+  }
+  async function libraries() {
+    if(window.L?.PM)return;
+    if(!assets)assets=(async()=>{
+      await Promise.all([asset('link','https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'),asset('link','https://unpkg.com/@geoman-io/leaflet-geoman-free@2.18.0/dist/leaflet-geoman.css')]);
+      if(!window.L)await asset('script','https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+      if(!window.L.PM)await asset('script','https://unpkg.com/@geoman-io/leaflet-geoman-free@2.18.0/dist/leaflet-geoman.min.js');
+    })().catch(error=>{assets=null;throw error;});
+    await assets;
+  }
+  function node(tag,text,className) { const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n; }
+  function popup(point,label) {
+    const div=node('div');div.append(node('strong',point.zip),node('div',label));
+    if(point.city||point.state_name)div.append(node('div',[point.city,point.state_name].filter(Boolean).join(', ')));
+    div.append(node('small',point.lat.toFixed(5)+', '+point.lng.toFixed(5)));return div;
+  }
+  function icon(color,home=false) {
+    return L.divIcon({className:'zl-map-marker',html:'<span style="--pin:'+color+'">'+(home?'⌂':'')+'</span>',iconSize:[24,30],iconAnchor:[12,29],popupAnchor:[0,-26]});
+  }
+  function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
+  function legend() {
+    const target=$('zl-map-legend');target.replaceChildren();
+    for(const [type,label]of [['used','Used'],['new','New']]){
+      const detail=node('details'),summary=node('summary');const dot=node('i',undefined,'zl-map-dot');dot.style.background=colors[type];
+      summary.append(dot,document.createTextNode(label+' '+projected.shown[type].length+' / '+(projected.shown[type].length+projected.missing[type].length)));
+      detail.append(summary,node('strong','Shown on map'),node('p',projected.shown[type].join(', ')||'None'),node('strong','Not shown — coordinates unavailable'),node('p',projected.missing[type].join(', ')||'None'));target.append(detail);
+    }
+    const home=node('div',undefined,'zl-map-home-legend'),dot=node('i',undefined,'zl-map-dot');dot.style.background=colors.home;
+    home.append(dot,document.createTextNode(projected.homeZip?'Home '+projected.homeZip+(projected.homeMissing?' · no coordinates':''):'Home ZIP not set'));target.append(home);
+    target.append(node('p','Purple: additional available ZIPs in the selected area.','zl-map-legend-help'));
+  }
+  function pins(fit) {
+    pinLayer.clearLayers();projected=ZipMapCore.project(data,lookup,data.home_zip);legend();
+    for(const point of projected.pins){
+      const status=point.type==='used'?'Used':point.type==='new'?'New':'Home';
+      L.marker([point.lat,point.lng],{icon:icon(point.home?colors.home:colors[point.type],point.home),pmIgnore:true,zIndexOffset:point.home?1000:0,keyboard:true,title:point.zip+' · '+(point.home?'Home · ':'')+status})
+        .bindPopup(popup(point,(point.home?'Home ZIP'+(status==='Home'?'':' · '+status):status))).addTo(pinLayer);
+    }
+    if(fit){
+      const points=projected.pins.map(p=>[p.lat,p.lng]);
+      if(points.length===1)map.setView(points[0],12);
+      else if(points.length)map.fitBounds(points,{padding:[44,44],maxZoom:12});
+      else map.setView([39.5,-98.35],4);
+    }
+    const missing=projected.missing.used.length+projected.missing.new.length+(projected.homeMissing?1:0);
+    $('zl-map-reference').textContent=lookup.size?lookup.size.toLocaleString()+' ZIP coordinates loaded'+(missing?' · '+missing+' listed/Home ZIPs have no coordinates.':'.'):'Upload uszips.csv with lat and lng columns to plot ZIPs and select additional areas. Older city/state-only uploads need to be uploaded again.';
+  }
+  function vertices(){return polygon?polygon.getLatLngs()[0].map(p=>({lat:p.lat,lng:p.lng})):[];}
+  function clearArea() {
+    clearTimeout(editTimer);selectionVersion++;selected=[];
+    if(map){map.pm.disableDraw();if(polygon)map.removeLayer(polygon);areaLayer.clearLayers();}
+    polygon=null;drawing=false;$('zl-map-selected').value='';$('zl-map-copy').disabled=true;
+    $('zl-map-measure').textContent='';$('zl-map-help').textContent='Double-click the map or choose Draw area. Drag the vertices to adjust your selection.';
+  }
+  function selectArea() {
+    if(!polygon || !$('zl-map-dialog').open)return;
+    const revision=++selectionVersion,points=vertices(),dimensions=ZipMapCore.dimensions(points);
+    $('zl-map-measure').textContent=dimensions?'Width '+dimensions.width.toFixed(1)+' mi · Height '+dimensions.height.toFixed(1)+' mi':'';
+    selected=ZipMapCore.additional(lookup,points,projected.blocked);
+    $('zl-map-selected').value=selected.map(p=>p.zip).join(',');$('zl-map-copy').disabled=!selected.length;
+    $('zl-map-help').textContent=lookup.size?selected.length.toLocaleString()+' additional ZIPs. Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
+    areaLayer.clearLayers();let i=0;
+    // Canvas and small animation-frame batches keep large selections responsive.
+    const batch=()=>{
+      if(revision!==selectionVersion || !$('zl-map-dialog').open)return;
+      for(let n=0;n<400&&i<selected.length;n++,i++){
+        const p=selected[i];if(p.zip===projected.homeZip)continue;
+        L.circleMarker([p.lat,p.lng],{renderer,radius:5,color:'#fff',weight:1.3,fillColor:colors.selected,fillOpacity:.92,pmIgnore:true}).bindPopup(popup(p,'Selected area')).addTo(areaLayer);
+      }
+      if(i<selected.length)requestAnimationFrame(batch);
+    };batch();
+  }
+  function queueSelection(){clearTimeout(editTimer);selectionVersion++;editTimer=setTimeout(selectArea,150);}
+  function draw() {
+    if(!map || !lookup.size)return;
+    if(polygon){$('zl-map-help').textContent='Drag the existing boundary, or Clear area before drawing another.';return;}
+    drawing=true;$('zl-map-help').textContent='Click to place boundary points. Click the first point or double-click to finish.';
+    map.pm.enableDraw('Polygon',{snappable:false,allowSelfIntersection:false,templineStyle:{color:colors.selected},hintlineStyle:{color:colors.selected,dashArray:[5,5]},pathOptions:{color:colors.selected,fillColor:colors.selected,fillOpacity:.13,weight:2}});
+  }
+  function setup() {
+    if(map)return;
+    map=L.map('zl-map-canvas',{doubleClickZoom:false,worldCopyJump:true,preferCanvas:true}).setView([39.5,-98.35],4);
+    renderer=L.canvas({padding:.3});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',pmIgnore:true}).addTo(map);
+    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);
+    map.on('dblclick',()=>{if(!drawing)draw();});
+    map.on('pm:create',event=>{
+      if(event.shape!=='Polygon')return;
+      if(polygon){map.removeLayer(event.layer);return;}
+      polygon=event.layer;drawing=false;polygon.pm.enable({allowSelfIntersection:false,snappable:false});
+      polygon.on('pm:edit',queueSelection);polygon.on('pm:vertexadded',queueSelection);polygon.on('pm:vertexremoved',queueSelection);selectArea();
+    });
+    map.on('pm:drawend',()=>{drawing=false;});
+  }
+  async function open(config) {
+    options=config;const current=++session,dialog=$('zl-map-dialog');
+    if(!dialog.open)dialog.showModal();
+    setError('');$('zl-map-loading').hidden=false;$('zl-map-draw').disabled=true;
+    data=config.getSnapshot();$('zl-map-home').value=data.home_zip||'';
+    try {
+      const [,rows]=await Promise.all([libraries(),config.readReference()]);
+      if(current!==session||!dialog.open)return;
+      data=config.getSnapshot();lookup=ZipMapCore.reference(rows);setup();clearArea();
+      map.invalidateSize();pins(true);$('zl-map-draw').disabled=!lookup.size;
+    } catch(error){if(current===session)setError(error.message);}
+    finally {if(current===session)$('zl-map-loading').hidden=true;}
+  }
+  $('zl-map-close').addEventListener('click',()=>$('zl-map-dialog').close());
+  $('zl-map-dialog').addEventListener('close',()=>{session++;clearTimeout(editTimer);selectionVersion++;if(map)clearArea();});
+  $('zl-map-dialog').addEventListener('cancel',event=>{if(polygon||drawing){event.preventDefault();clearArea();}});
+  $('zl-map-draw').addEventListener('click',draw);$('zl-map-clear').addEventListener('click',clearArea);
+  $('zl-map-fit').addEventListener('click',()=>{if(map)pins(true);});
+  $('zl-map-copy').addEventListener('click',async()=>{
+    const value=$('zl-map-selected').value;if(!value)return;
+    try{await navigator.clipboard.writeText(value);$('zl-map-help').textContent='ZIPs copied.';}
+    catch{$('zl-map-selected').focus();$('zl-map-selected').select();$('zl-map-help').textContent='Press Ctrl+C or Command+C to copy the selected ZIPs.';}
+  });
+  $('zl-map-home-form').addEventListener('submit',async event=>{
+    event.preventDefault();const raw=$('zl-map-home').value.trim(),code=raw?ZipMapCore.zip(raw):'';
+    if(code===null){setError('Enter a ZIP of up to five digits, or leave it blank.');return;}
+    const current=session;$('zl-map-home-save').disabled=true;setError('');
+    try{data=await options.saveHome(code);if(current!==session)return;$('zl-map-home').value=data.home_zip||'';if(map){pins(false);if(polygon)selectArea();}}
+    catch(error){if(current===session)setError(error.message);}
+    finally{$('zl-map-home-save').disabled=false;}
+  });
+  return {open};
+})();
+
 
       (() => {
         // Fixed to the subaccount currently represented by the page. No cross-account selector.
@@ -7241,6 +7548,8 @@ class ZipContactCounts {
             model.busy || invalid || !fresh.length;
         }
         function render() {
+          $("zl-summary-used").textContent = usedSet().size.toLocaleString();
+          $("zl-summary-new").textContent = newSet().size.toLocaleString();
           renderNew();
           renderUsed();
           renderHistory();
@@ -7959,9 +8268,16 @@ class ZipContactCounts {
                   state_name: r.state_name.trim(),
                 },
                 old = lookup.get(value.zip);
+              const hasLat = parsed.meta.fields.includes("lat"), hasLng = parsed.meta.fields.includes("lng");
+              if (hasLat !== hasLng) throw Error("CSV requires both lat and lng columns for map coordinates.");
+              value.lat = hasLat && String(r.lat ?? "").trim() !== "" ? Number(r.lat) : null;
+              value.lng = hasLng && String(r.lng ?? "").trim() !== "" ? Number(r.lng) : null;
+              if (!((value.lat === null && value.lng === null) ||
+                (Number.isFinite(value.lat) && Math.abs(value.lat) <= 90 && Number.isFinite(value.lng) && Math.abs(value.lng) <= 180)))
+                throw Error("Invalid latitude or longitude at CSV row " + (i + 2) + ".");
               if (
                 old &&
-                (old.city !== value.city || old.state_name !== value.state_name)
+                (old.city !== value.city || old.state_name !== value.state_name || old.lat !== value.lat || old.lng !== value.lng)
               )
                 throw Error(
                   "CSV contains conflicting places for ZIP " + value.zip + ".",
@@ -7984,6 +8300,24 @@ class ZipContactCounts {
           } finally {
             busy(false);
           }
+        });
+        $("zl-open-map").addEventListener("click", () => {
+          if (!model.data || model.busy) return;
+          void ZipMap.open({
+            getSnapshot: () => model.data,
+            readReference: () => ZipStore.mapReference(ACCOUNT),
+            saveHome: async zip => {
+              if (model.busy) throw Error("A ZIP update is already in progress.");
+              const revision = model.data.revision;
+              busy(true);
+              try {
+                await ZipStore.change(ACCOUNT, revision, "home_zip", {zip});
+                model.data = await ZipStore.snapshot(ACCOUNT);
+                render();
+                return model.data;
+              } finally { busy(false); }
+            },
+          });
         });
         void contactCounts.start();
         void refresh();
