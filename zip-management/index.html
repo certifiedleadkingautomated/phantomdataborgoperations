@@ -6406,11 +6406,13 @@ const ZipMap = (() => {
   }
   $('zl-map-close').addEventListener('click',()=>$('zl-map-dialog').close());
   $('zl-map-dialog').addEventListener('close',()=>{session++;clearTimeout(editTimer);selectionVersion++;if(map)clearArea();});
-  $('zl-map-dialog').addEventListener('cancel',event=>{if(polygon||drawing){event.preventDefault();clearArea();}});
+  $('zl-map-dialog').addEventListener('cancel',event=>{event.preventDefault();clearArea();});
+  $('zl-map-dialog').addEventListener('keydown',event=>{
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();clearArea();}
+  },true);
   $('zl-map-draw').addEventListener('click',draw);$('zl-map-clear').addEventListener('click',clearArea);
   $('zl-map-search-form').addEventListener('submit',event=>{event.preventDefault();if(map&&lookup.size)findZip();else setError('Upload ZIP coordinates before searching.');});
   $('zl-map-search-clear').addEventListener('click',()=>{clearSearch();setError('');});
-  $('zl-map-search').addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();event.stopPropagation();clearSearch();setError('');}});
   $('zl-map-copy').addEventListener('click',async()=>{
     const value=$('zl-map-selected').value;if(!value)return;
     try{await navigator.clipboard.writeText(value);$('zl-map-help').textContent='ZIPs copied.';}

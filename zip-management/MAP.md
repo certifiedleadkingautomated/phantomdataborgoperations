@@ -32,8 +32,10 @@ opens; edits use that in-memory lookup, with no sheet or provider requests.
 
 The initial view fits the current Used/New/Home pins. Legend entries
 expand to show mapped and missing ZIPs. **Clear area** removes only the polygon
-selection. Escape first clears an active polygon/drawing; otherwise it closes the
-dialog. A missing library/data source produces a visible retry instruction.
+selection. Escape only clears an active polygon/drawing, including a radius
+polygon, and keeps the map open even when no area exists or search is focused.
+Close the map explicitly using its top-right X button.
+A missing library/data source produces a visible retry instruction.
 
 The **Find ZIP** field searches the local uploaded coordinate lookup and pads
 short ZIPs to five digits. It centers on the result, opens its popup and highlights
