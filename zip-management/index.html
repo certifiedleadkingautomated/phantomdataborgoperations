@@ -3796,17 +3796,20 @@
 .zl-map-dialog{width:min(1500px,calc(100vw - 36px));height:calc(100dvh - 36px);max-width:none;max-height:none;padding:0;border:1px solid #d8e0eb;border-radius:14px;background:#fff;color:#23354d;box-shadow:0 20px 80px #13243c40;overflow:hidden}
 .zl-map-dialog::backdrop{background:#101b2d66;backdrop-filter:blur(2px)}
 .zl-map-dialog[open]{display:flex;flex-direction:column}
-.zl-map-top{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #e2e7ee;flex-wrap:wrap}
-.zl-map-top h2{font-size:16px;margin:0 auto 0 0;white-space:nowrap}
-.zl-map-top form{display:flex;align-items:center;gap:7px;margin:0;font-size:11px;color:#64748b}
-.zl-map-top input{width:78px;padding:6px 7px;border:1px solid #d8e0e9;border-radius:6px;font-size:12px}
+.zl-map-top{position:relative;display:flex;align-items:center;gap:8px;padding:6px 44px 6px 12px;min-height:42px;flex:0 0 auto;border-bottom:1px solid #e2e7ee;flex-wrap:wrap}
+.zl-map-top h2{font-size:14px;line-height:20px;margin:0;white-space:nowrap}
+.zl-map-top form{display:flex;align-items:center;gap:6px;margin:0;padding:0;overflow:visible;font-size:11px;color:#64748b}
+.zl-map-top #zl-map-home-form,.zl-map-top #zl-map-home-display{margin-left:auto}
+.zl-map-top input,.zl-map-top button{box-sizing:border-box;height:28px;min-height:0;line-height:16px}
+.zl-map-top input{width:78px;margin:0;padding:5px 7px;border:1px solid #d8e0e9;border-radius:6px;font-size:12px}
 .zl-map-top #zl-map-search{width:110px}
 .zl-map-radius-form{display:flex;align-items:flex-end;gap:8px;margin-top:11px;padding-top:10px;border-top:1px solid #e2e7ee}
 .zl-map-radius-form label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#607188}
 .zl-map-radius-form input{width:82px;min-height:29px;padding:5px 7px;border:1px solid #d8e0e9;border-radius:5px;font:inherit;color:#243b55}
 .zl-map-radius-form button{min-height:29px;padding:5px 9px;border:1px solid #ccd9e9;border-radius:5px;background:#f4f7fc;color:#345579;font-size:11px;white-space:nowrap}
 .zl-map-top button,.zl-map-panel button{font-size:11px;padding:7px 10px;border:1px solid #d9e1eb;border-radius:7px;background:#fff;color:#365272}
-.zl-map-top #zl-map-close{border:0;font-size:22px;line-height:1;padding:3px 6px}
+.zl-map-top button{padding:4px 8px;border-radius:6px}
+.zl-map-top #zl-map-close{position:absolute;right:10px;top:6px;width:28px;height:28px;border:0;font-size:22px;line-height:1;padding:3px}
 .zl-map-body{display:grid;grid-template-columns:minmax(0,1fr) 270px;min-height:0;flex:1}
 #zl-map-canvas{min-height:240px;height:100%;background:#edf1f5;z-index:0;outline:none}
 .zl-map-panel{padding:14px;overflow:auto;border-left:1px solid #e0e6ee;font-size:12px;background:#fff}
@@ -3829,7 +3832,7 @@
 .zl-map-marker>span{display:grid;place-items:center;position:relative;width:23px;height:23px;background:var(--pin);border:2px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 4px #0005;color:white;font-size:16px;font-weight:bold}
 .zl-map-marker>span:empty:after{content:'';width:7px;height:7px;background:white;border-radius:50%}
 .zl-map-marker>span:not(:empty){font-size:17px}
-@media(max-width:760px){.zl-zip-summary{gap:14px}.zl-map-dialog{width:calc(100vw - 12px);height:calc(100dvh - 12px);border-radius:10px}.zl-map-top{gap:8px;padding:10px}.zl-map-body{grid-template-columns:1fr;grid-template-rows:minmax(240px,1fr) 225px}.zl-map-panel{border-left:0;border-top:1px solid #e0e6ee;display:grid;grid-template-columns:1fr 1fr;column-gap:18px}.zl-map-panel textarea{min-height:70px}#zl-map-legend{margin:0;padding:0;border:0}#zl-map-reference{grid-column:1/-1}.zl-account-connection{width:100%}}
+@media(max-width:760px){.zl-zip-summary{gap:14px}.zl-map-dialog{width:calc(100vw - 12px);height:calc(100dvh - 12px);border-radius:10px}.zl-map-top{gap:6px;padding:6px 42px 6px 10px}.zl-map-body{grid-template-columns:1fr;grid-template-rows:minmax(240px,1fr) 225px}.zl-map-panel{border-left:0;border-top:1px solid #e0e6ee;display:grid;grid-template-columns:1fr 1fr;column-gap:18px}.zl-map-panel textarea{min-height:70px}#zl-map-legend{margin:0;padding:0;border:0}#zl-map-reference{grid-column:1/-1}.zl-account-connection{width:100%}}
 
       .zl-batch-copy-actions{display:flex;align-items:center;justify-content:flex-end;justify-self:end;gap:6px;flex-wrap:nowrap}
     </style>
