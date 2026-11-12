@@ -6934,6 +6934,7 @@ const ZipMap = (() => {
             : "Added to Used ZIPs by this history row.";
           if (z.deleted_event_id)
             title = `Deleted by ${{ search_others: "search remainder (kept matching ZIPs)", search_matches: "search matches", individual: "individual ZIP selection" }[z.deleted_mode] || z.deleted_mode}: ${z.deleted_group} · ${formatDate(z.deleted_at)}${z.deleted_comment ? " · " + z.deleted_comment : ""}`;
+          if (!z.deleted_event_id && previouslyDeletedSet().has(z.zip)) title += " Previously deleted in the past.";
           return el(
             "span",
             {
@@ -6944,6 +6945,7 @@ const ZipMap = (() => {
                   : z.already_used
                     ? " duplicate"
                     : "") +
+                (!z.deleted_event_id && previouslyDeletedSet().has(z.zip) ? " zl-was-deleted" : "") +
                 (z.zip === model.historySearchZip ? " zl-history-search-match" : ""),
               title,
               tabindex: "0",
@@ -7624,6 +7626,24 @@ const ZipMap = (() => {
             : waiting
               ? "—"
               : fresh.join(", ") || "No unused ZIPs available in this list.";
+          const pastDeletions = previouslyDeletedSet();
+          if (!invalid && !waiting) {
+            for (const [id, zips] of [["zl-matches", matches], ["zl-other", other], ["zl-fresh", fresh]]) {
+              if (!zips.some(z => pastDeletions.has(z))) continue;
+              $(id).replaceChildren(...zips.flatMap((z, index) => [
+                ...(index ? [", "] : []),
+                el("span", {
+                  class: pastDeletions.has(z) ? "zl-was-deleted" : "",
+                  title: pastDeletions.has(z) ? "Previously deleted" : "",
+                  "aria-label": z + (pastDeletions.has(z) ? ", previously deleted" : ""),
+                }, z),
+              ]));
+            }
+            const previous = p.zips.filter(z => pastDeletions.has(z));
+            if (previous.length) $("zl-check-feedback").append(el("span", {
+              class: "zl-past-deletion-feedback",
+            }, previous.length + " previously deleted · purple highlight."));
+          }
           checker.values = {
             matches: invalid ? [] : matches,
             other: invalid ? [] : other,
@@ -7794,13 +7814,13 @@ const ZipMap = (() => {
                         : row.comment.length > 3000
                           ? "Comment exceeds 3,000 characters."
                           : `${p.zips.length} ZIPs${matches.size ? " · " + matches.size + (model.addTarget === "new" ? " already exist" : " already used") : ""}${p.duplicates ? " · " + p.duplicates + " repeats removed" : ""}${p.padded ? " · " + p.padded + " padded" : ""}`;
-              if (model.addTarget === "new") {
+              {
                 const previous = p.zips.filter((z) => pastDeletions.has(z));
                 if (previous.length)
                   row.feedback.textContent +=
                     " · " +
                     previous.length +
-                    " previously deleted (new requests allowed)";
+                    " previously deleted · purple highlight";
               }
               row.preview.replaceChildren(
                 ...p.zips.slice(0, 24).map((z) =>
@@ -7810,12 +7830,12 @@ const ZipMap = (() => {
                       class:
                         "zl-history-chip" +
                         (matches.has(z) ? " duplicate" : "") +
-                        (model.addTarget === "new" && pastDeletions.has(z)
+                        (pastDeletions.has(z)
                           ? " zl-was-deleted"
                           : ""),
                       title:
-                        model.addTarget === "new" && pastDeletions.has(z)
-                          ? "Previously deleted. Eligible for a new request."
+                        pastDeletions.has(z)
+                          ? "Previously deleted. Informational only; adding is allowed."
                           : "",
                     },
                     z,
@@ -7917,7 +7937,7 @@ const ZipMap = (() => {
                     : " already Used. They will be highlighted and kept in this new row; no other action is taken."),
               ),
             );
-          if (model.addTarget === "new") {
+          {
             const previous = p.zips.filter((z) => pastDeletions.has(z));
             if (previous.length)
               $("zl-add-feedback").append(
@@ -7925,7 +7945,7 @@ const ZipMap = (() => {
                   "span",
                   { class: "zl-past-deletion-feedback" },
                   previous.length +
-                    " previously deleted. These ZIPs may be added for a new contact request.",
+                    " previously deleted · purple highlight. Adding is allowed.",
                 ),
               );
           }
@@ -7937,12 +7957,12 @@ const ZipMap = (() => {
                   class:
                     "zl-history-chip" +
                     (used.has(z) ? " duplicate" : "") +
-                    (model.addTarget === "new" && pastDeletions.has(z)
+                    (pastDeletions.has(z)
                       ? " zl-was-deleted"
                       : ""),
                   title:
-                    model.addTarget === "new" && pastDeletions.has(z)
-                      ? "Previously deleted. Eligible for a new request."
+                    pastDeletions.has(z)
+                      ? "Previously deleted. Informational only; adding is allowed."
                       : "",
                 },
                 z,

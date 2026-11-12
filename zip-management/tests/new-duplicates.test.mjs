@@ -4,13 +4,13 @@ import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import vm from 'node:vm';
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
-function checkerFixture(input) {
+function checkerFixture(input, previous=[]) {
   const elements=new Map();
-  const $=id=>{if(!elements.has(id))elements.set(id,{value:'',textContent:'',hidden:false,disabled:false});return elements.get(id);};
+  const $=id=>{if(!elements.has(id))elements.set(id,{value:'',textContent:'',hidden:false,disabled:false,children:[],replaceChildren(...children){this.children=children;this.textContent=children.map(c=>typeof c==='string'?c:c.textContent).join('');},append(...children){this.children.push(...children);}});return elements.get(id);};
   $('zl-check').value=input;
   const context=vm.createContext({$,model:{busy:false,data:{used:[]}},Set,
     parse:text=>({zips:[...new Set(text.split(',').filter(Boolean).map(z=>z.padStart(5,'0')))],invalid:[]}),
-    usedSet:()=>new Set(),pendingSet:()=>new Set(),newSet:()=>new Set(['00601','10001']),feedback:()=>{},
+    el:(tag,attributes,text)=>({tag,...attributes,textContent:text}),previouslyDeletedSet:()=>new Set(previous),usedSet:()=>new Set(),pendingSet:()=>new Set(),newSet:()=>new Set(['00601','10001']),feedback:()=>{},
     openAdd:()=>{},validateAdd:()=>{},
   });
   const checker=html.match(/        function checker\(\) \{([\s\S]*?)\n        function render\(\)/)[1];
@@ -58,4 +58,13 @@ test('SQLite refuses persisted New ZIPs and repeated import rows atomically',()=
     f.add([['00601']],'b');
     assert.equal(f.sqlite.prepare('SELECT count(*) n FROM new_zip_items').get().n,2);
   }finally{f.sqlite.close();}
+});
+
+test('previous deletion is highlighted in checker results without filtering eligible ZIPs',()=>{
+  const f=checkerFixture('33704,90210',['33704']);
+  assert.equal(f.$('zl-fresh').textContent,'33704, 90210');
+  assert.equal(f.$('zl-fresh').children[0].class,'zl-was-deleted');
+  assert.equal(f.$('zl-add-checked-new').disabled,false);
+  vm.runInContext('addCheckedToNew()',f.context);
+  assert.equal(f.$('zl-add-zips').value,'33704,90210');
 });
