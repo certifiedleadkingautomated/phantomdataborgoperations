@@ -6226,7 +6226,7 @@ const ZipMapCore = (() => {
 
 const ZipMap = (() => {
   const $=id=>document.getElementById(id);
-  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, searchLayer, radiusLayer;
+  let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, searchLayer;
   let session=0, selectionVersion=0, pinVersion=0, editTimer, selected=[], selectedSet=new Set(), baseMarkers=new Map(), areaMarkers=new Map();
   let searchedZip=null, radiusInfo=null, lastRadius=5;
   const colors={used:'#3388ff',new:'#f58a18',home:'#e04c68',selected:'#a855f7',search:'#089c9c'};
@@ -6261,13 +6261,16 @@ const ZipMap = (() => {
     form.addEventListener('submit',event=>{event.preventDefault();drawRadius(point,Number(field.value));});
     return div;
   }
-  function icon(color,home=false) {
-    return L.divIcon({className:'zl-map-marker',html:'<span style="--pin:'+color+'">'+(home?'⌂':'')+'</span>',iconSize:[24,30],iconAnchor:[12,29],popupAnchor:[0,-26]});
+  function icon(color,home=false,active=false) {
+    return L.divIcon({className:'zl-map-marker'+(active?' zl-radius-origin':''),html:'<span style="--pin:'+color+(active?';width:30px;height:30px':'')+'">'+(home?'⌂':'')+'</span>',iconSize:active?[32,39]:[24,30],iconAnchor:active?[16,38]:[12,29],popupAnchor:active?[0,-35]:[0,-26]});
   }
   function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
   function marker(point,color,label,home=false) {
-    return L.marker([point.lat,point.lng],{icon:icon(color,home),pmIgnore:true,zIndexOffset:home?1000:0,keyboard:true,title:point.zip+' · '+label})
+    const active=!!(polygon && radiusInfo && !radiusInfo.edited && radiusInfo.zip===point.zip);
+    const pin=L.marker([point.lat,point.lng],{icon:icon(active?'#d59a15':color,home,active),pmIgnore:true,zIndexOffset:active?2000:home?1000:0,keyboard:true,title:point.zip+' · '+label})
       .bindPopup(()=>popup(point,label));
+    pin._zipAppearance={zip:point.zip,color,home,active};
+    return pin;
   }
   function status(point) {
     const base=projected.pins.find(p=>p.zip===point.zip);
@@ -6284,11 +6287,14 @@ const ZipMap = (() => {
     if(focus){map.setView([point.lat,point.lng],Math.max(map.getZoom(),12));pin.openPopup();}
   }
   function updateRadiusOrigin() {
-    if(!radiusLayer)return;
-    radiusLayer.clearLayers();
-    if(!polygon || !radiusInfo || radiusInfo.edited)return;
-    const point=lookup.get(radiusInfo.zip);if(!point)return;
-    L.circleMarker([point.lat,point.lng],{radius:24,weight:3,color:'#d59a15',fillColor:'#d59a15',fillOpacity:.10,interactive:false,pmIgnore:true,className:'zl-radius-origin'}).addTo(radiusLayer);
+    const origin=polygon && radiusInfo && !radiusInfo.edited?radiusInfo.zip:null;
+    for(const group of [pinLayer,areaLayer,searchLayer])group?.eachLayer(pin=>{
+      const style=pin._zipAppearance;if(!style)return;
+      const active=style.zip===origin;if(style.active===active)return;
+      style.active=active;
+      pin.setIcon(icon(active?'#d59a15':style.color,style.home,active));
+      pin.setZIndexOffset(active?2000:style.home?1000:0);
+    });
   }
   function clearSearch() {
     searchedZip=null;$('zl-map-search').value='';$('zl-map-search-clear').hidden=true;
@@ -6389,7 +6395,7 @@ const ZipMap = (() => {
     if(map)return;
     map=L.map('zl-map-canvas',{doubleClickZoom:false,worldCopyJump:true,preferCanvas:true}).setView([39.5,-98.35],4);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',pmIgnore:true}).addTo(map);
-    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);searchLayer=L.layerGroup().addTo(map);radiusLayer=L.layerGroup().addTo(map);
+    pinLayer=L.layerGroup().addTo(map);areaLayer=L.layerGroup().addTo(map);searchLayer=L.layerGroup().addTo(map);
     map.on('moveend zoomend',renderAreaPins);
     map.on('dblclick',()=>{if(!drawing)draw();});
     map.on('pm:create',event=>{
