@@ -3835,6 +3835,15 @@
 @media(max-width:760px){.zl-zip-summary{gap:14px}.zl-map-dialog{width:calc(100vw - 12px);height:calc(100dvh - 12px);border-radius:10px}.zl-map-top{gap:6px;padding:6px 42px 6px 10px}.zl-map-body{grid-template-columns:1fr;grid-template-rows:minmax(240px,1fr) 225px}.zl-map-panel{border-left:0;border-top:1px solid #e0e6ee;display:grid;grid-template-columns:1fr 1fr;column-gap:18px}.zl-map-panel textarea{min-height:70px}#zl-map-legend{margin:0;padding:0;border:0}#zl-map-reference{grid-column:1/-1}.zl-account-connection{width:100%}}
 
       .zl-batch-copy-actions{display:flex;align-items:center;justify-content:flex-end;justify-self:end;gap:6px;flex-wrap:nowrap}
+
+/* Ten-ZIP batches stay together without forcing horizontal scrolling. */
+.zip-lab .zl-new-textbox { display:block; min-width:0; max-width:100%; overflow-x:hidden; overflow-y:auto; }
+.zip-lab .zl-new-textbox .zl-new-batch { display:flex; flex-wrap:wrap; align-items:baseline; gap:0 6px; min-width:0; }
+.zip-lab .zl-new-textbox .zl-new-line { flex:0 1 auto; min-width:0; max-width:100%; white-space:normal; overflow-wrap:anywhere; font-size:10px; line-height:21px; }
+.zip-lab .zl-batch-copy-actions { display:flex; flex:0 1 auto; min-width:0; flex-wrap:wrap; align-items:baseline; justify-content:flex-start; gap:4px; }
+.zip-lab .zl-inline-copy { padding:2px 3px; line-height:17px; }
+.czw-target-options[hidden] { display:none; }
+
     </style>
   </head>
   <body>
@@ -4409,6 +4418,12 @@
                 </select></label
               >
             </div>
+            <label>Assigned subaccounts <span class="zl-optional">required</span>
+              <select id="zl-assignment" required>
+                <option value="this">This subaccount</option>
+                <option value="all">All subaccounts (this subaccount only)</option>
+              </select>
+            </label>
             <div id="zl-single-entry">
               <label
                 >ZIP list<textarea
@@ -7114,11 +7129,7 @@ const ZipMap = (() => {
                       onclick: () => void copyBatch(row, batch),
                     },
                     `Copy ${batch.length}`,
-                    el(
-                      "span",
-                      { class: "zl-copy-context" },
-                      " to request contacts",
-                    ),
+
                   ),
                   i === 0 ? el("button", {
                     type: "button", class: "zl-inline-copy",
@@ -8209,7 +8220,7 @@ const ZipMap = (() => {
           e.preventDefault();
           if (model.addMode === "bulk") {
             const result = validateBulk();
-            if (model.busy || !result.valid) return;
+            if (model.busy || !result.valid || !$("zl-assignment").value) return;
             void change(
               model.addTarget === "new" ? "bulk_add_new" : "bulk_add",
               { rows: result.rows },
@@ -8222,7 +8233,7 @@ const ZipMap = (() => {
             return;
           }
           const p = parse($("zl-add-zips").value);
-          if (model.busy || p.invalid.length || !p.zips.length) return;
+          if (model.busy || p.invalid.length || !p.zips.length || !$("zl-assignment").value) return;
           void change(
             model.addTarget === "new" ? "add_new" : "add",
             {

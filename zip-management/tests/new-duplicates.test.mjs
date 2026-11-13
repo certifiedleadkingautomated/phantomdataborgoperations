@@ -68,3 +68,13 @@ test('previous deletion is highlighted in checker results without filtering elig
   vm.runInContext('addCheckedToNew()',f.context);
   assert.equal(f.$('zl-add-zips').value,'33704,90210');
 });
+
+test('compact New batches wrap without a max-content scrolling column and keep an explicit account',()=>{
+  assert.match(html,/Assigned subaccounts[\s\S]*?id="zl-assignment" required/);
+  assert.match(html,/\.zip-lab \.zl-new-textbox \{[^}]*overflow-x:hidden/);
+  assert.match(html,/\.zip-lab \.zl-new-textbox \.zl-new-batch \{[^}]*flex-wrap:wrap/);
+  assert.match(html,/\.zip-lab \.zl-new-textbox \.zl-new-line \{[^}]*overflow-wrap:anywhere/);
+  const render=html.slice(html.indexOf('el("div", { class: "zl-batch-copy-actions" }'),html.indexOf('el("div", { class: "zl-batch-copy-actions" }')+1000);
+  assert.ok(!render.includes('class: "zl-copy-context"'));
+  assert.ok(render.includes('"aria-label": `Copy ${batch.length} to request contacts`'));
+});
