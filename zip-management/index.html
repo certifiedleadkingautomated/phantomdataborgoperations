@@ -5732,6 +5732,11 @@ class GhlCountCache {
     });
   }
 }
+function ghlPostalCodeFilters(zip) {
+  const plain = zip.replace(/^0+(?=\d)/, '');
+  const filter = value => ({ field: 'postalCode', operator: 'eq', value });
+  return plain === zip ? [filter(zip)] : [{ group: 'OR', filters: [filter(zip), filter(plain)] }];
+}
 class GhlZipCountEngine {
   constructor({ cache = new GhlCountCache(), fetcher = (...args) => fetch(...args), locks = navigator.locks, interval = 500, forceInterval = 60, onUpdate = () => {}, onProblem = () => {}, onAccount = () => {} } = {}) {
     this.cache = cache; this.fetcher = fetcher; this.locks = locks; this.interval = interval;
@@ -5849,7 +5854,7 @@ class GhlZipCountEngine {
     }).finally(() => { if (this.validation === promise) this.validation = null; });
     this.validation = promise; return promise;
   }
-  fresh(cached) { return this.accountState === 'ready' && cached?.cache_generation === this.account?.cache_generation; }
+  fresh(cached) { return this.accountState === 'ready' && cached?.cache_generation === this.account?.cache_generation && (!cached.zip?.startsWith('0') || cached.postal_search_version === 3); }
   result(zip, cached, job) {
     const now = Date.now() / 1000;
     // No count leaves the cache until this page validates the account total.
@@ -5925,7 +5930,7 @@ class GhlZipCountEngine {
                 if (latest) this.acceptAccount(latest);
                 return;
               }
-              job.cached = { key: job.context.scope + ':' + job.zip, scope: job.context.scope, zip: job.zip, total,
+              job.cached = { postal_search_version: 3, key: job.context.scope + ':' + job.zip, scope: job.context.scope, zip: job.zip, total,
                 fetched_at: now, expires_at: Number.MAX_SAFE_INTEGER, cache_generation: job.cache_generation };
               await this.cache.put(job.cached); if (total === 0) this.verifiedZeros.add(job.zip); job.state = 'fresh'; job.error = null; this.failures = 0;
             });
@@ -5976,7 +5981,7 @@ class GhlZipCountEngine {
       const response = await this.fetcher(url, {
         method: job.accountRequest ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
         headers: { Authorization: 'Bearer ' + this.token, Version: job.accountRequest ? 'v3' : '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
-        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: [{ field: 'postalCode', operator: 'eq', value: job.zip.replace(/^0+(?=\d)/, '') }] }) })
+        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: ghlPostalCodeFilters(job.zip) }) })
       });
       if ([401, 403].includes(response.status)) throw new GhlCountFailure('access_denied');
       if (response.status === 429) {

@@ -273,14 +273,16 @@ test('returning to an earlier account total creates a new generation instead of 
   assert.equal((await e.batch(['33701'])).counts[0].total, null); await settle(e); e.disconnect();
 });
 
-test('GHL search removes leading zeroes while cache and results keep five-digit ZIPs', async () => {
+test('GHL search matches both ZIP forms in one OR request and preserves padded identities', async () => {
   const values = []; const cache = new Cache();
   const e = await engine({ cache, fetcher: async (_url, options) => {
-    values.push(JSON.parse(options.body).filters[0].value); return response(7);
+    values.push(JSON.parse(options.body).filters); return response(7);
   } });
   const zips = ['00601', '01234', '00001', '00000', '33701', '10101'];
   await e.batch(zips); await settle(e);
-  assert.deepEqual(values.slice().sort(), ['601', '1234', '1', '0', '33701', '10101'].sort());
+  const actual=values.map(f=>f[0].group==='OR'?Array.from(f[0].filters,x=>x.value):[f[0].value]);
+  assert.deepEqual(actual.map(v=>v.join('|')).sort(),['00601|601','01234|1234','00001|1','00000|0','33701','10101'].sort());
+  assert.equal(values.length,zips.length);
   for (const zip of zips) {
     assert.equal((await e.batch([zip])).counts[0].zip, zip);
     assert.equal((await cache.get(e.context.scope, zip)).zip, zip);
@@ -319,4 +321,26 @@ test('failed zero recheck hides the old zero and does not automatically retry on
   const result = (await b.batch(['00601'])).counts[0];
   assert.equal(result.total, null); assert.equal(result.state, 'error');
   await settle(b); assert.equal(calls, 1); b.disconnect();
+});
+
+
+test('old unpadded-only counts refresh once for zero-prefixed ZIPs while other cached counts survive',async()=>{
+  const cache=new Cache();let requests=[];
+  const fetcher=async(_url,init)=>{requests.push(JSON.parse(init.body).filters);return response(17);};
+  const first=await engine({cache,fetcher});
+  await first.batch(['00601','33701']);await settle(first);
+  const scope=first.context.scope;
+  const previous=await cache.get(scope,'00601');delete previous.postal_search_version;previous.total=5;await cache.put(previous);
+  const regular=await cache.get(scope,'33701');delete regular.postal_search_version;await cache.put(regular);
+  first.disconnect();requests=[];
+  const next=await engine({cache,fetcher});
+  const before=await next.batch(['00601','33701']);
+  assert.equal(before.counts.find(z=>z.zip==='00601').total,null);
+  assert.equal(before.counts.find(z=>z.zip==='33701').total,17);
+  await settle(next);assert.equal(requests.length,1);
+  assert.equal((await next.batch(['00601'])).counts[0].total,17);
+  assert.equal((await cache.get(scope,'00601')).postal_search_version,3);
+  next.disconnect();requests=[];
+  const again=await engine({cache,fetcher});await again.batch(['00601','33701']);await settle(again);
+  assert.equal(requests.length,0);again.disconnect();
 });
