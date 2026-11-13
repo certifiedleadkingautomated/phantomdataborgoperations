@@ -61,13 +61,13 @@ test('large area selection is sorted, complete and does not truncate the copied 
  const selected=core.additional(core.reference(points),[{lat:29,lng:-91},{lat:31,lng:-91},{lat:31,lng:-89},{lat:29,lng:-89}],new Set());
  assert.equal(selected.length,33782);assert.equal(selected[0].zip,'00000');assert.equal(selected.at(-1).zip,'33781');
 });
-test('radius starts as a 64-point circle with the requested distance in miles',()=>{
+test('radius starts as a 16-point circle with the requested distance in miles',()=>{
  for(const center of [{lat:0,lng:0},{lat:18.18,lng:-66.75},{lat:65,lng:-150}]) {
   const ring=core.radiusPolygon(center,5);
-  assert.equal(ring.length,64);
+  assert.equal(ring.length,16);
   for(const point of ring)assert.ok(Math.abs(core.miles(center,point)-5)<1e-6);
-  assert.ok(ring[0].lat>center.lat);assert.ok(ring[16].lng>center.lng);
-  assert.ok(ring[32].lat<center.lat);assert.ok(ring[48].lng<center.lng);
+  assert.ok(ring[0].lat>center.lat);assert.ok(ring[4].lng>center.lng);
+  assert.ok(ring[8].lat<center.lat);assert.ok(ring[12].lng<center.lng);
  }
 });
 test('radius polygons select the same ZIP data with Used/New exclusions',()=>{

@@ -3844,6 +3844,17 @@
 .zip-lab .zl-inline-copy { padding:2px 3px; line-height:17px; }
 .czw-target-options[hidden] { display:none; }
 
+
+/* Saved boundaries stay compact in the existing right-hand map panel. */
+.zl-map-saved{border-top:1px solid #dce2ed;padding-top:12px;margin-top:12px}
+.zl-map-save-line{display:flex;gap:6px;align-items:center}
+.zl-map-save-line input{min-width:0;flex:1;width:0;padding:7px;border:1px solid #d6dfed;border-radius:6px;font:inherit}
+#zl-map-area-status{font-size:11px;line-height:1.4;color:#59657d;margin:6px 0}
+#zl-map-areas{max-height:240px;overflow:auto}
+.zl-map-saved-area{display:flex;align-items:center;gap:6px;padding:7px 0;border-top:1px solid #e6eaf1}
+.zl-map-saved-area .zl-map-area-load{flex:1;min-width:0;text-align:left;border:0;background:none;padding:2px}
+.zl-map-area-load strong,.zl-map-area-load span{display:block;overflow-wrap:anywhere}
+.zl-map-area-load span{font-size:10px;color:#64718a;margin-top:3px}
     </style>
   </head>
   <body>
@@ -4703,6 +4714,12 @@
         <textarea id="zl-map-selected" aria-label="Additional ZIPs in selected area" readonly placeholder="Additional available ZIPs inside the polygon"></textarea>
         <div class="zl-map-panel-actions"><button type="button" id="zl-map-copy" disabled>Copy ZIPs</button><button type="button" id="zl-map-clear">Clear area</button></div>
       </div>
+      <section class="zl-map-saved" aria-label="Saved map areas">
+        <h3>Saved areas</h3>
+        <div class="zl-map-save-line"><input id="zl-map-area-name" maxlength="120" placeholder="Area name (optional)" aria-label="Saved area name" /><button type="button" id="zl-map-area-save" disabled>Save area</button></div>
+        <p id="zl-map-area-status" role="status" aria-live="polite"></p>
+        <div id="zl-map-areas"></div>
+      </section>
       <div id="zl-map-legend" aria-label="Map legend"></div>
       <p id="zl-map-reference"></p>
     </aside>
@@ -4732,6 +4749,8 @@
     CREATE INDEX IF NOT EXISTS new_zip_account ON new_zip_rows(subaccount_id);
     CREATE TABLE IF NOT EXISTS restoration_events(id TEXT PRIMARY KEY,subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),deletion_id TEXT NOT NULL REFERENCES deletion_events(id) ON DELETE CASCADE,created_at TEXT NOT NULL,comment TEXT NOT NULL,zips TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS restoration_account ON restoration_events(subaccount_id,deletion_id);
+    CREATE TABLE IF NOT EXISTS map_areas(id TEXT PRIMARY KEY,subaccount_id TEXT NOT NULL REFERENCES subaccounts(id),name TEXT NOT NULL,vertices TEXT NOT NULL,radius TEXT,available_count INTEGER NOT NULL,created_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS map_areas_account ON map_areas(subaccount_id);
     PRAGMA user_version=1;
   `;
         let enginePromise, storagePromise;
@@ -5096,7 +5115,7 @@
                 "Add at most 50,000 ZIP entries at a time.",
               );
               const used = new Set(active(db, account.id).map((z) => z.zip));
-              for (const entry of incoming) {
+              for (const entry of [...incoming].reverse()) {
                 checkZips(entry.zips);
                 const note = comment(entry.comment),
                   date = entry.date;
@@ -5142,7 +5161,7 @@
                 ...pendingCodes(db, account.id),
                 ...query(db, "SELECT z.zip FROM new_zip_items z JOIN new_zip_rows n ON n.id=z.row_id WHERE n.subaccount_id=?", [account.id]).map(z => z.zip),
               ]);
-              for (const entry of entries) {
+              for (const entry of [...entries].reverse()) {
                 checkZips(entry.zips);
                 assert(
                   !entry.zips.some((z) => blocked.has(z)),
@@ -5591,7 +5610,23 @@
                 "DELETE FROM history_rows WHERE id=? AND subaccount_id=?",
                 [payload.row, account.id],
               );
+            } else if (action === "save_map_area") {
+              assert(typeof payload.id === "string" && /^[0-9a-f-]{36}$/i.test(payload.id), "Invalid saved area ID.");
+              assert(typeof payload.name === "string" && payload.name.trim().length > 0 && payload.name.length <= 120, "Name the area using at most 120 characters.");
+              assert(Array.isArray(payload.vertices) && payload.vertices.length >= 3 && payload.vertices.length <= 512 && payload.vertices.every(p => Number.isFinite(p.lat) && Math.abs(p.lat)<=90 && Number.isFinite(p.lng) && Math.abs(p.lng)<=540), "Invalid area boundary (3–512 points required).");
+              assert(Number.isInteger(payload.available_count) && payload.available_count>=0 && payload.available_count<=100000, "Invalid available ZIP count.");
+              assert(payload.radius === null || (payload.radius && /^\d{5}$/.test(payload.radius.zip) && Number.isFinite(payload.radius.miles) && payload.radius.miles>0 && payload.radius.miles<=5000 && typeof payload.radius.edited === "boolean"), "Invalid radius metadata.");
+              const prior = first(db, "SELECT * FROM map_areas WHERE id=?", [payload.id]);
+              const boundary=JSON.stringify(payload.vertices), radius=payload.radius===null?null:JSON.stringify(payload.radius);
+              if (prior) assert(prior.subaccount_id===account.id && prior.name===payload.name && prior.vertices===boundary && prior.radius===radius && prior.available_count===payload.available_count, "Saved area ID already exists.");
+              else {
+                assert(first(db, "SELECT count(*) n FROM map_areas WHERE subaccount_id=?", [account.id]).n < 100, "Delete a saved area before adding another (maximum 100).");
+                db.run("INSERT INTO map_areas VALUES(?,?,?,?,?,?,?)", [payload.id,account.id,payload.name,boundary,radius,payload.available_count,now()]);
+              }
+            } else if (action === "delete_map_area") {
+              db.run("DELETE FROM map_areas WHERE id=? AND subaccount_id=?", [payload.id,account.id]);
             } else if (action === "reset") {
+              db.run("DELETE FROM map_areas WHERE subaccount_id=?", [account.id]);
               db.run("UPDATE subaccounts SET home_zip=NULL WHERE id=?", [account.id]);
               db.run(
                 "DELETE FROM pending_sources WHERE history_id IN (SELECT id FROM history_rows WHERE subaccount_id=?)",
@@ -5625,7 +5660,13 @@
           try { return query(db, "SELECT zip,city,state_name,lat,lng FROM zip_places WHERE subaccount_id=? ORDER BY zip", [account.id]); }
           finally { db.close(); }
         }
-        return { snapshot, change, mapReference };
+        async function mapAreas(account) {
+          checkAccount(account);
+          const {db} = await open();
+          try { return {can_manage:true,areas:query(db,"SELECT * FROM map_areas WHERE subaccount_id=? ORDER BY created_at DESC,rowid DESC",[account.id]).map(a=>({id:a.id,name:a.name,vertices:JSON.parse(a.vertices),radius:a.radius?JSON.parse(a.radius):null,available_count:a.available_count,created_at:a.created_at}))}; }
+          finally {db.close();}
+        }
+        return { snapshot, change, mapReference, mapAreas };
       })();
     </script>
     <script>
@@ -6231,7 +6272,7 @@ const ZipMapCore = (() => {
     const shape=polygon(vertices);if(!shape)return [];
     return [...lookup.values()].filter(p=>!blocked.has(p.zip)&&contains(p,shape)).sort((a,b)=>a.zip.localeCompare(b.zip));
   }
-  function radiusPolygon(center,radius,steps=64) {
+  function radiusPolygon(center,radius,steps=16) {
     if(!validPoint(center) || !Number.isFinite(radius) || radius<.1 || radius>5000 || !Number.isInteger(steps) || steps<12 || steps>256)
       throw Error('Enter a radius from 0.1 to 5,000 miles.');
     const rad=n=>n*Math.PI/180,deg=n=>n*180/Math.PI;
@@ -6359,8 +6400,82 @@ const ZipMap = (() => {
     $('zl-map-reference').textContent=lookup.size?lookup.size.toLocaleString()+' ZIP coordinates loaded'+(missing?' · '+missing+' listed/Home ZIPs have no coordinates.':'.'):'Upload uszips.csv with lat and lng columns to plot ZIPs and select additional areas. Older city/state-only uploads need to be uploaded again.';
     updateSearch();
   }
+  // Saved shapes are scoped by the transport to this subaccount. Counts below
+  // are snapshots; loading a boundary always recomputes current availability.
+  let savedAreas = [], areasCanManage = false, areasBusy = false, areaReady = false, areaVersion = 0, areaAttempt = null;
+  function areaStatus(message = '') { $('zl-map-area-status').textContent = message; }
+  function savedButtons() {
+    $('zl-map-area-save').disabled = !areaReady || !polygon || !areasCanManage || areasBusy;
+  }
+  function savedList() {
+    const target = $('zl-map-areas'); target.replaceChildren();
+    if (!savedAreas.length) {
+      const empty = document.createElement('p'); empty.textContent = 'No saved areas.'; target.append(empty);
+    }
+    for (const area of savedAreas) {
+      const row = document.createElement('div'); row.className = 'zl-map-saved-area';
+      const load = document.createElement('button'); load.type = 'button'; load.className = 'zl-map-area-load';
+      const name = document.createElement('strong'); name.textContent = area.name;
+      const detail = document.createElement('span');
+      detail.textContent = area.available_count.toLocaleString() + ' available when saved · ' + new Date(area.created_at).toLocaleDateString();
+      load.append(name, detail); load.disabled = !map || !lookup.size;
+      load.addEventListener('click', () => {
+        clearArea();
+        $('zl-map-area-name').value = area.name;
+        const layer = L.polygon(area.vertices, {color:colors.selected,fillColor:colors.selected,fillOpacity:.13,weight:2}).addTo(map);
+        attachArea(layer, area.radius ? {...area.radius} : null);
+        map.fitBounds(layer.getBounds(), {padding:[38,38],maxZoom:18});
+        areaStatus('Loaded. Available ZIPs have been recalculated.');
+      });
+      const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'Delete';
+      remove.setAttribute('aria-label', 'Delete saved area ' + area.name);
+      remove.disabled = !areasCanManage || areasBusy;
+      remove.addEventListener('click', () => void changeSaved('delete', {id:area.id}));
+      row.append(load, remove); target.append(row);
+    }
+    savedButtons();
+  }
+  async function loadSaved(current, config) {
+    savedAreas = []; areasCanManage = false; areasBusy = false;
+    savedList(); areaStatus('Loading saved areas…');
+    try {
+      const result = await config.readAreas();
+      if (current !== session || !$('zl-map-dialog').open) return;
+      savedAreas = result.areas; areasCanManage = result.can_manage;
+      savedList(); areaStatus('');
+    } catch {
+      if (current === session) areaStatus('Saved areas unavailable. Close and reopen the map to retry.');
+    }
+  }
+  async function changeSaved(action, payload) {
+    if (areasBusy || !areasCanManage) return;
+    const current = session, config = options, version = areaVersion;
+    areasBusy = true; savedList(); areaStatus(action === 'save' ? 'Saving…' : 'Deleting…');
+    try {
+      const result = await config.changeArea(action, payload);
+      if (current !== session || !$('zl-map-dialog').open) return;
+      savedAreas = result.areas; areasCanManage = result.can_manage;
+      areaStatus(action === 'save' ? 'Area saved.' : 'Saved area deleted.');
+      if (action === 'save' && version === areaVersion) $('zl-map-area-name').value = '';
+    } catch (error) {
+      if (current === session) areaStatus(error.message || 'Unable to update saved areas.');
+    } finally {
+      if (current === session) { areasBusy = false; savedList(); }
+    }
+  }
+  $('zl-map-area-save').addEventListener('click', () => {
+    if (!areaReady || !polygon || areasBusy) return;
+    const name = $('zl-map-area-name').value.trim() || 'Area ' + new Date().toLocaleDateString();
+    const draft = {name,vertices:vertices(),radius:radiusInfo ? {...radiusInfo} : null,available_count:selected.length};
+    const key = JSON.stringify(draft);
+    // An explicit retry after an uncertain response reuses the same save ID.
+    if (!areaAttempt || areaAttempt.key !== key) areaAttempt = {key,id:crypto.randomUUID()};
+    void changeSaved('save', {id:areaAttempt.id,...draft});
+  });
+
   function vertices(){return polygon?polygon.getLatLngs()[0].map(p=>({lat:p.lat,lng:p.lng})):[];}
   function clearArea() {
+    areaReady=false;areaVersion++;savedButtons();
     clearTimeout(editTimer);selectionVersion++;pinVersion++;selected=[];selectedSet.clear();radiusInfo=null;updateRadiusOrigin();
     if(map){map.pm.disableDraw();if(polygon)map.removeLayer(polygon);areaLayer.clearLayers();areaMarkers.clear();}
     polygon=null;drawing=false;$('zl-map-selected').value='';$('zl-map-copy').disabled=true;
@@ -6376,6 +6491,7 @@ const ZipMap = (() => {
     $('zl-map-selected').value=selected.map(p=>p.zip).join(',');$('zl-map-copy').disabled=!selected.length;
     const origin=radiusInfo?(radiusInfo.edited?'Edited area around ZIP '+radiusInfo.zip+'. ':'Initial '+radiusInfo.miles+'-mile radius around ZIP '+radiusInfo.zip+'. '):'';
     $('zl-map-help').textContent=lookup.size?origin+selected.length.toLocaleString()+' additional ZIPs. Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
+    areaReady=!!lookup.size;savedButtons();
     renderAreaPins();updateSearch();
   }
   function renderAreaPins() {
@@ -6394,7 +6510,7 @@ const ZipMap = (() => {
       if(i<visible.length)requestAnimationFrame(batch);
     };batch();
   }
-  function queueSelection(){clearTimeout(editTimer);selectionVersion++;editTimer=setTimeout(selectArea,150);}
+  function queueSelection(){areaReady=false;areaVersion++;savedButtons();clearTimeout(editTimer);selectionVersion++;editTimer=setTimeout(selectArea,150);}
   function draw() {
     if(!map || !lookup.size)return;
     if(polygon){$('zl-map-help').textContent='Drag the existing boundary, or Clear area before drawing another.';return;}
@@ -6429,6 +6545,7 @@ const ZipMap = (() => {
     map.on('pm:drawend',()=>{drawing=false;});
   }
   async function open(config) {
+    savedAreas=[];areasCanManage=false;areasBusy=false;areaReady=false;savedList();areaStatus('');
     options=config;const current=++session,dialog=$('zl-map-dialog');
     if(!dialog.open)dialog.showModal();
     setError('');$('zl-map-loading').hidden=false;$('zl-map-draw').disabled=true;
@@ -6438,6 +6555,7 @@ const ZipMap = (() => {
       if(current!==session||!dialog.open)return;
       data=config.getSnapshot();lookup=ZipMapCore.reference(rows);setup();clearArea();clearSearch();
       map.invalidateSize();pins(true);$('zl-map-draw').disabled=!lookup.size;
+      void loadSaved(current,config);
     } catch(error){if(current===session)setError(error.message);}
     finally {if(current===session)$('zl-map-loading').hidden=true;}
   }
@@ -7825,7 +7943,8 @@ const ZipMap = (() => {
           let invalid = 0,
             total = 0,
             overlap = 0;
-          const rows = (model.bulkRows || []).map((row) => {
+          // Spreadsheet rows arrive newest first; evaluate provenance oldest first.
+          const rows = [...(model.bulkRows || [])].reverse().map((row) => {
             const p = parse(row.raw);
             const validDate =
               /^\d{4}-\d{2}-\d{2}$/.test(row.date) &&
@@ -7847,7 +7966,7 @@ const ZipMap = (() => {
               row.feedback.textContent =
                 model.addTarget === "new" &&
                 p.zips.some((z) => seen.has(z))
-                  ? "Remove Used, pending, or already New ZIPs (including repeats in earlier rows)."
+                  ? "Remove Used, pending, or already New ZIPs (including repeats in older pasted rows)."
                   : p.invalid.length
                     ? "Invalid: " + p.invalid.slice(0, 5).join(", ")
                     : !p.zips.length
@@ -7902,11 +8021,12 @@ const ZipMap = (() => {
               source: $("zl-source").value,
             };
           });
+          rows.reverse(); // Keep review and submitted rows in pasted (newest-first) order.
           const tooMany = total > 50000;
           $("zl-bulk-feedback").textContent =
             model.bulkError ||
             (rows.length
-              ? `${rows.length} ${model.addTarget === "new" ? "New ZIP entries" : "history rows"} · ${total.toLocaleString()} ZIP entries${overlap ? " · " + overlap + (model.addTarget === "new" ? " already exist or repeat earlier rows" : " already used or repeated in earlier rows") : ""}${invalid ? " · " + invalid + " rows need correction" : ""}${tooMany ? " · Maximum 50,000 ZIP entries per import" : ""}`
+              ? `${rows.length} ${model.addTarget === "new" ? "New ZIP entries" : "history rows"} · ${total.toLocaleString()} ZIP entries${overlap ? " · " + overlap + (model.addTarget === "new" ? " already exist or repeat older pasted rows" : " already used or repeated in older pasted rows") : ""}${invalid ? " · " + invalid + " rows need correction" : ""}${tooMany ? " · Maximum 50,000 ZIP entries per import" : ""}`
               : "Paste one or two columns. Each spreadsheet row becomes a separate entry.");
           $("zl-bulk-feedback").classList.toggle(
             "zl-invalid",
@@ -8455,6 +8575,16 @@ const ZipMap = (() => {
           void ZipMap.open({
             getSnapshot: () => model.data,
             readReference: () => ZipStore.mapReference(ACCOUNT),
+            readAreas: () => ZipStore.mapAreas(ACCOUNT),
+            changeArea: async (action,payload) => {
+              if(model.busy) throw Error("A ZIP update is already in progress.");
+              busy(true);
+              try {
+                await ZipStore.change(ACCOUNT, model.data.revision, action === "save" ? "save_map_area" : "delete_map_area",payload);
+                model.data=await ZipStore.snapshot(ACCOUNT);render();
+                return await ZipStore.mapAreas(ACCOUNT);
+              } finally {busy(false);}
+            },
             saveHome: async zip => {
               if (model.busy) throw Error("A ZIP update is already in progress.");
               const revision = model.data.revision;
