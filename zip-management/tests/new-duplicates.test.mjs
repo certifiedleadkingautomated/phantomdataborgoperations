@@ -77,4 +77,9 @@ test('compact New batches wrap without a max-content scrolling column and keep a
   const render=html.slice(html.indexOf('el("div", { class: "zl-batch-copy-actions" }'),html.indexOf('el("div", { class: "zl-batch-copy-actions" }')+1000);
   assert.ok(!render.includes('class: "zl-copy-context"'));
   assert.ok(render.includes('"aria-label": `Copy ${batch.length} to request contacts`'));
+  assert.ok(render.includes('`Copy ${batch.length} to request contacts`'));
+  assert.ok(!render.includes('"Copy all ZIPs"'));
+  const header=html.slice(html.indexOf('        function renderNew'),html.indexOf('            const textBox',html.indexOf('        function renderNew')));
+  assert.match(header,/class: "zl-entry-actions"[\s\S]*?class: "zl-text-button"[\s\S]*?"Copy all ZIPs"/);
+
 });

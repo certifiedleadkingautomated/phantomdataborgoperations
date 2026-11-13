@@ -7066,6 +7066,10 @@ const ZipMap = (() => {
                 el(
                   "div",
                   { class: "zl-entry-actions" },
+                  el("button", {
+                    type: "button", class: "zl-text-button",
+                    onclick: () => void copy([...row.zips].sort()),
+                  }, "Copy all ZIPs"),
                   el(
                     "button",
                     {
@@ -7128,13 +7132,10 @@ const ZipMap = (() => {
                       disabled: model.busy,
                       onclick: () => void copyBatch(row, batch),
                     },
-                    `Copy ${batch.length}`,
+                    `Copy ${batch.length} to request contacts`,
 
                   ),
-                  i === 0 ? el("button", {
-                    type: "button", class: "zl-inline-copy",
-                    onclick: () => void copy([...row.zips].sort()),
-                  }, "Copy all ZIPs") : null),
+                  ),
                 ),
               );
             }
