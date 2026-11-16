@@ -3857,6 +3857,8 @@
 .zl-map-area-load span{font-size:10px;color:#64718a;margin-top:3px}
 /* Keep the current assignment readable in the one-subaccount prototype. */
 #zl-assignment { border-color: #2563eb; background: #eff6ff; color: #1e40af; font-weight: 600; }
+
+.zl-map-panel-actions { flex-wrap: wrap; }
     </style>
   </head>
   <body>
@@ -4714,7 +4716,7 @@
         <p id="zl-map-help">Double-click the map or choose Draw area.</p>
         <p id="zl-map-measure" aria-live="polite"></p>
         <textarea id="zl-map-selected" aria-label="Additional ZIPs in selected area" readonly placeholder="Additional available ZIPs inside the polygon"></textarea>
-        <div class="zl-map-panel-actions"><button type="button" id="zl-map-copy" disabled>Copy ZIPs</button><button type="button" id="zl-map-clear">Clear area</button></div>
+        <div class="zl-map-panel-actions"><button type="button" id="zl-map-copy" disabled>Copy ZIPs</button><button type="button" id="zl-map-add-new" disabled>Add to New ZIPs</button><button type="button" id="zl-map-clear">Clear area</button></div>
       </div>
       <section class="zl-map-saved" aria-label="Saved map areas">
         <h3>Saved areas</h3>
@@ -6383,14 +6385,16 @@ const ZipMap = (() => {
     const home=node('div',undefined,'zl-map-home-legend'),dot=node('i',undefined,'zl-map-dot');dot.style.background=colors.home;
     home.append(dot,document.createTextNode(projected.homeZip?'Home '+projected.homeZip+(projected.homeMissing?' · no coordinates':''):'Home ZIP not set'));target.append(home);
     target.append(node('p','Purple: additional available ZIPs in the selected area.','zl-map-legend-help'));
+    if(recentlyAdded.size)target.append(node('p','Darker orange: just added to New ZIPs.','zl-map-legend-help'));
     target.append(node('p','Teal ring: searched ZIP.','zl-map-legend-help'));
   }
   function pins(fit) {
     pinLayer.clearLayers();baseMarkers.clear();projected=ZipMapCore.project(data,lookup,data.home_zip);legend();
     for(const point of projected.pins){
       const status=point.type==='used'?'Used':point.type==='new'?'New':'Home';
-      const label=point.home?'Home ZIP'+(status==='Home'?'':' · '+status):status;
-      baseMarkers.set(point.zip,marker(point,point.home?colors.home:colors[point.type],label,point.home).addTo(pinLayer));
+      const recent=point.type==='new'&&recentlyAdded.has(point.zip);
+      const label=point.home?'Home ZIP'+(status==='Home'?'':' · '+status):recent?'New · Just added':status;
+      baseMarkers.set(point.zip,marker(point,point.home?colors.home:recent?'#d66b10':colors[point.type],label,point.home).addTo(pinLayer));
     }
     if(fit){
       const points=projected.pins.map(p=>[p.lat,p.lng]);
@@ -6406,7 +6410,36 @@ const ZipMap = (() => {
   // are snapshots; loading a boundary always recomputes current availability.
   let savedAreas = [], areasCanManage = false, areasBusy = false, areaReady = false, areaVersion = 0, areaAttempt = null;
   function areaStatus(message = '') { $('zl-map-area-status').textContent = message; }
+  let suspended = false, preserveClose = false, requestedCodes = [], recentlyAdded = new Set();
+  function resume() {
+    if (!suspended || !map || !polygon || !options?.canResume?.()) return;
+    const next = options.getSnapshot();
+    const before = new Set((data.incoming || []).flatMap(entry => entry.zips));
+    const after = new Set((next.incoming || []).flatMap(entry => entry.zips));
+    for (const zip of requestedCodes) if (after.has(zip) && !before.has(zip)) recentlyAdded.add(zip);
+    data = {...next,home_zip:data.home_zip};
+    suspended = false;
+    $('zl-map-dialog').showModal();
+    map.invalidateSize();
+    pins(false);
+    selectArea(); // Recompute exclusions from the verified, refreshed workspace.
+    refreshActions();
+  }
+  function refreshActions() {
+    $('zl-map-add-new').disabled = !areaReady || !selected.length ||
+      !options?.canAddNew?.() || typeof options?.onAddNew !== 'function';
+  }
+  $('zl-map-add-new').addEventListener('click', () => {
+    if (!$('zl-map-dialog').open || !areaReady || !polygon || !selected.length ||
+        !options?.canAddNew?.() || typeof options?.onAddNew !== 'function') return;
+    // Capture the complete list; temporarily hide the map while the entry is reviewed.
+    const codes = selected.map(point => point.zip), launch = options.onAddNew;
+    requestedCodes = codes; suspended = true; preserveClose = true;
+    $('zl-map-dialog').close();
+    launch(codes); // Review only. The existing New ZIP editor owns validation/save.
+  });
   function savedButtons() {
+    refreshActions();
     $('zl-map-area-save').disabled = !areaReady || !polygon || !areasCanManage || areasBusy;
   }
   function savedList() {
@@ -6547,6 +6580,7 @@ const ZipMap = (() => {
     map.on('pm:drawend',()=>{drawing=false;});
   }
   async function open(config) {
+    suspended=false;requestedCodes=[];recentlyAdded.clear();
     savedAreas=[];areasCanManage=false;areasBusy=false;areaReady=false;savedList();areaStatus('');
     options=config;const current=++session,dialog=$('zl-map-dialog');
     if(!dialog.open)dialog.showModal();
@@ -6562,7 +6596,7 @@ const ZipMap = (() => {
     finally {if(current===session)$('zl-map-loading').hidden=true;}
   }
   $('zl-map-close').addEventListener('click',()=>$('zl-map-dialog').close());
-  $('zl-map-dialog').addEventListener('close',()=>{session++;clearTimeout(editTimer);selectionVersion++;if(map)clearArea();});
+  $('zl-map-dialog').addEventListener('close',()=>{const keep=preserveClose;preserveClose=false;session++;clearTimeout(editTimer);selectionVersion++;if(map&&!keep)clearArea();});
   $('zl-map-dialog').addEventListener('cancel',event=>{event.preventDefault();clearArea();});
   $('zl-map-dialog').addEventListener('keydown',event=>{
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();clearArea();}
@@ -6583,7 +6617,7 @@ const ZipMap = (() => {
     catch(error){if(current===session)setError(error.message);}
     finally{$('zl-map-home-save').disabled=false;}
   });
-  return {open};
+  return {open,resume};
 })();
 
 
@@ -8280,6 +8314,9 @@ const ZipMap = (() => {
         $("zl-source").addEventListener("change", validateAdd);
         $("zl-add").addEventListener("click", openAdd);
         $("zl-add-new").addEventListener("click", () => openAdd("new"));
+        $("zl-add-dialog").addEventListener("close", () => {
+          setTimeout(() => ZipMap.resume(), 0);
+        });
         function addCheckedToNew() {
           if (model.busy || !model.data) return;
           checker();
@@ -8576,6 +8613,14 @@ const ZipMap = (() => {
           if (!model.data || model.busy) return;
           void ZipMap.open({
             getSnapshot: () => model.data,
+            canAddNew: () => !model.busy && !!model.data,
+            canResume: () => !model.busy && !!model.data && !$("zl-add-dialog").open,
+            onAddNew: zips => {
+              if (model.busy || !model.data) return;
+              openAdd("new");
+              $("zl-add-zips").value = zips.join(",");
+              validateAdd();
+            },
             readReference: () => ZipStore.mapReference(ACCOUNT),
             readAreas: () => ZipStore.mapAreas(ACCOUNT),
             changeArea: async (action,payload) => {

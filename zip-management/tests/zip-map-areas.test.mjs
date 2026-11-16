@@ -9,17 +9,20 @@ function fixture() {
   const elements=new Map();
   function node(){return {children:[],events:{},value:'',textContent:'',disabled:false,open:true,
     append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;},
+    close(){this.open=false;this.events.close?.();},showModal(){this.open=true;},
     setAttribute(){},addEventListener(name,fn){this.events[name]=fn;}};}
   const $=id=>{if(!elements.has(id))elements.set(id,node());return elements.get(id);};
   const calls=[];
   const area={id:'00000000-0000-4000-8000-000000000001',name:'Saved area',vertices:[{lat:1,lng:1},{lat:1,lng:2},{lat:2,lng:1}],radius:{zip:'00601',miles:5,edited:false},available_count:12,created_at:'2026-11-13T10:00:00Z'};
   const config={readAreas:async()=>({can_manage:true,areas:[area]}),changeArea:async(action,payload)=>{calls.push({action,payload});return {can_manage:true,areas:action==='delete'?[]:[{...area,...payload}]};}};
+  config.canAddNew=()=>true;config.canResume=()=>true;config.onAddNew=codes=>calls.push({intake:[...codes]});
+  config.getSnapshot=()=>({incoming:[],used:[],pending_zips:[]});
   const context=vm.createContext({$,document:{createElement:node},crypto:{randomUUID:()=>area.id},Date,
-    session:1,options:config,map:{fitBounds(){}},lookup:new Map([['00601',{}]]),polygon:{},selected:[{zip:'00601'}],radiusInfo:{zip:'00601',miles:5,edited:false},
+    session:1,options:config,map:{fitBounds(){},invalidateSize(){}},data:{incoming:[],used:[],pending_zips:[]},pins:()=>{},selectArea:()=>{},lookup:new Map([['00601',{}]]),polygon:{},selected:[{zip:'00601'}],radiusInfo:{zip:'00601',miles:5,edited:false},
     vertices:()=>area.vertices,colors:{selected:'purple'},L:{polygon:(points)=>({addTo(){calls.push({loaded:points});return {getBounds(){return {};}};}})},
     clearArea(){context.polygon=null;},attachArea(layer,origin){calls.push({origin});context.polygon=layer;},
   });
-  vm.runInContext(block+'\nglobalThis.api={loadSaved,changeSaved,prepare(){areaReady=true;},snapshot(){return {savedAreas,areasCanManage,areasBusy};}};',context);
+  vm.runInContext(block+'\nglobalThis.api={loadSaved,changeSaved,resume,refreshActions,prepare(){areaReady=true;},snapshot(){return {savedAreas,areasCanManage,areasBusy,suspended,recentlyAdded};}};',context);
   return {context,$,config,calls,area,api:context.api};
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
@@ -61,4 +64,32 @@ test('explicit retry after an uncertain save uses the same ID',async()=>{
  const sent=[];f.config.changeArea=async(action,payload)=>{sent.push(payload);throw Error('Network error');};
  f.$('zl-map-area-save').events.click();await settle();f.$('zl-map-area-save').events.click();await settle();
  assert.equal(sent.length,2);assert.equal(sent[0].id,sent[1].id);assert.equal(ids,1);
+});
+
+test('map-to-New opens review with the full selection, with no automatic write',()=>{
+ const f=fixture();f.api.prepare();f.api.refreshActions();
+ assert.equal(f.$('zl-map-add-new').disabled,false);
+ f.$('zl-map-add-new').events.click();
+ assert.equal(f.$('zl-map-dialog').open,false);assert.deepEqual(f.calls,[{intake:['00601']}]);
+ assert.equal(f.api.snapshot().suspended,true);
+});
+test('empty/incomplete selections and revoked create access cannot launch intake',()=>{
+ const f=fixture();f.$('zl-map-add-new').events.click();assert.equal(f.calls.length,0);
+ f.api.prepare();f.config.canAddNew=()=>false;f.api.refreshActions();
+ assert.equal(f.$('zl-map-add-new').disabled,true);f.$('zl-map-add-new').events.click();assert.equal(f.calls.length,0);
+ f.config.canAddNew=()=>true;f.context.selected=[];f.api.refreshActions();assert.equal(f.$('zl-map-add-new').disabled,true);
+});
+test('verified New data restores the same boundary, excludes added ZIPs and highlights only newly added pins',()=>{
+ const f=fixture();const boundary=f.context.polygon;f.api.prepare();f.$('zl-map-add-new').events.click();
+ f.config.canResume=()=>false;f.api.resume();assert.equal(f.$('zl-map-dialog').open,false);
+ f.config.getSnapshot=()=>({incoming:[{zips:['00601']}],used:[],pending_zips:[]});
+ f.context.pins=()=>{f.context.projected={blocked:new Set(f.config.getSnapshot().incoming.flatMap(e=>e.zips))};};
+ f.context.selectArea=()=>{f.context.selected=f.context.selected.filter(p=>!f.context.projected.blocked.has(p.zip));f.$('zl-map-selected').value=f.context.selected.map(p=>p.zip).join(',');};
+ f.config.canResume=()=>true;f.api.resume();
+ assert.equal(f.$('zl-map-dialog').open,true);assert.equal(f.context.polygon,boundary);assert.equal(f.$('zl-map-selected').value,'');
+ assert.equal(f.api.snapshot().recentlyAdded.has('00601'),true);assert.equal(f.$('zl-map-add-new').disabled,true);
+});
+test('cancelled intake returns to the map without consuming or highlighting any ZIP',()=>{
+ const f=fixture();f.api.prepare();f.$('zl-map-add-new').events.click();f.api.resume();
+ assert.equal(f.$('zl-map-dialog').open,true);assert.equal(f.context.selected.length,1);assert.equal(f.api.snapshot().recentlyAdded.size,0);
 });
