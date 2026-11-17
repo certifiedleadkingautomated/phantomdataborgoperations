@@ -23,34 +23,57 @@ function fixture() {
  const projected={blocked:new Set(['00604'])};
  const rows=[{zip:'00601',population:1234},{zip:'00602',population:0},{zip:'00603',population:null},{zip:'00604',population:9000}];
  const lookup=new Map(rows.map(p=>[p.zip,p]));
- const pin=()=>({tooltip:null,getTooltip(){return this.tooltip;},unbindTooltip(){this.tooltip=null;},bindTooltip(text,options){this.tooltip={text,options};}});
+ const pin=()=>({_zipAppearance:{color:'#a855f7',home:false,active:false},current:null,setIcon(value){this.current=value;}});
  const baseMarkers=new Map(rows.map(p=>[p.zip,pin()]));
- const ctx={ZipMapCore:core,selectedSet,projected,lookup,baseMarkers,colors:{selected:'#a855f7'},node:(_tag,text)=>({textContent:text,style:{}})};
+ const ctx={ZipMapCore:core,selectedSet,projected,lookup,baseMarkers,L:{divIcon:options=>options}};
  const helper=source.match(/\/\/ BEGIN ZIP MAP POPULATION([\s\S]*?)\/\/ END ZIP MAP POPULATION/)[1];
- const api=vm.runInNewContext(helper+'\n({paintPopulation,refreshPopulation})',ctx);
+ const icon=source.slice(source.indexOf('  function icon('),source.indexOf('  function setError('));
+ const api=vm.runInNewContext(icon+'\n'+helper+'\n({paintPopulation,refreshPopulation,icon})',ctx);
  return {...ctx,...api};
 }
-test('only available selected pins get quiet permanent labels, including a selected Home/search pin',()=>{
+test('population is part of the pin silhouette with one outer outline and no separate tooltip',()=>{
  const f=fixture();f.refreshPopulation();
- const label=f.baseMarkers.get('00601').tooltip;
- assert.equal(label.text.textContent,'1.2k');assert.equal(label.options.className,'zl-map-population');
- assert.equal(label.text.style.backgroundColor,'#a855f7');assert.equal(label.options.permanent,true);assert.equal(label.options.interactive,false);
- assert.deepEqual(Array.from(label.options.offset),[0,-28]);
- assert.equal(f.baseMarkers.get('00602').tooltip.text.textContent,'0');
- assert.equal(f.baseMarkers.get('00603').tooltip,null);assert.equal(f.baseMarkers.get('00604').tooltip,null);
- const searchPin={...f.baseMarkers.get('00601'),tooltip:null};
- f.paintPopulation(searchPin,f.lookup.get('00601'));assert.equal(searchPin.tooltip.text.textContent,'1.2k');
+ const pin=f.baseMarkers.get('00601'),icon=pin.current;
+ assert.match(icon.className,/zl-map-population-marker/);assert.match(icon.html,/>1\.2k<\/text>/);
+ assert.equal((icon.html.match(/<path /g)||[]).length,1);
+ assert.match(icon.html,/fill="#a855f7" stroke="#fff"/);assert.doesNotMatch(icon.html,/tooltip/);
+ assert.match(f.baseMarkers.get('00602').current.html,/>0<\/text>/);
+ for(const zip of ['00603','00604'])assert.doesNotMatch(f.baseMarkers.get(zip).current.className,/population/);
+ const home=f.baseMarkers.get('00602');home._zipAppearance={home:true,color:'#e04c68',active:false};f.paintPopulation(home,f.lookup.get('00602'));
+ assert.match(home.current.html,/fill="#e04c68"/);assert.match(home.current.html,/⌂/);
 });
-test('editing or clearing a boundary removes labels and excludes newly consumed ZIPs',()=>{
+test('editing or clearing the boundary restores ordinary pins and excludes newly consumed ZIPs',()=>{
  const f=fixture();f.refreshPopulation();f.selectedSet.delete('00601');f.projected.blocked.add('00602');f.refreshPopulation();
- assert.equal(f.baseMarkers.get('00601').tooltip,null);assert.equal(f.baseMarkers.get('00602').tooltip,null);
+ for(const zip of ['00601','00602'])assert.doesNotMatch(f.baseMarkers.get(zip).current.className,/population/);
  f.selectedSet.clear();f.refreshPopulation();
- assert.ok([...f.baseMarkers.values()].every(p=>p.tooltip===null));
+ assert.ok([...f.baseMarkers.values()].every(p=>!p.current.className.includes('population')));
 });
-
-test('population label clears the taller radius-origin icon and is removed for an unknown point',()=>{
- const f=fixture(),pin=f.baseMarkers.get('00601');pin._zipAppearance={active:true};
- f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.options.offset[1],-37);assert.equal(pin.tooltip.text.style.backgroundColor,'#d59a15');
- pin._zipAppearance={active:false,color:'#e04c68'};f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.text.style.backgroundColor,'#e04c68');
- f.paintPopulation(pin,undefined);assert.equal(pin.tooltip,null);
+test('radius-origin uses the same joined shape in gold and unknown points return to the ordinary icon',()=>{
+ const f=fixture(),pin=f.baseMarkers.get('00601');pin._zipAppearance.active=true;
+ f.paintPopulation(pin,f.lookup.get('00601'));assert.match(pin.current.html,/fill="#d59a15"/);assert.equal(pin.current.iconSize[1],48);
+ f.paintPopulation(pin,undefined);assert.doesNotMatch(pin.current.className,/population/);assert.match(pin.current.className,/zl-radius-origin/);
+});
+test('selected population sums unique ZIPs, preserves zero and distinguishes missing values',()=>{
+ const rows=[{zip:'00601',population:1234},{zip:'00601',population:1234},{zip:'00602',population:500},{zip:'00603',population:0}];
+ const sum=core.sumPopulation(rows);assert.equal(sum.total,1734);assert.equal(sum.known,3);assert.equal(sum.size,3);
+ assert.equal(core.populationSummary(rows),'Population: '+(1734).toLocaleString()+'.');
+ assert.equal(core.populationSummary([]),'Population: 0.');
+ assert.equal(core.populationSummary([{zip:'00601',population:0}]),'Population: 0.');
+ assert.equal(core.populationSummary([...rows,{zip:'00604',population:null}]),'Known population: '+(1734).toLocaleString()+' (3 of 4 ZIPs).');
+ assert.equal(core.populationSummary([{zip:'00601',population:null}]),'Population unavailable (0 of 1 ZIPs).');
+});
+test('unsafe population sums are unavailable rather than rounded or reported as zero',()=>{
+ const rows=[{zip:'00601',population:Number.MAX_SAFE_INTEGER},{zip:'00602',population:1}];
+ assert.equal(core.sumPopulation(rows).total,null);assert.equal(core.populationSummary(rows),'Population unavailable.');
+});
+test('actual selection description totals additional ZIPs and recalculates on boundary edits',()=>{
+ const elements=new Map();const $=id=>{if(!elements.has(id))elements.set(id,{open:true,textContent:'',value:''});return elements.get(id);};
+ const ring=[{lat:0,lng:0},{lat:2,lng:0},{lat:2,lng:5},{lat:0,lng:5}];
+ const rows=[{zip:'00601',lat:1,lng:1,population:1200},{zip:'00602',lat:1,lng:2,population:800},{zip:'00603',lat:1,lng:3,population:5000}];
+ const ctx={ZipMapCore:core,$,polygon:{},lookup:core.reference(rows),vertices:()=>ring,projected:{blocked:new Set(['00603'])},selectionVersion:0,selected:[],selectedSet:new Set(),radiusInfo:null,areaReady:false,refreshPopulation(){},savedButtons(){},renderAreaPins(){},updateSearch(){}};
+ const start=source.indexOf('  function selectArea()');const block=source.slice(start,source.indexOf('  function renderAreaPins()',start));
+ const select=vm.runInNewContext(block+'\nselectArea',ctx);select();
+ assert.match($('zl-map-help').textContent,/2 additional ZIPs\. Population: 2,000\./);
+ ctx.projected.blocked.add('00602');select();assert.match($('zl-map-help').textContent,/1 additional ZIPs\. Population: 1,200\./);
+ ring.splice(0,ring.length,{lat:5,lng:0},{lat:6,lng:0},{lat:6,lng:1});select();assert.match($('zl-map-help').textContent,/0 additional ZIPs\. Population: 0\./);
 });

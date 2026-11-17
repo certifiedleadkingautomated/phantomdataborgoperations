@@ -3887,27 +3887,17 @@
 .zl-used-contact-total { margin-inline-start:auto; display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; color:#738198; font-size:10px; }
 .zl-used-contact-total strong { font-weight:600; color:#365272; font-variant-numeric:tabular-nums; }
 
-/* Compact population badges share the pin's own color. */
-.leaflet-tooltip.zl-map-population {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 11px;
-  font-variant-numeric: tabular-nums;
+/* Population tab and pin share one silhouette and one outer white outline. */
+.zl-map-population-marker svg { display: block; overflow: visible; }
+.zl-map-population-text, .zl-map-population-home {
+  fill: #fff;
+  font-family: inherit;
+  text-anchor: middle;
+  dominant-baseline: central;
   pointer-events: none;
 }
-.leaflet-tooltip.zl-map-population > span {
-  display: block;
-  padding: 0 2px;
-  border-radius: 2px;
-}
-.leaflet-tooltip.zl-map-population::before { display: none; }
+.zl-map-population-text { font-size: 9px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.zl-map-population-home { font-size: 16px; }
     </style>
   </head>
   <body>
@@ -6368,7 +6358,29 @@ const ZipMapCore = (() => {
   }
   function populationLabel(value) {
     const count = population(value);
-    return count === null ? "" : count < 1000 ? String(count) : (count / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+    return count === null
+      ? ""
+      : count < 1000
+        ? String(count)
+        : (count / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  }
+  function sumPopulation(rows) {
+    const unique = new Map((rows || []).map(row => [row.zip, row]));
+    let total = 0, known = 0;
+    for (const row of unique.values()) {
+      const count = population(row.population);
+      if (count === null) continue;
+      known++; total += count;
+    }
+    const overflow = !Number.isSafeInteger(total);
+    return {total: overflow || (unique.size && !known) ? null : total, known, size: unique.size, overflow};
+  }
+  function populationSummary(rows) {
+    const sum = sumPopulation(rows);
+    if (sum.overflow) return "Population unavailable.";
+    if (sum.total === null) return "Population unavailable (0 of " + sum.size + " ZIPs).";
+    if (sum.known !== sum.size) return "Known population: " + sum.total.toLocaleString() + " (" + sum.known + " of " + sum.size + " ZIPs).";
+    return "Population: " + sum.total.toLocaleString() + ".";
   }
   function reference(rows) {
     const lookup = new Map();
@@ -6478,6 +6490,8 @@ const ZipMapCore = (() => {
     dimensions,
     population,
     populationLabel,
+    sumPopulation,
+    populationSummary,
     reference,
     project,
     additional,
@@ -6524,7 +6538,22 @@ const ZipMap = (() => {
     form.addEventListener('submit',event=>{event.preventDefault();drawRadius(point,Number(field.value));});
     return div;
   }
-  function icon(color,home=false,active=false) {
+  function icon(color,home=false,active=false,population="") {
+    if (population) {
+      // One filled outline joins the population tab and pin; no internal border seam.
+      const radius = active ? 14.5 : 11, cy = active ? 24 : 20;
+      const tab = Math.max(active ? 22 : 20, Math.ceil(population.length * 4.7 + 4));
+      const width = Math.max(radius * 2 + 2, tab + 2), cx = width / 2;
+      const left = cx - tab / 2, right = cx + tab / 2, join = Math.sqrt(radius ** 2 - (cy - 12) ** 2);
+      const shoulder = radius / Math.SQRT2, tip = active ? 46 : 37;
+      const path = `M${left + 2},1 H${right - 2} Q${right},1 ${right},3 V10 Q${right},12 ${right - 2},12 H${cx + join} A${radius},${radius} 0 0 1 ${cx + shoulder},${cy + shoulder} L${cx},${tip} L${cx - shoulder},${cy + shoulder} A${radius},${radius} 0 0 1 ${cx - join},12 H${left + 2} Q${left},12 ${left},10 V3 Q${left},1 ${left + 2},1 Z`;
+      return L.divIcon({
+        className: "zl-map-marker zl-map-population-marker" + (active ? " zl-radius-origin" : ""),
+        html: `<svg width="${width}" height="${tip + 2}" viewBox="0 0 ${width} ${tip + 2}" aria-hidden="true"><path d="${path}" fill="${color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/><text class="zl-map-population-text" x="${cx}" y="7">${population}</text>${home ? `<text class="zl-map-population-home" x="${cx}" y="${cy}">⌂</text>` : `<circle cx="${cx}" cy="${cy}" r="3.5" fill="#fff"/>`}</svg>`,
+        iconSize: [width, tip + 2], iconAnchor: [cx, tip + 1], popupAnchor: [0, -tip + 3],
+      });
+    }
+
     return L.divIcon({className:'zl-map-marker'+(active?' zl-radius-origin':''),html:'<span style="--pin:'+color+(active?';width:30px;height:30px':'')+'">'+(home?'⌂':'')+'</span>',iconSize:active?[32,39]:[24,30],iconAnchor:active?[16,38]:[12,29],popupAnchor:active?[0,-35]:[0,-26]});
   }
   function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
@@ -6532,16 +6561,10 @@ const ZipMap = (() => {
   function paintPopulation(pin, point) {
     const text = point && selectedSet.has(point.zip) && !projected.blocked.has(point.zip)
       ? ZipMapCore.populationLabel(point.population) : "";
-    if (pin.getTooltip()) pin.unbindTooltip();
-    if (text) {
-      const badge = node("span", text);
-      badge.style.backgroundColor = pin._zipAppearance?.active ? "#d59a15" : pin._zipAppearance?.color || colors.selected;
-      pin.bindTooltip(badge, {
-        permanent: true, direction: "top",
-        offset: [0, pin._zipAppearance?.active ? -37 : -28],
-        className: "zl-map-population", opacity: 1, interactive: false,
-      });
-    }
+    const style = pin._zipAppearance;
+    if (style.population === text) return;
+    style.population = text;
+    pin.setIcon(icon(style.active ? "#d59a15" : style.color, style.home, style.active, text));
   }
   function refreshPopulation() {
     for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));
@@ -6575,7 +6598,7 @@ const ZipMap = (() => {
       const style=pin._zipAppearance;if(!style)return;
       const active=style.zip===origin;if(style.active===active)return;
       style.active=active;
-      pin.setIcon(icon(active?'#d59a15':style.color,style.home,active));paintPopulation(pin,lookup.get(style.zip));
+      pin.setIcon(icon(active?'#d59a15':style.color,style.home,active,style.population));paintPopulation(pin,lookup.get(style.zip));
       pin.setZIndexOffset(active?2000:style.home?1000:0);
     });
   }
@@ -6740,7 +6763,7 @@ const ZipMap = (() => {
     selectedSet=new Set(selected.map(p=>p.zip));refreshPopulation();
     $('zl-map-selected').value=selected.map(p=>p.zip).join(',');$('zl-map-copy').disabled=!selected.length;
     const origin=radiusInfo?(radiusInfo.edited?'Edited area around ZIP '+radiusInfo.zip+'. ':'Initial '+radiusInfo.miles+'-mile radius around ZIP '+radiusInfo.zip+'. '):'';
-    $('zl-map-help').textContent=lookup.size?origin+selected.length.toLocaleString()+' additional ZIPs. Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
+    $('zl-map-help').textContent=lookup.size?origin+selected.length.toLocaleString()+' additional ZIPs. '+ZipMapCore.populationSummary(selected)+' Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
     areaReady=!!lookup.size;savedButtons();
     renderAreaPins();updateSearch();
   }
