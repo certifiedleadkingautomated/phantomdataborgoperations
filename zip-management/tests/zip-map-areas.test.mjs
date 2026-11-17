@@ -19,7 +19,7 @@ function fixture() {
   config.getSnapshot=()=>({incoming:[],used:[],pending_zips:[]});
   const context=vm.createContext({$,document:{createElement:node},crypto:{randomUUID:()=>area.id},Date,
     session:1,options:config,map:{fitBounds(){},invalidateSize(){}},data:{incoming:[],used:[],pending_zips:[]},pins:()=>{},selectArea:()=>{},lookup:new Map([['00601',{}]]),polygon:{},selected:[{zip:'00601'}],radiusInfo:{zip:'00601',miles:5,edited:false},
-    vertices:()=>area.vertices,colors:{selected:'purple'},L:{polygon:(points)=>({addTo(){calls.push({loaded:points});return {getBounds(){return {};}};}})},
+    refreshLeads(){},vertices:()=>area.vertices,colors:{selected:'purple'},L:{polygon:(points)=>({addTo(){calls.push({loaded:points});return {getBounds(){return {};}};}})},
     clearArea(){context.polygon=null;},attachArea(layer,origin){calls.push({origin});context.polygon=layer;},
   });
   vm.runInContext(block+'\nglobalThis.api={loadSaved,changeSaved,resume,refreshActions,prepare(){areaReady=true;},snapshot(){return {savedAreas,areasCanManage,areasBusy,suspended,recentlyAdded};}};',context);

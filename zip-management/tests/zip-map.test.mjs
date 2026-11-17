@@ -110,7 +110,7 @@ test('local schema upgrade is repeatable and preserves pre-map ZIPs and city/sta
  }finally{sqlite.close();}
 });
 test('map is lazy, scoped, read-only for ZIP usage and has no Apps Script or GHL dependency',()=>{
- const module=html.slice(html.indexOf('const ZipMap ='),html.indexOf('const ZipMap =')+22000).split('// Fixed to the subaccount')[0];
+ const module=html.slice(html.indexOf('const ZipMap ='),html.indexOf('// Fixed to the subaccount',html.indexOf('const ZipMap =')));
  assert.ok(module.includes('pm:edit'));assert.ok(module.includes('pm:create'));
  assert.equal(module.includes('google.script.run'),false);assert.equal(module.includes('leadconnectorhq.com'),false);
  assert.ok(html.includes('aria-label="Open interactive ZIP map"'));assert.ok(html.includes('id="zl-summary-new"'));

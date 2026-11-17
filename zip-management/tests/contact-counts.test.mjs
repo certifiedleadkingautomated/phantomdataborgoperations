@@ -344,3 +344,14 @@ test('old unpadded-only counts refresh once for zero-prefixed ZIPs while other c
   const again=await engine({cache,fetcher});await again.batch(['00601','33701']);await settle(again);
   assert.equal(requests.length,0);again.disconnect();
 });
+
+test('lead searches use the tag plus ZIP filter and never persist a result in the total count cache', async()=>{
+ const cx=fixture(), cache=new Cache(), bodies=[];
+ let writes=0;cache.put=async()=>{writes++;};
+ const engine=new cx.Engine({cache,locks:locks(),interval:0,fetcher:async(url,init)=>{bodies.push(JSON.parse(init.body));return new Response(JSON.stringify({total:2,contacts:[]}),{status:200});}});
+ await engine.connect('synthetic-token','SyntheticLocation123');
+ const result=await engine.limitedRequest({context:engine.context,generation:engine.generation,zip:'00601',leadRequest:true});
+ assert.equal(result,2);assert.equal(writes,0);assert.equal(cache.rows.size,0);
+ assert.deepEqual(bodies[0].filters,[{field:'tags',operator:'exists',value:'lead'},{group:'OR',filters:[{field:'postalCode',operator:'eq',value:'00601'},{field:'postalCode',operator:'eq',value:'601'}]}]);
+ engine.disconnect();
+});

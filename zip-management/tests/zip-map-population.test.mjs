@@ -25,7 +25,7 @@ function fixture() {
  const lookup=new Map(rows.map(p=>[p.zip,p]));
  const pin=()=>({_zipAppearance:{color:'#a855f7',home:false,active:false},current:null,setIcon(value){this.current=value;}});
  const baseMarkers=new Map(rows.map(p=>[p.zip,pin()]));
- const ctx={ZipMapCore:core,selectedSet,projected,lookup,baseMarkers,L:{divIcon:options=>options}};
+ const ctx={ZipMapCore:core,selectedSet,projected,lookup,baseMarkers,usedLeadZips:new Set(),leadSession:{value:()=>null},L:{divIcon:options=>options}};
  const helper=source.match(/\/\/ BEGIN ZIP MAP POPULATION([\s\S]*?)\/\/ END ZIP MAP POPULATION/)[1];
  const icon=source.slice(source.indexOf('  function icon('),source.indexOf('  function setError('));
  const api=vm.runInNewContext(icon+'\n'+helper+'\n({paintPopulation,refreshPopulation,icon})',ctx);
@@ -76,4 +76,12 @@ test('actual selection description totals additional ZIPs and recalculates on bo
  assert.match($('zl-map-help').textContent,/2 additional ZIPs\. Population: 2,000\./);
  ctx.projected.blocked.add('00602');select();assert.match($('zl-map-help').textContent,/1 additional ZIPs\. Population: 1,200\./);
  ring.splice(0,ring.length,{lat:5,lng:0},{lat:6,lng:0},{lat:6,lng:1});select();assert.match($('zl-map-help').textContent,/0 additional ZIPs\. Population: 0\./);
+});
+
+test('Used lead labels use the same integrated SVG and singular/plural text; New/zero stay unlabelled',()=>{
+ const f=fixture(),pin=f.baseMarkers.get('00601');f.usedLeadZips.add('00601');pin._zipAppearance.color='#3388ff';
+ let count=1;f.leadSession.value=()=>count;f.paintPopulation(pin,f.lookup.get('00601'));assert.match(pin.current.html,/>1 lead<\/text>/);assert.match(pin.current.html,/fill="#3388ff"/);
+ count=2;f.paintPopulation(pin,f.lookup.get('00601'));assert.match(pin.current.html,/>2 leads<\/text>/);
+ count=null;f.paintPopulation(pin,f.lookup.get('00601'));assert.doesNotMatch(pin.current.className,/population/);
+ f.usedLeadZips.clear();f.projected.blocked.add('00601');count=2;f.paintPopulation(pin,f.lookup.get('00601'));assert.doesNotMatch(pin.current.className,/population/);
 });

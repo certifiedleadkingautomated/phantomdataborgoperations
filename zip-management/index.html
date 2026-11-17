@@ -6083,7 +6083,7 @@ class GhlZipCountEngine {
       const response = await this.fetcher(url, {
         method: job.accountRequest ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
         headers: { Authorization: 'Bearer ' + this.token, Version: job.accountRequest ? 'v3' : '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
-        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: ghlPostalCodeFilters(job.zip) }) })
+        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: job.leadRequest ? [{field:'tags',operator:'exists',value:'lead'},...ghlPostalCodeFilters(job.zip)] : ghlPostalCodeFilters(job.zip) }) })
       });
       if ([401, 403].includes(response.status)) throw new GhlCountFailure('access_denied');
       if (response.status === 429) {
@@ -6177,6 +6177,22 @@ class ZipContactCounts {
     node.setAttribute('aria-busy', String(state === 'checking'));
     node.textContent = state === 'ready' ? total.toLocaleString() : state === 'checking' ? '…' : state === 'error' ? 'Unavailable' : '—';
     node.setAttribute('aria-label', 'Total contacts in Go High Level: ' + (state === 'ready' ? total.toLocaleString() : state === 'checking' ? 'loading' : state === 'error' ? 'unavailable' : 'not connected'));
+  }
+  mapContactState() {
+    const e = this.engine;
+    return e.context && e.account ? { key: e.context.scope, ready: e.accountState === 'ready' && !e.blocked, counts: this.entries } : null;
+  }
+  async readLeadCount(zip, signal) {
+    const e = this.engine, context = e.context, generation = e.generation, cacheGeneration = e.account?.cache_generation;
+    const eligible = () => e.accountState === 'ready' && !e.blocked && e.used.has(zip) && Number.isSafeInteger(this.entries.get(zip)?.total) && this.entries.get(zip).total > 0;
+    if (!context || signal.aborted || !eligible()) return null;
+    try {
+      const total = await e.limitedRequest({ context, generation, zip, leadRequest: true });
+      return !signal.aborted && generation === e.generation && cacheGeneration === e.account?.cache_generation && eligible() ? total : null;
+    } catch (error) {
+      if (error.kind === 'rate_limited') e.setCooldown(context.location_id, error.retryAfter || 10);
+      throw error;
+    }
   }
   async readBatch(body) { return this.engine.batch(body.zips, body.refresh); }
   async start() { this.status.textContent = 'Connect GHL to display contact totals for this test subaccount.'; this.controls(); }
@@ -6501,6 +6517,105 @@ const ZipMapCore = (() => {
 
 // END ZIP MAP CORE
 
+// BEGIN ZIP MAP LEAD SESSION
+// Page-memory only: closing/remounting a map never repeats an attempted ZIP read.
+// A real page reload recreates this module; no result enters browser/server storage.
+const pageLeadRuns = new Map();
+function positive(count) {
+  return Number.isSafeInteger(count?.total) && count.total > 0;
+}
+function pump(record) {
+  while (record.active < 2) {
+    const index = record.queue.findIndex((job) =>
+      [...record.watchers].some(
+        (w) =>
+          w.enabled &&
+          w.context?.ready &&
+          w.used.has(job.zip) &&
+          positive(w.context.counts.get(job.zip)),
+      ),
+    );
+    if (index < 0) return;
+    const job = record.queue.splice(index, 1)[0];
+    record.active++;
+    Promise.resolve()
+      .then(() => job.request(job.zip, record.controller.signal))
+      .then(
+        (total) => {
+          job.total = Number.isSafeInteger(total) && total >= 0 ? total : null;
+        },
+        () => {
+          job.total = null;
+        },
+      )
+      .finally(() => {
+        job.done = true;
+        record.active--;
+        for (const watcher of record.watchers) watcher.onChange();
+        pump(record);
+      });
+  }
+}
+class MapLeadSession {
+  constructor(onChange) {
+    this.onChange = onChange;
+    this.context = null;
+    this.record = null;
+    this.used = new Set();
+    this.enabled = false;
+  }
+  update(context, used, request, enabled) {
+    this.context = context;
+    this.used = new Set(used);
+    this.enabled = Boolean(enabled && typeof request === "function");
+    const key = context?.key;
+    if (this.record?.key !== key) {
+      this.record?.watchers.delete(this);
+      this.record = null;
+      if (key) {
+        if (!pageLeadRuns.has(key))
+          pageLeadRuns.set(key, {
+            key,
+            entries: new Map(),
+            queue: [],
+            active: 0,
+            watchers: new Set(),
+            controller: new AbortController(),
+          });
+        this.record = pageLeadRuns.get(key);
+        this.record.watchers.add(this);
+      }
+    }
+    const record = this.record;
+    if (!record || !context?.ready || !this.enabled) return;
+    for (const zip of this.used) {
+      if (!positive(context.counts.get(zip))) continue;
+      const previous = record.entries.get(zip);
+      if (previous) {
+        if (!previous.done && record.queue.includes(previous)) previous.request = request;
+        continue;
+      }
+      const job = { zip, request, total: null, done: false };
+      record.entries.set(zip, job);
+      record.queue.push(job);
+    }
+    pump(record);
+  }
+  value(zip) {
+    if (!this.context?.ready || !this.used.has(zip) || !positive(this.context.counts.get(zip)))
+      return null;
+    const value = this.record?.entries.get(zip);
+    return value?.done && value.total > 0 ? value.total : null;
+  }
+  destroy() {
+    this.enabled = false;
+    this.record?.watchers.delete(this);
+    this.record = null;
+  }
+}
+
+// END ZIP MAP LEAD SESSION
+
 const ZipMap = (() => {
   const $=id=>document.getElementById(id);
   let assets, map, polygon, drawing=false, options, data, lookup=new Map(), projected, pinLayer, areaLayer, searchLayer;
@@ -6557,10 +6672,42 @@ const ZipMap = (() => {
     return L.divIcon({className:'zl-map-marker'+(active?' zl-radius-origin':''),html:'<span style="--pin:'+color+(active?';width:30px;height:30px':'')+'">'+(home?'⌂':'')+'</span>',iconSize:active?[32,39]:[24,30],iconAnchor:active?[16,38]:[12,29],popupAnchor:active?[0,-35]:[0,-26]});
   }
   function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
+  // BEGIN ZIP MAP LEAD PINS
+  const leadSession = new MapLeadSession(() => paintLeadPins());
+  let usedLeadZips = new Set();
+  function leadRequest(context) {
+    const key = context?.key, read = options?.readLeadCount;
+    return async (zip, signal) => {
+      const current = options?.getContacts?.();
+      if (!key || current?.key !== key || !current.ready || typeof read !== "function") return null;
+      const total = await read(zip, signal);
+      const latest = options?.getContacts?.();
+      return latest?.key === key && latest.ready ? total : null;
+    };
+  }
+  function paintLeadPins() {
+    if (!map || !$("zl-map-dialog").open || !options?.getContacts) return;
+    const context = options.getContacts();
+    // Reconcile readiness before painting, so late replies cannot revive stale data.
+    leadSession.update(context, [...usedLeadZips], leadRequest(context), $("zl-map-dialog").open);
+    for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));
+  }
+  function refreshLeads() {
+    if (!options?.getContacts) return;
+    usedLeadZips = new Set((options.getSnapshot()?.used || []).map(p => p.zip).filter(zip => lookup.has(zip)));
+    const context = options.getContacts();
+    leadSession.update(context, [...usedLeadZips], leadRequest(context), !!map && $("zl-map-dialog").open);
+    for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));
+  }
+  // END ZIP MAP LEAD PINS
   // BEGIN ZIP MAP POPULATION
   function paintPopulation(pin, point) {
-    const text = point && selectedSet.has(point.zip) && !projected.blocked.has(point.zip)
-      ? ZipMapCore.populationLabel(point.population) : "";
+    const used = point && usedLeadZips.has(point.zip);
+    const leads = used ? leadSession.value(point.zip) : null;
+    const text = used
+      ? leads !== null ? leads.toLocaleString() + (leads === 1 ? " lead" : " leads") : ""
+      : point && selectedSet.has(point.zip) && !projected.blocked.has(point.zip)
+        ? ZipMapCore.populationLabel(point.population) : "";
     const style = pin._zipAppearance;
     if (style.population === text) return;
     style.population = text;
@@ -6663,7 +6810,7 @@ const ZipMap = (() => {
     selectArea(); // Recompute exclusions from the verified, refreshed workspace.
     refreshActions();
   }
-  function refreshActions() {
+  function refreshActions() {refreshLeads();
     $('zl-map-add-new').disabled = !areaReady || !selected.length ||
       !options?.canAddNew?.() || typeof options?.onAddNew !== 'function';
   }
@@ -6828,13 +6975,13 @@ const ZipMap = (() => {
       const [,rows]=await Promise.all([libraries(),config.readReference()]);
       if(current!==session||!dialog.open)return;
       data=config.getSnapshot();lookup=ZipMapCore.reference(rows);setup();clearArea();clearSearch();
-      map.invalidateSize();pins(true);$('zl-map-draw').disabled=!lookup.size;
+      map.invalidateSize();pins(true);refreshLeads();$('zl-map-draw').disabled=!lookup.size;
       void loadSaved(current,config);
     } catch(error){if(current===session)setError(error.message);}
     finally {if(current===session)$('zl-map-loading').hidden=true;}
   }
   $('zl-map-close').addEventListener('click',()=>$('zl-map-dialog').close());
-  $('zl-map-dialog').addEventListener('close',()=>{const keep=preserveClose;preserveClose=false;session++;clearTimeout(editTimer);selectionVersion++;if(map&&!keep)clearArea();});
+  $('zl-map-dialog').addEventListener('close',()=>{leadSession.update(options?.getContacts?.(),[...usedLeadZips],options?.readLeadCount,false);const keep=preserveClose;preserveClose=false;session++;clearTimeout(editTimer);selectionVersion++;if(map&&!keep)clearArea();});
   $('zl-map-dialog').addEventListener('cancel',event=>{event.preventDefault();clearArea();});
   $('zl-map-dialog').addEventListener('keydown',event=>{
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();clearArea();}
@@ -6855,7 +7002,7 @@ const ZipMap = (() => {
     catch(error){if(current===session)setError(error.message);}
     finally{$('zl-map-home-save').disabled=false;}
   });
-  return {open,resume};
+  return {open,resume,refreshLeads};
 })();
 
 
@@ -7112,6 +7259,7 @@ const ZipMap = (() => {
         }
         function scheduleUsedSort() {
           updateUsedContactTotal();
+          ZipMap.refreshLeads();
           clearTimeout(usedSortTimer);
           if (!(model.usedSort || "").startsWith("contacts-") && model.usedView !== "state" && model.usedView !== "city") return;
           usedSortTimer = setTimeout(() => reorderUsedLists(), 120);
@@ -8843,6 +8991,8 @@ const ZipMap = (() => {
           if (!model.data || model.busy) return;
           void ZipMap.open({
             getSnapshot: () => model.data,
+            getContacts: () => contactCounts.mapContactState(),
+            readLeadCount: (zip, signal) => contactCounts.readLeadCount(zip, signal),
             canAddNew: () => !model.busy && !!model.data,
             canResume: () => !model.busy && !!model.data && !$("zl-add-dialog").open,
             onAddNew: zips => {
