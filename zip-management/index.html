@@ -3887,20 +3887,25 @@
 .zl-used-contact-total { margin-inline-start:auto; display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; color:#738198; font-size:10px; }
 .zl-used-contact-total strong { font-weight:600; color:#365272; font-variant-numeric:tabular-nums; }
 
-/* Compact population badges sit directly against the pin's top edge. */
+/* Compact population badges share the pin's own color. */
 .leaflet-tooltip.zl-map-population {
   margin: 0;
-  padding: 0 3px;
-  border: 1px solid #cbd5e1;
-  border-radius: 2px;
-  background: #fff;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
-  color: #334155;
+  color: #fff;
   font-size: 10px;
   font-weight: 600;
-  line-height: 12px;
+  line-height: 14px;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
+}
+.leaflet-tooltip.zl-map-population > span {
+  display: block;
+  padding: 0 3px;
+  border-radius: 2px;
 }
 .leaflet-tooltip.zl-map-population::before { display: none; }
     </style>
@@ -6528,10 +6533,15 @@ const ZipMap = (() => {
     const text = point && selectedSet.has(point.zip) && !projected.blocked.has(point.zip)
       ? ZipMapCore.populationLabel(point.population) : "";
     if (pin.getTooltip()) pin.unbindTooltip();
-    if (text) pin.bindTooltip(text, {
-      permanent: true, direction: "top", offset: [0, pin._zipAppearance?.active ? -44 : -34],
-      className: "zl-map-population", opacity: 1, interactive: false,
-    });
+    if (text) {
+      const badge = node("span", text);
+      badge.style.backgroundColor = pin._zipAppearance?.active ? "#d59a15" : pin._zipAppearance?.color || colors.selected;
+      pin.bindTooltip(badge, {
+        permanent: true, direction: "top",
+        offset: [0, pin._zipAppearance?.active ? -44 : -34],
+        className: "zl-map-population", opacity: 1, interactive: false,
+      });
+    }
   }
   function refreshPopulation() {
     for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));

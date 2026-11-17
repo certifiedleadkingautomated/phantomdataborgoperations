@@ -25,7 +25,7 @@ function fixture() {
  const lookup=new Map(rows.map(p=>[p.zip,p]));
  const pin=()=>({tooltip:null,getTooltip(){return this.tooltip;},unbindTooltip(){this.tooltip=null;},bindTooltip(text,options){this.tooltip={text,options};}});
  const baseMarkers=new Map(rows.map(p=>[p.zip,pin()]));
- const ctx={ZipMapCore:core,selectedSet,projected,lookup,baseMarkers};
+ const ctx={ZipMapCore:core,selectedSet,projected,lookup,baseMarkers,colors:{selected:'#a855f7'},node:(_tag,text)=>({textContent:text,style:{}})};
  const helper=source.match(/\/\/ BEGIN ZIP MAP POPULATION([\s\S]*?)\/\/ END ZIP MAP POPULATION/)[1];
  const api=vm.runInNewContext(helper+'\n({paintPopulation,refreshPopulation})',ctx);
  return {...ctx,...api};
@@ -33,13 +33,13 @@ function fixture() {
 test('only available selected pins get quiet permanent labels, including a selected Home/search pin',()=>{
  const f=fixture();f.refreshPopulation();
  const label=f.baseMarkers.get('00601').tooltip;
- assert.equal(label.text,'1.2k');assert.equal(label.options.className,'zl-map-population');
- assert.equal(label.options.permanent,true);assert.equal(label.options.interactive,false);
+ assert.equal(label.text.textContent,'1.2k');assert.equal(label.options.className,'zl-map-population');
+ assert.equal(label.text.style.backgroundColor,'#a855f7');assert.equal(label.options.permanent,true);assert.equal(label.options.interactive,false);
  assert.deepEqual(Array.from(label.options.offset),[0,-34]);
- assert.equal(f.baseMarkers.get('00602').tooltip.text,'0');
+ assert.equal(f.baseMarkers.get('00602').tooltip.text.textContent,'0');
  assert.equal(f.baseMarkers.get('00603').tooltip,null);assert.equal(f.baseMarkers.get('00604').tooltip,null);
  const searchPin={...f.baseMarkers.get('00601'),tooltip:null};
- f.paintPopulation(searchPin,f.lookup.get('00601'));assert.equal(searchPin.tooltip.text,'1.2k');
+ f.paintPopulation(searchPin,f.lookup.get('00601'));assert.equal(searchPin.tooltip.text.textContent,'1.2k');
 });
 test('editing or clearing a boundary removes labels and excludes newly consumed ZIPs',()=>{
  const f=fixture();f.refreshPopulation();f.selectedSet.delete('00601');f.projected.blocked.add('00602');f.refreshPopulation();
@@ -50,6 +50,7 @@ test('editing or clearing a boundary removes labels and excludes newly consumed 
 
 test('population label clears the taller radius-origin icon and is removed for an unknown point',()=>{
  const f=fixture(),pin=f.baseMarkers.get('00601');pin._zipAppearance={active:true};
- f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.options.offset[1],-44);
+ f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.options.offset[1],-44);assert.equal(pin.tooltip.text.style.backgroundColor,'#d59a15');
+ pin._zipAppearance={active:false,color:'#e04c68'};f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.text.style.backgroundColor,'#e04c68');
  f.paintPopulation(pin,undefined);assert.equal(pin.tooltip,null);
 });
