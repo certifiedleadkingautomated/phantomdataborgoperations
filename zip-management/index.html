@@ -3896,15 +3896,15 @@
   background: transparent;
   box-shadow: none;
   color: #fff;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  line-height: 14px;
+  line-height: 11px;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
 }
 .leaflet-tooltip.zl-map-population > span {
   display: block;
-  padding: 0 3px;
+  padding: 0 2px;
   border-radius: 2px;
 }
 .leaflet-tooltip.zl-map-population::before { display: none; }
@@ -6538,7 +6538,7 @@ const ZipMap = (() => {
       badge.style.backgroundColor = pin._zipAppearance?.active ? "#d59a15" : pin._zipAppearance?.color || colors.selected;
       pin.bindTooltip(badge, {
         permanent: true, direction: "top",
-        offset: [0, pin._zipAppearance?.active ? -44 : -34],
+        offset: [0, pin._zipAppearance?.active ? -37 : -28],
         className: "zl-map-population", opacity: 1, interactive: false,
       });
     }
