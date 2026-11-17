@@ -35,7 +35,7 @@ test('only available selected pins get quiet permanent labels, including a selec
  const label=f.baseMarkers.get('00601').tooltip;
  assert.equal(label.text,'1.2k');assert.equal(label.options.className,'zl-map-population');
  assert.equal(label.options.permanent,true);assert.equal(label.options.interactive,false);
- assert.deepEqual(Array.from(label.options.offset),[0,-32]);
+ assert.deepEqual(Array.from(label.options.offset),[0,-34]);
  assert.equal(f.baseMarkers.get('00602').tooltip.text,'0');
  assert.equal(f.baseMarkers.get('00603').tooltip,null);assert.equal(f.baseMarkers.get('00604').tooltip,null);
  const searchPin={...f.baseMarkers.get('00601'),tooltip:null};
@@ -50,6 +50,6 @@ test('editing or clearing a boundary removes labels and excludes newly consumed 
 
 test('population label clears the taller radius-origin icon and is removed for an unknown point',()=>{
  const f=fixture(),pin=f.baseMarkers.get('00601');pin._zipAppearance={active:true};
- f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.options.offset[1],-42);
+ f.paintPopulation(pin,f.lookup.get('00601'));assert.equal(pin.tooltip.options.offset[1],-44);
  f.paintPopulation(pin,undefined);assert.equal(pin.tooltip,null);
 });
