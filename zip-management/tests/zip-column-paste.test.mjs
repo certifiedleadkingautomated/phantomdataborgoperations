@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const code = html.slice(html.indexOf('      window.ZipPaste = {'), html.indexOf('// BEGIN STATIC GHL COUNT ENGINE'));
+const code = html.slice(html.indexOf('// BEGIN ZIP INTAKE DRAFT HELPERS'), html.indexOf('// BEGIN STATIC GHL COUNT ENGINE'));
 const window = {};
 vm.runInNewContext(code, { window, Event: class { constructor(type, options) { this.type = type; this.bubbles = options.bubbles; } } });
 const paste = window.ZipPaste;
@@ -33,3 +33,4 @@ test('all ZIP-list paste surfaces use column handling without attaching it to co
   assert.match(html, /\["zl-check", "zl-used-search"\]/);
   assert.match(html, /"aria-label": "ZIPs for row " \+ \(i \+ 1\),\s+onpaste:/);
 });
+

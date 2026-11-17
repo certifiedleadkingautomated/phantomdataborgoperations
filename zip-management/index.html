@@ -3870,6 +3870,18 @@
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Bounded, expandable intake previews; removal changes only the unsaved draft. */
+.zl-dialog .zl-intake-preview { margin:8px 0; min-width:0; }
+.zl-dialog .zl-intake-chips { display:flex; flex-wrap:wrap; gap:5px; max-height:180px; overflow:auto; padding:3px 2px; align-content:flex-start; }
+.zl-dialog .zl-bulk-zip-cell .zl-intake-chips { max-height:120px; }
+.zl-dialog .zl-intake-preview .zl-history-chip { display:inline-flex; align-items:center; gap:4px; }
+.zl-dialog .zl-intake-remove { border:0; background:transparent; color:inherit; font:inherit; line-height:1; padding:2px; opacity:.65; cursor:pointer; -webkit-user-select:none; user-select:none; }
+.zl-dialog .zl-intake-remove:hover { opacity:1; }
+.zl-dialog .zl-intake-remove:focus-visible { outline:2px solid #2563eb; outline-offset:1px; border-radius:3px; }
+.zl-dialog .zl-intake-preview-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; margin-top:6px; font-size:10px; color:#64748b; }
+.zl-dialog .zl-intake-preview-actions button { padding:3px 6px; border:1px solid #dbe3ed; border-radius:5px; background:#fff; color:#294d7a; font:inherit; cursor:pointer; }
+.zl-dialog .zl-intake-preview-actions button[aria-pressed="true"] { background:#eff6ff; border-color:#93b4ef; }
     </style>
   </head>
   <body>
@@ -4464,7 +4476,7 @@
                 class="zl-feedback"
                 aria-live="polite"
               ></div>
-              <div id="zl-add-preview" class="zl-preview"></div>
+              <div id="zl-add-preview" class="zl-intake-preview"></div>
               <label
                 >Comment / order number <span class="zl-optional">optional</span
                 ><textarea
@@ -5686,7 +5698,21 @@
     </script>
     <script>
       // Spreadsheet cells use TSV: commas inside a ZIP cell are not column separators.
+// BEGIN ZIP INTAKE DRAFT HELPERS
+function removeDraftZip(text, zip) {
+  return text.split(/[\s,;|]+/).filter(Boolean).filter(token => {
+    const clean = token.replace(/^[[\](){}"']+|[[\](){}"']+$/g, "");
+    return !/^\d{1,5}$/.test(clean) || clean.padStart(5, "0") !== zip;
+  }).join(",");
+}
+function serializeDraftRows(rows) {
+  const cell = value => /[\t\r\n"]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value;
+  return rows.map(row => [row.comment, row.text].map(cell).join("\t")).join("\n");
+}
+// END ZIP INTAKE DRAFT HELPERS
       window.ZipPaste = {
+        removeZip: removeDraftZip,
+        rowsText: serializeDraftRows,
         column(text) {
           if (typeof text !== "string" || text.length > 1500000 || !/[\r\n]/.test(text)) return null;
           const lines = text.split(/\r\n|\r|\n/).map(line => line.trim()).filter(Boolean);
@@ -7919,7 +7945,7 @@ const ZipMap = (() => {
           );
           model.bulkRows.forEach((row, i) => {
             row.feedback = el("div", { class: "zl-bulk-row-feedback" });
-            row.preview = el("div", { class: "zl-bulk-chips" });
+            row.preview = el("div", { class: "zl-intake-preview" });
             const dateInput = el("input", {
               type: "date",
               value: row.date,
@@ -7950,6 +7976,7 @@ const ZipMap = (() => {
               },
             });
             zipInput.value = row.raw;
+            row.zipInput = zipInput;
             row.element = el(
               "div",
               { class: "zl-bulk-row" },
@@ -8031,34 +8058,12 @@ const ZipMap = (() => {
                     previous.length +
                     " previously deleted · purple highlight";
               }
-              row.preview.replaceChildren(
-                ...p.zips.slice(0, 24).map((z) =>
-                  el(
-                    "span",
-                    {
-                      class:
-                        "zl-history-chip" +
-                        (matches.has(z) ? " duplicate" : "") +
-                        (pastDeletions.has(z)
-                          ? " zl-was-deleted"
-                          : ""),
-                      title:
-                        pastDeletions.has(z)
-                          ? "Previously deleted. Informational only; adding is allowed."
-                          : "",
-                    },
-                    z,
-                  ),
-                ),
-              );
-              if (p.zips.length > 24)
-                row.preview.append(
-                  el(
-                    "span",
-                    { class: "zl-bulk-more" },
-                    "+" + (p.zips.length - 24) + " more",
-                  ),
-                );
+              renderDraftPreview(row.preview, p.zips, matches, pastDeletions, row, zip => {
+                row.raw=ZipPaste.removeZip(row.raw,zip);
+                row.zipInput.value=row.raw;
+                $("zl-bulk-paste").value=ZipPaste.rowsText(model.bulkRows.map(item=>({comment:item.comment,text:item.raw})));
+                validateBulk();
+              },validateBulk,24,"row " + (model.bulkRows.indexOf(row)+1) + " preview");
             }
             p.zips.forEach((z) => seen.add(z));
             return {
@@ -8116,6 +8121,25 @@ const ZipMap = (() => {
           readBulkPaste();
         }
 
+// BEGIN ZIP INTAKE PREVIEW
+        function renderDraftPreview(target,codes,matches,deleted,state,remove,refresh,pageSize,context) {
+          if(!codes.length){target.replaceChildren();return;}
+          const scroll=target.children[0]?.scrollTop||0;
+          const limit=state.previewLimit||pageSize;
+          const matched=codes.filter(code=>matches.has(code));
+          const filtered=state.previewMatchesOnly&&matched.length>0;
+          const list=filtered?matched:codes, visible=list.slice(0,limit);
+          const chips=el("div",{class:"zl-intake-chips"},...visible.map(zip=>el("span",{
+            class:"zl-history-chip"+(matches.has(zip)?" duplicate":"")+(deleted.has(zip)?" zl-was-deleted":""),
+            title:deleted.has(zip)?"Previously deleted. Informational only; adding is allowed.":matches.has(zip)?"Already listed":""
+          },zip,el("button",{type:"button",class:"zl-intake-remove",disabled:model.busy,"aria-label":"Remove ZIP "+zip+" from "+context,onclick:()=>remove(zip)},"×"))));
+          const actions=el("div",{class:"zl-intake-preview-actions"},el("span",{},visible.length+" of "+list.length+" ZIPs"));
+          if(matched.length)actions.append(el("button",{type:"button","aria-pressed":String(!!filtered),onclick:()=>{state.previewMatchesOnly=!filtered;state.previewLimit=pageSize;refresh();}},filtered?"Show all ZIPs":"Show matches ("+matched.length+")"));
+          if(visible.length<list.length)actions.append(el("button",{type:"button",onclick:()=>{state.previewLimit=limit+pageSize;refresh();}},"Load "+Math.min(pageSize,list.length-visible.length)+" more"));
+          target.replaceChildren(chips,actions);
+          chips.scrollTop=scroll;
+        }
+// END ZIP INTAKE PREVIEW
         function validateAdd() {
           if (!$("zl-add-dialog").open) return;
           if (model.addMode === "bulk") {
@@ -8159,36 +8183,10 @@ const ZipMap = (() => {
                 ),
               );
           }
-          $("zl-add-preview").replaceChildren(
-            ...p.zips.slice(0, 200).map((z) =>
-              el(
-                "span",
-                {
-                  class:
-                    "zl-history-chip" +
-                    (used.has(z) ? " duplicate" : "") +
-                    (pastDeletions.has(z)
-                      ? " zl-was-deleted"
-                      : ""),
-                  title:
-                    pastDeletions.has(z)
-                      ? "Previously deleted. Informational only; adding is allowed."
-                      : "",
-                },
-                z,
-              ),
-            ),
-          );
-          if (p.zips.length > 200)
-            $("zl-add-preview").append(
-              el(
-                "span",
-                {},
-                "Preview shows the first 200 ZIPs. All " +
-                  p.zips.length +
-                  " will be saved.",
-              ),
-            );
+          renderDraftPreview($("zl-add-preview"),p.zips,used,pastDeletions,model,zip=>{
+            $("zl-add-zips").value=ZipPaste.removeZip($("zl-add-zips").value,zip);
+            validateAdd();
+          },validateAdd,100,"preview");
           $("zl-save-row").disabled =
             model.busy ||
             !p.zips.length ||
@@ -8198,6 +8196,7 @@ const ZipMap = (() => {
         function openAdd(target = "history") {
           if (model.busy || !model.data) return;
           model.dialogRevision = model.data.revision;
+          model.previewLimit=100;model.previewMatchesOnly=false;
           model.addTarget = target === "new" ? "new" : "history";
           $("zl-add-title").textContent =
             model.addTarget === "new" ? "Add new ZIPs" : "Add Used ZIP history";
