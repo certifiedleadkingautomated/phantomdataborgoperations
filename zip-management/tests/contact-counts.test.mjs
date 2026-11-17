@@ -352,6 +352,6 @@ test('lead searches use the tag plus ZIP filter and never persist a result in th
  await engine.connect('synthetic-token','SyntheticLocation123');
  const result=await engine.limitedRequest({context:engine.context,generation:engine.generation,zip:'00601',leadRequest:true});
  assert.equal(result,2);assert.equal(writes,0);assert.equal(cache.rows.size,0);
- assert.deepEqual(bodies[0].filters,[{field:'tags',operator:'exists',value:'lead'},{group:'OR',filters:[{field:'postalCode',operator:'eq',value:'00601'},{field:'postalCode',operator:'eq',value:'601'}]}]);
+ assert.deepEqual(bodies[0].filters,[{field:'tags',operator:'eq',value:'lead'},{group:'OR',filters:[{field:'postalCode',operator:'eq',value:'00601'},{field:'postalCode',operator:'eq',value:'601'}]}]);
  engine.disconnect();
 });

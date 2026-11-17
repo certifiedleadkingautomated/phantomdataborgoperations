@@ -6083,7 +6083,7 @@ class GhlZipCountEngine {
       const response = await this.fetcher(url, {
         method: job.accountRequest ? 'GET' : 'POST', redirect: 'error', credentials: 'omit', cache: 'no-store', signal: controller.signal,
         headers: { Authorization: 'Bearer ' + this.token, Version: job.accountRequest ? 'v3' : '2021-07-28', 'Content-Type': 'application/json', Accept: 'application/json' },
-        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: job.leadRequest ? [{field:'tags',operator:'exists',value:'lead'},...ghlPostalCodeFilters(job.zip)] : ghlPostalCodeFilters(job.zip) }) })
+        ...(job.accountRequest ? {} : { body: JSON.stringify({ locationId: job.context.location_id, page: 1, pageLimit: 1, filters: job.leadRequest ? [{field:'tags',operator:'eq',value:'lead'},...ghlPostalCodeFilters(job.zip)] : ghlPostalCodeFilters(job.zip) }) })
       });
       if ([401, 403].includes(response.status)) throw new GhlCountFailure('access_denied');
       if (response.status === 429) {
