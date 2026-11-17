@@ -73,3 +73,25 @@ test('unsafe group sums remain unavailable instead of reporting an inaccurate to
   assert.equal(result.total,null);assert.equal(result.overflow,true);assert.equal(result.complete,false);
 });
 
+
+
+function subtotalFixture(items,counts,state='ready') {
+ const node={textContent:'',parentElement:{setAttribute(name,value){this[name]=value;}}};
+ const context={model:{data:{used:items}},contactCounts:{entries:counts,engine:{accountState:state}},$:()=>node};
+ const paint=html.match(/\/\/ BEGIN USED ZIP LOADED TOTAL([\s\S]*?)\/\/ END USED ZIP LOADED TOTAL/)[1];
+ const update=vm.runInNewContext(code+'\n'+paint+'\nupdateUsedContactTotal',context);
+ return {node,context,update};
+}
+test('loaded Used subtotal deduplicates ZIPs, skips unknowns and ignores counts outside Used',()=>{
+ const f=subtotalFixture([{zip:'00601'},{zip:'00601'},{zip:'33701'},{zip:'99999'}],new Map([
+  ['00601',{total:0}],['33701',{total:25}],['99999',{total:null}],['10000',{total:999}]
+ ]));f.update();assert.equal(f.node.textContent,'25');assert.match(f.node.parentElement['aria-label'],/2 of 3/);
+ f.context.contactCounts.entries.set('99999',{total:5});f.update();assert.equal(f.node.textContent,'30');
+});
+test('loaded Used subtotal waits for account verification and distinguishes valid zero from unknown',()=>{
+ const f=subtotalFixture([{zip:'00601'}],new Map([['00601',{total:500}]]),'checking');
+ f.update();assert.equal(f.node.textContent,'—');
+ f.context.contactCounts.engine.accountState='ready';f.context.contactCounts.entries.set('00601',{total:0});f.update();assert.equal(f.node.textContent,'0');
+ f.context.contactCounts.engine.accountState='error';f.update();assert.equal(f.node.textContent,'—');
+ f.context.model.data.used=[];f.update();assert.equal(f.node.textContent,'0');
+});

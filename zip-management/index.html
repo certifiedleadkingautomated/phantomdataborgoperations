@@ -3882,6 +3882,10 @@
 .zl-dialog .zl-intake-preview-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px; margin-top:6px; font-size:10px; color:#64748b; }
 .zl-dialog .zl-intake-preview-actions button { padding:3px 6px; border:1px solid #dbe3ed; border-radius:5px; background:#fff; color:#294d7a; font:inherit; cursor:pointer; }
 .zl-dialog .zl-intake-preview-actions button[aria-pressed="true"] { background:#eff6ff; border-color:#93b4ef; }
+
+/* Sum already-loaded Used ZIP counts without changing the fetch schedule. */
+.zl-used-contact-total { margin-inline-start:auto; display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; color:#738198; font-size:10px; }
+.zl-used-contact-total strong { font-weight:600; color:#365272; font-variant-numeric:tabular-nums; }
     </style>
   </head>
   <body>
@@ -4216,6 +4220,7 @@
                     <button type="button" data-sort="contacts-desc" aria-pressed="false" aria-label="Contacts: highest first" title="Available contact counts: highest first. ZIPs without counts stay last. State/city groups sort by their available contact totals. Click again to return to ZIP order, smallest first.">Contacts ↓</button>
                     <button type="button" data-sort="contacts-asc" aria-pressed="false" aria-label="Contacts: lowest first" title="Available contact counts: lowest first. ZIPs without counts stay last. State/city groups sort by their available contact totals. Click again to return to ZIP order, smallest first.">Contacts ↑</button>
                   </div>
+                  <span class="zl-used-contact-total" role="status" aria-live="polite" aria-atomic="true"><span>Loaded contacts</span><strong id="zl-used-contact-total">—</strong></span>
                   <p id="zl-sort-note" class="zl-sort-note" role="status" aria-live="polite" hidden></p>
                 </div>
                 <div class="zl-used-search-box">
@@ -6857,6 +6862,19 @@ const ZipMap = (() => {
             : sum.complete ? `Sum of available contact counts for all ${sum.size} ZIPs in this group. Counts validated against the latest account-total check.`
               : `Known subtotal from ${sum.known} of ${sum.size} ZIPs. Missing counts are not zero. Sorting uses the available subtotal; it updates as counts arrive.`;
         }
+// BEGIN USED ZIP LOADED TOTAL
+        function updateUsedContactTotal() {
+          const items=model.data?.used||[];
+          const sum=sumZipContacts(items,contactCounts.entries);
+          const ready=contactCounts.engine?.accountState==="ready";
+          const total=!model.data?null:!items.length?0:ready?sum.total:null;
+          const known=ready?sum.known:0;
+          const node=$("zl-used-contact-total");
+          node.textContent=total===null?"—":total.toLocaleString();
+          node.parentElement.setAttribute("aria-label",`Loaded contacts in Used ZIPs: ${total===null?"unavailable":total.toLocaleString()}, ${known} of ${sum.size} ZIP counts loaded`);
+        }
+// END USED ZIP LOADED TOTAL
+
         let usedSortTimer = null;
         function updateUsedSortControls() {
           const order = model.usedSort || "zip-asc";
@@ -6897,6 +6915,7 @@ const ZipMap = (() => {
           updateUsedSortControls();
         }
         function scheduleUsedSort() {
+          updateUsedContactTotal();
           clearTimeout(usedSortTimer);
           if (!(model.usedSort || "").startsWith("contacts-") && model.usedView !== "state" && model.usedView !== "city") return;
           usedSortTimer = setTimeout(() => reorderUsedLists(), 120);
@@ -7148,6 +7167,7 @@ const ZipMap = (() => {
                   ),
             );
           $("zl-used-count").textContent = data.length;
+          updateUsedContactTotal();
           selectionControls();
           const unknown = data.filter((z) => !z.state_name || !z.city).length;
           $("zl-geo-status").hidden = kind === "list" || !unknown;
