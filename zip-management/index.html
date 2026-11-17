@@ -3859,6 +3859,17 @@
 #zl-assignment { border-color: #2563eb; background: #eff6ff; color: #1e40af; font-weight: 600; }
 
 .zl-map-panel-actions { flex-wrap: wrap; }
+
+/* Drag across New ZIP rows without selecting the inline request actions. */
+.zip-lab .zl-new-textbox .zl-new-line {
+  -webkit-user-select: text;
+  user-select: text;
+}
+.zip-lab .zl-new-textbox .zl-batch-copy-actions,
+.zip-lab .zl-new-textbox .zl-batch-copy-actions * {
+  -webkit-user-select: none;
+  user-select: none;
+}
     </style>
   </head>
   <body>
