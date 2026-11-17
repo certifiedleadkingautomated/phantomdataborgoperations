@@ -3886,6 +3886,23 @@
 /* Sum already-loaded Used ZIP counts without changing the fetch schedule. */
 .zl-used-contact-total { margin-inline-start:auto; display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; color:#738198; font-size:10px; }
 .zl-used-contact-total strong { font-weight:600; color:#365272; font-variant-numeric:tabular-nums; }
+
+/* Quiet population labels for additional available ZIP pins only. */
+.leaflet-tooltip.zl-map-population {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff;
+  pointer-events: none;
+}
+.leaflet-tooltip.zl-map-population::before { display: none; }
     </style>
   </head>
   <body>
@@ -4888,7 +4905,7 @@
           if (!query(db, "PRAGMA table_info(subaccounts)").some(c => c.name === "home_zip"))
             db.run("ALTER TABLE subaccounts ADD COLUMN home_zip TEXT");
           const placeColumns = query(db, "PRAGMA table_info(zip_places)");
-          for (const column of ["lat", "lng"])
+          for (const column of ["lat", "lng", "population"])
             if (!placeColumns.some(c => c.name === column))
               db.run("ALTER TABLE zip_places ADD COLUMN " + column + " REAL");
         }
@@ -5473,11 +5490,13 @@
                   (Number.isFinite(r.lat) && Math.abs(r.lat) <= 90 && Number.isFinite(r.lng) && Math.abs(r.lng) <= 180),
                   "CSV has invalid latitude or longitude.");
               }
+              for (const r of payload.rows)
+                assert(r.population == null || (Number.isSafeInteger(r.population) && r.population >= 0), "CSV has invalid population.");
               db.run("DELETE FROM zip_places WHERE subaccount_id=?", [
                 account.id,
               ]);
               const stmt = db.prepare(
-                "INSERT INTO zip_places(subaccount_id,zip,city,state_name,lat,lng) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO zip_places(subaccount_id,zip,city,state_name,lat,lng,population) VALUES (?,?,?,?,?,?,?)",
               );
               try {
                 for (const r of payload.rows) {
@@ -5488,6 +5507,7 @@
                     r.state_name.trim(),
                     r.lat ?? null,
                     r.lng ?? null,
+                    r.population ?? null,
                   ]);
                 }
               } finally {
@@ -5689,7 +5709,7 @@
         async function mapReference(account) {
           checkAccount(account);
           const {db} = await open();
-          try { return query(db, "SELECT zip,city,state_name,lat,lng FROM zip_places WHERE subaccount_id=? ORDER BY zip", [account.id]); }
+          try { return query(db, "SELECT zip,city,state_name,lat,lng,population FROM zip_places WHERE subaccount_id=? ORDER BY zip", [account.id]); }
           finally { db.close(); }
         }
         async function mapAreas(account) {
@@ -6262,76 +6282,204 @@ class ZipContactCounts {
 
 // BEGIN ZIP MAP CORE
 const ZipMapCore = (() => {
-  const zip = value => /^\d{1,5}$/.test(String(value ?? '').trim()) ? String(value).trim().padStart(5, '0') : null;
-  const validPoint = p => p && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 && Number.isFinite(p.lng) && Math.abs(p.lng) <= 180;
-  const longitude = n => ((n + 180) % 360 + 360) % 360 - 180;
+  const zip = (value) =>
+    /^\d{1,5}$/.test(String(value ?? "").trim()) ? String(value).trim().padStart(5, "0") : null;
+  const validPoint = (p) =>
+    p &&
+    Number.isFinite(p.lat) &&
+    Math.abs(p.lat) <= 90 &&
+    Number.isFinite(p.lng) &&
+    Math.abs(p.lng) <= 180;
+  const longitude = (n) => ((((n + 180) % 360) + 360) % 360) - 180;
   function polygon(vertices) {
-    if (!Array.isArray(vertices) || vertices.length < 3 || vertices.some(p => !Number.isFinite(p.lat) || !Number.isFinite(p.lng) || Math.abs(p.lat) > 90)) return null;
+    if (
+      !Array.isArray(vertices) ||
+      vertices.length < 3 ||
+      vertices.some(
+        (p) => !Number.isFinite(p.lat) || !Number.isFinite(p.lng) || Math.abs(p.lat) > 90,
+      )
+    )
+      return null;
     const anchor = longitude(vertices[0].lng);
-    const ring = vertices.map(p => ({lat:p.lat,lng:anchor + longitude(p.lng-anchor)}));
-    return {ring,anchor,south:Math.min(...ring.map(p=>p.lat)),north:Math.max(...ring.map(p=>p.lat)),west:Math.min(...ring.map(p=>p.lng)),east:Math.max(...ring.map(p=>p.lng))};
+    const ring = vertices.map((p) => ({ lat: p.lat, lng: anchor + longitude(p.lng - anchor) }));
+    return {
+      ring,
+      anchor,
+      south: Math.min(...ring.map((p) => p.lat)),
+      north: Math.max(...ring.map((p) => p.lat)),
+      west: Math.min(...ring.map((p) => p.lng)),
+      east: Math.max(...ring.map((p) => p.lng)),
+    };
   }
   function contains(point, shape) {
     if (!validPoint(point) || !shape) return false;
-    const x=shape.anchor+longitude(point.lng-shape.anchor), y=point.lat, v=shape.ring;
-    if (y<shape.south || y>shape.north || x<shape.west || x>shape.east) return false;
-    let inside=false;
-    for(let i=0,j=v.length-1;i<v.length;j=i++) {
-      const a=v[j],b=v[i],cross=(x-a.lng)*(b.lat-a.lat)-(y-a.lat)*(b.lng-a.lng);
-      if(Math.abs(cross)<1e-10 && x>=Math.min(a.lng,b.lng)-1e-10 && x<=Math.max(a.lng,b.lng)+1e-10 && y>=Math.min(a.lat,b.lat)-1e-10 && y<=Math.max(a.lat,b.lat)+1e-10) return true;
-      if((a.lat>y)!==(b.lat>y) && x<(b.lng-a.lng)*(y-a.lat)/(b.lat-a.lat)+a.lng) inside=!inside;
+    const x = shape.anchor + longitude(point.lng - shape.anchor),
+      y = point.lat,
+      v = shape.ring;
+    if (y < shape.south || y > shape.north || x < shape.west || x > shape.east) return false;
+    let inside = false;
+    for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+      const a = v[j],
+        b = v[i],
+        cross = (x - a.lng) * (b.lat - a.lat) - (y - a.lat) * (b.lng - a.lng);
+      if (
+        Math.abs(cross) < 1e-10 &&
+        x >= Math.min(a.lng, b.lng) - 1e-10 &&
+        x <= Math.max(a.lng, b.lng) + 1e-10 &&
+        y >= Math.min(a.lat, b.lat) - 1e-10 &&
+        y <= Math.max(a.lat, b.lat) + 1e-10
+      )
+        return true;
+      if (a.lat > y !== b.lat > y && x < ((b.lng - a.lng) * (y - a.lat)) / (b.lat - a.lat) + a.lng)
+        inside = !inside;
     }
     return inside;
   }
-  function miles(a,b) {
-    const r=n=>n*Math.PI/180, dLat=r(b.lat-a.lat),dLng=r(b.lng-a.lng);
-    const h=Math.min(1,Math.max(0,Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLng/2)**2));
-    return 3958.7613*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
+  function miles(a, b) {
+    const r = (n) => (n * Math.PI) / 180,
+      dLat = r(b.lat - a.lat),
+      dLng = r(b.lng - a.lng);
+    const h = Math.min(
+      1,
+      Math.max(
+        0,
+        Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2,
+      ),
+    );
+    return 3958.7613 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
   }
   function dimensions(vertices) {
-    const p=polygon(vertices);if(!p)return null;
-    const lat=(p.south+p.north)/2,lng=(p.west+p.east)/2;
-    return {width:miles({lat,lng:p.west},{lat,lng:p.east}),height:miles({lat:p.south,lng},{lat:p.north,lng})};
+    const p = polygon(vertices);
+    if (!p) return null;
+    const lat = (p.south + p.north) / 2,
+      lng = (p.west + p.east) / 2;
+    return {
+      width: miles({ lat, lng: p.west }, { lat, lng: p.east }),
+      height: miles({ lat: p.south, lng }, { lat: p.north, lng }),
+    };
+  }
+  function population(value) {
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  }
+  function populationLabel(value) {
+    const count = population(value);
+    return count === null ? "" : count < 1000 ? String(count) : (count / 1000).toFixed(1).replace(/\.0$/, "") + "k";
   }
   function reference(rows) {
-    const lookup=new Map();
-    for(const row of rows || []) { const code=zip(row.zip);if(code && validPoint(row))lookup.set(code,{zip:code,lat:row.lat,lng:row.lng,city:String(row.city||''),state_name:String(row.state_name||'')}); }
+    const lookup = new Map();
+    for (const row of rows || []) {
+      const code = zip(row.zip);
+      if (code && validPoint(row))
+        lookup.set(code, {
+          zip: code,
+          lat: row.lat,
+          lng: row.lng,
+          city: String(row.city || ""),
+          state_name: String(row.state_name || ""),
+          population: population(row.population),
+        });
+    }
     return lookup;
   }
-  function project(data,lookup,home) {
-    const used=new Set((data.used||[]).map(p=>zip(p.zip)).filter(Boolean));
-    const incoming=new Set((data.incoming||[]).flatMap(e=>e.zips).map(zip).filter(Boolean));
-    const pending=new Set((data.pending_zips||[]).map(zip).filter(Boolean));
-    const shown={used:[],new:[]},missing={used:[],new:[]},pins=new Map();
-    for(const [type,codes] of [['used',used],['new',incoming]])for(const code of codes){
-      if(type==='new' && used.has(code))continue;
-      const point=lookup.get(code);
-      (point?shown:missing)[type].push(code);
-      if(point)pins.set(code,{...point,type,home:false});
-    }
-    for(const lists of [shown,missing])for(const type of ['used','new'])lists[type].sort();
-    const homeZip=zip(home);
-    if(homeZip && lookup.has(homeZip))pins.set(homeZip,{...lookup.get(homeZip),...(pins.get(homeZip)||{type:'home'}),home:true});
-    return {pins:[...pins.values()],shown,missing,homeZip,homeMissing:!!homeZip&&!lookup.has(homeZip),blocked:new Set([...used,...incoming,...pending])};
+  function project(data, lookup, home) {
+    const used = new Set((data.used || []).map((p) => zip(p.zip)).filter(Boolean));
+    const incoming = new Set(
+      (data.incoming || [])
+        .flatMap((e) => e.zips)
+        .map(zip)
+        .filter(Boolean),
+    );
+    const pending = new Set((data.pending_zips || []).map(zip).filter(Boolean));
+    const shown = { used: [], new: [] },
+      missing = { used: [], new: [] },
+      pins = new Map();
+    for (const [type, codes] of [
+      ["used", used],
+      ["new", incoming],
+    ])
+      for (const code of codes) {
+        if (type === "new" && used.has(code)) continue;
+        const point = lookup.get(code);
+        (point ? shown : missing)[type].push(code);
+        if (point) pins.set(code, { ...point, type, home: false });
+      }
+    for (const lists of [shown, missing]) for (const type of ["used", "new"]) lists[type].sort();
+    const homeZip = zip(home);
+    if (homeZip && lookup.has(homeZip))
+      pins.set(homeZip, {
+        ...lookup.get(homeZip),
+        ...(pins.get(homeZip) || { type: "home" }),
+        home: true,
+      });
+    return {
+      pins: [...pins.values()],
+      shown,
+      missing,
+      homeZip,
+      homeMissing: !!homeZip && !lookup.has(homeZip),
+      blocked: new Set([...used, ...incoming, ...pending]),
+    };
   }
-  function additional(lookup,vertices,blocked) {
-    const shape=polygon(vertices);if(!shape)return [];
-    return [...lookup.values()].filter(p=>!blocked.has(p.zip)&&contains(p,shape)).sort((a,b)=>a.zip.localeCompare(b.zip));
+  function additional(lookup, vertices, blocked) {
+    const shape = polygon(vertices);
+    if (!shape) return [];
+    return [...lookup.values()]
+      .filter((p) => !blocked.has(p.zip) && contains(p, shape))
+      .sort((a, b) => a.zip.localeCompare(b.zip));
   }
-  function radiusPolygon(center,radius,steps=16) {
-    if(!validPoint(center) || !Number.isFinite(radius) || radius<.1 || radius>5000 || !Number.isInteger(steps) || steps<12 || steps>256)
-      throw Error('Enter a radius from 0.1 to 5,000 miles.');
-    const rad=n=>n*Math.PI/180,deg=n=>n*180/Math.PI;
-    const latitude=rad(center.lat),lng=rad(center.lng),distance=radius/3958.7613;
-    return Array.from({length:steps},(_,i)=>{
-      const bearing=2*Math.PI*i/steps;
-      const lat=Math.asin(Math.max(-1,Math.min(1,Math.sin(latitude)*Math.cos(distance)+Math.cos(latitude)*Math.sin(distance)*Math.cos(bearing))));
-      const lon=lng+Math.atan2(Math.sin(bearing)*Math.sin(distance)*Math.cos(latitude),Math.cos(distance)-Math.sin(latitude)*Math.sin(lat));
-      return {lat:deg(lat),lng:center.lng+longitude(deg(lon)-center.lng)};
+  function radiusPolygon(center, radius, steps = 16) {
+    if (
+      !validPoint(center) ||
+      !Number.isFinite(radius) ||
+      radius < 0.1 ||
+      radius > 5000 ||
+      !Number.isInteger(steps) ||
+      steps < 12 ||
+      steps > 256
+    )
+      throw Error("Enter a radius from 0.1 to 5,000 miles.");
+    const rad = (n) => (n * Math.PI) / 180,
+      deg = (n) => (n * 180) / Math.PI;
+    const latitude = rad(center.lat),
+      lng = rad(center.lng),
+      distance = radius / 3958.7613;
+    return Array.from({ length: steps }, (_, i) => {
+      const bearing = (2 * Math.PI * i) / steps;
+      const lat = Math.asin(
+        Math.max(
+          -1,
+          Math.min(
+            1,
+            Math.sin(latitude) * Math.cos(distance) +
+              Math.cos(latitude) * Math.sin(distance) * Math.cos(bearing),
+          ),
+        ),
+      );
+      const lon =
+        lng +
+        Math.atan2(
+          Math.sin(bearing) * Math.sin(distance) * Math.cos(latitude),
+          Math.cos(distance) - Math.sin(latitude) * Math.sin(lat),
+        );
+      return { lat: deg(lat), lng: center.lng + longitude(deg(lon) - center.lng) };
     });
   }
-  return {zip,validPoint,polygon,contains,miles,dimensions,reference,project,additional,radiusPolygon};
+  return {
+    zip,
+    validPoint,
+    polygon,
+    contains,
+    miles,
+    dimensions,
+    population,
+    populationLabel,
+    reference,
+    project,
+    additional,
+    radiusPolygon,
+  };
 })();
+
 // END ZIP MAP CORE
 
 const ZipMap = (() => {
@@ -6375,11 +6523,26 @@ const ZipMap = (() => {
     return L.divIcon({className:'zl-map-marker'+(active?' zl-radius-origin':''),html:'<span style="--pin:'+color+(active?';width:30px;height:30px':'')+'">'+(home?'⌂':'')+'</span>',iconSize:active?[32,39]:[24,30],iconAnchor:active?[16,38]:[12,29],popupAnchor:active?[0,-35]:[0,-26]});
   }
   function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
+  // BEGIN ZIP MAP POPULATION
+  function paintPopulation(pin, point) {
+    const text = point && selectedSet.has(point.zip) && !projected.blocked.has(point.zip)
+      ? ZipMapCore.populationLabel(point.population) : "";
+    if (pin.getTooltip()) pin.unbindTooltip();
+    if (text) pin.bindTooltip(text, {
+      permanent: true, direction: "top", offset: [0, pin._zipAppearance?.active ? -42 : -32],
+      className: "zl-map-population", opacity: 0.8, interactive: false,
+    });
+  }
+  function refreshPopulation() {
+    for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));
+  }
+  // END ZIP MAP POPULATION
   function marker(point,color,label,home=false) {
     const active=!!(polygon && radiusInfo && !radiusInfo.edited && radiusInfo.zip===point.zip);
     const pin=L.marker([point.lat,point.lng],{icon:icon(active?'#d59a15':color,home,active),pmIgnore:true,zIndexOffset:active?2000:home?1000:0,keyboard:true,title:point.zip+' · '+label})
       .bindPopup(()=>popup(point,label));
     pin._zipAppearance={zip:point.zip,color,home,active};
+    paintPopulation(pin,point);
     return pin;
   }
   function status(point) {
@@ -6402,7 +6565,7 @@ const ZipMap = (() => {
       const style=pin._zipAppearance;if(!style)return;
       const active=style.zip===origin;if(style.active===active)return;
       style.active=active;
-      pin.setIcon(icon(active?'#d59a15':style.color,style.home,active));
+      pin.setIcon(icon(active?'#d59a15':style.color,style.home,active));paintPopulation(pin,lookup.get(style.zip));
       pin.setZIndexOffset(active?2000:style.home?1000:0);
     });
   }
@@ -6553,7 +6716,7 @@ const ZipMap = (() => {
   function vertices(){return polygon?polygon.getLatLngs()[0].map(p=>({lat:p.lat,lng:p.lng})):[];}
   function clearArea() {
     areaReady=false;areaVersion++;savedButtons();
-    clearTimeout(editTimer);selectionVersion++;pinVersion++;selected=[];selectedSet.clear();radiusInfo=null;updateRadiusOrigin();
+    clearTimeout(editTimer);selectionVersion++;pinVersion++;selected=[];selectedSet.clear();refreshPopulation();radiusInfo=null;updateRadiusOrigin();
     if(map){map.pm.disableDraw();if(polygon)map.removeLayer(polygon);areaLayer.clearLayers();areaMarkers.clear();}
     polygon=null;drawing=false;$('zl-map-selected').value='';$('zl-map-copy').disabled=true;
     $('zl-map-measure').textContent='';$('zl-map-help').textContent='Double-click the map or choose Draw area. Drag the vertices to adjust your selection.';
@@ -6564,7 +6727,7 @@ const ZipMap = (() => {
     const revision=++selectionVersion,points=vertices(),dimensions=ZipMapCore.dimensions(points);
     $('zl-map-measure').textContent=dimensions?'Width '+dimensions.width.toFixed(1)+' mi · Height '+dimensions.height.toFixed(1)+' mi':'';
     selected=ZipMapCore.additional(lookup,points,projected.blocked);
-    selectedSet=new Set(selected.map(p=>p.zip));
+    selectedSet=new Set(selected.map(p=>p.zip));refreshPopulation();
     $('zl-map-selected').value=selected.map(p=>p.zip).join(',');$('zl-map-copy').disabled=!selected.length;
     const origin=radiusInfo?(radiusInfo.edited?'Edited area around ZIP '+radiusInfo.zip+'. ':'Initial '+radiusInfo.miles+'-mile radius around ZIP '+radiusInfo.zip+'. '):'';
     $('zl-map-help').textContent=lookup.size?origin+selected.length.toLocaleString()+' additional ZIPs. Used, New and pending ZIPs are excluded. Drag any boundary point to update.':'Upload ZIP coordinates before selecting an area.';
@@ -8606,6 +8769,10 @@ const ZipMap = (() => {
                   state_name: r.state_name.trim(),
                 },
                 old = lookup.get(value.zip);
+              const rawPopulation = String(r.population ?? "").trim();
+              value.population = rawPopulation === "" ? null : Number(rawPopulation);
+              if (rawPopulation !== "" && (!/^\d+$/.test(rawPopulation) || !Number.isSafeInteger(value.population)))
+                throw Error("Invalid population at CSV row " + (i + 2) + ".");
               const hasLat = parsed.meta.fields.includes("lat"), hasLng = parsed.meta.fields.includes("lng");
               if (hasLat !== hasLng) throw Error("CSV requires both lat and lng columns for map coordinates.");
               value.lat = hasLat && String(r.lat ?? "").trim() !== "" ? Number(r.lat) : null;
@@ -8615,7 +8782,7 @@ const ZipMap = (() => {
                 throw Error("Invalid latitude or longitude at CSV row " + (i + 2) + ".");
               if (
                 old &&
-                (old.city !== value.city || old.state_name !== value.state_name || old.lat !== value.lat || old.lng !== value.lng)
+                (old.city !== value.city || old.state_name !== value.state_name || old.lat !== value.lat || old.lng !== value.lng || old.population !== value.population)
               )
                 throw Error(
                   "CSV contains conflicting places for ZIP " + value.zip + ".",

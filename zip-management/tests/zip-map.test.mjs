@@ -103,7 +103,7 @@ test('local schema upgrade is repeatable and preserves pre-map ZIPs and city/sta
   const ctx=vm.createContext({query:(_db,sql)=>sqlite.prepare(sql).all()});
   vm.runInContext(html.match(/\/\/ BEGIN ZIP MAP STORAGE([\s\S]*?)\/\/ END ZIP MAP STORAGE/)[1]+'\nglobalThis.upgrade=migrateMapSchema;',ctx);
   ctx.upgrade(db);ctx.upgrade(db);
-  const row=sqlite.prepare('SELECT * FROM zip_places').get();assert.equal(row.zip,'00601');assert.equal(row.city,'Adjuntas');assert.equal(row.lat,null);assert.equal(row.lng,null);
+  const row=sqlite.prepare('SELECT * FROM zip_places').get();assert.equal(row.zip,'00601');assert.equal(row.city,'Adjuntas');assert.equal(row.lat,null);assert.equal(row.lng,null);assert.equal(row.population,null);
   assert.equal(sqlite.prepare('SELECT revision FROM subaccounts').get().revision,7);
   sqlite.prepare('UPDATE subaccounts SET home_zip=? WHERE id=?').run('00601','a');
   assert.equal(sqlite.prepare('SELECT home_zip FROM subaccounts').get().home_zip,'00601');
