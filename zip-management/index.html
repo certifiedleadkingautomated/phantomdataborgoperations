@@ -3898,6 +3898,32 @@
 }
 .zl-map-population-text { font-size: 9px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .zl-map-population-home { font-size: 16px; }
+
+/* Used summary: assignment is visual priority, never an action permission. */
+#zip-workspace .zl-chip[data-used-zip].czw-assigned {
+  background: #eaf3ff;
+  border-color: #91b4e6;
+  border-style: solid;
+  color: #214f85;
+}
+#zip-workspace .zl-chip[data-used-zip].czw-assigned .zl-used-zip-code { font-weight: 600; }
+#zip-workspace .zl-chip[data-used-zip].czw-assigned > button { color: #4b6f9d; }
+#zip-workspace .zl-chip[data-used-zip].czw-unassigned {
+  background: #f1f3f6;
+  border-color: #c5cdd8;
+  border-style: dashed;
+  color: #334155;
+  opacity: 0.8;
+}
+#zip-workspace .zl-chip[data-used-zip].czw-unassigned > button { color: #64748b; }
+#zip-workspace .zl-chip[data-used-zip].czw-unassigned:hover,
+#zip-workspace .zl-chip[data-used-zip].czw-unassigned:focus-within {
+  opacity: 1;
+  background: #edf0f4;
+  border-color: #aebaca;
+}
+#zip-workspace .zl-chip[data-used-zip].czw-assigned:has(input:checked) { outline-color: #356db2; }
+#zip-workspace .zl-chip[data-used-zip].czw-unassigned:has(input:checked) { opacity: 1; outline-color: #64748b; }
     </style>
   </head>
   <body>
@@ -7158,8 +7184,10 @@ const ZipMap = (() => {
         function knownContactTotal(item) {
           return Number.isSafeInteger(item?.total) && item.total >= 0 ? item.total : null;
         }
-        function sortUsedZipItems(items, order = "zip-asc", counts = new Map()) {
+        function sortUsedZipItems(items, order = "zip-asc", counts = new Map(), assigned) {
           return [...items].sort((a, b) => {
+            const priority = Number(assigned?.has(b.zip) ?? false) - Number(assigned?.has(a.zip) ?? false);
+            if (priority) return priority;
             const zipOrder = a.zip.localeCompare(b.zip);
             if (!order.startsWith("contacts-")) return zipOrder;
             const left = knownContactTotal(counts.get(a.zip)), right = knownContactTotal(counts.get(b.zip));
@@ -7293,7 +7321,7 @@ const ZipMap = (() => {
         function usedChip(z) {
           return el(
             "span",
-            { class: "zl-chip", "data-used-zip": z.zip },
+            { class: "zl-chip czw-assigned", "data-used-zip": z.zip, "data-used-assigned": "true" },
             el(
               "label",
               {},

@@ -95,3 +95,10 @@ test('loaded Used subtotal waits for account verification and distinguishes vali
  f.context.contactCounts.engine.accountState='error';f.update();assert.equal(f.node.textContent,'—');
  f.context.model.data.used=[];f.update();assert.equal(f.node.textContent,'0');
 });
+
+test('optional assignment priority sorts within two partitions without changing the ordinary comparator',()=>{
+ const codes=['00601','90210','33701','10001','00602'].map(zip=>({zip}));const own=new Set(['90210','00602']);
+ assert.deepEqual(zips(sort(codes,'zip-asc',counts,own)),['00602','90210','00601','10001','33701']);
+ assert.deepEqual(zips(sort(codes,'contacts-desc',counts,own)),['90210','00602','33701','10001','00601']);
+ assert.deepEqual(zips(sort(codes,'contacts-asc',counts,own)),['90210','00602','00601','10001','33701']);
+});
