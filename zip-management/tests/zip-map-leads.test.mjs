@@ -62,3 +62,52 @@ test('the live map adapter refuses stale account results and does not request wh
  assert.equal(await request('00601',new AbortController().signal),null);assert.equal(calls,1);
  context={key:'scope-a',ready:false};assert.equal(await request('00601',new AbortController().signal),null);assert.equal(calls,1);
 });
+
+test('lead progress includes queued work, zero results and failed requests without starting extra reads',async()=>{
+ const c=context({'00601':10,'00602':20,'00603':30,'00604':0}),used=[...c.counts.keys()];
+ const pending=new Map();let calls=0;
+ const session=new Session(()=>{}),request=zip=>{calls++;return new Promise((resolve,reject)=>pending.set(zip,{resolve,reject}));};
+ session.update(c,used,request,true);await settle();
+ assert.equal(JSON.stringify(session.progress()),JSON.stringify({ready:true,total:3,completed:0,failed:0}));assert.equal(calls,2);
+ pending.get('00601').resolve(0);await settle();
+ assert.equal(session.progress().completed,1);assert.equal(calls,3);
+ pending.get('00602').reject(Error('synthetic failure'));pending.get('00603').resolve(4);await settle();
+ assert.equal(JSON.stringify(session.progress()),JSON.stringify({ready:true,total:3,completed:3,failed:1}));
+ session.update(c,used,request,false);session.update(c,used,request,true);await settle();
+ assert.equal(session.progress().completed,3);assert.equal(calls,3);
+ c.counts.set('00603',{total:0});session.update(c,used,request,true);assert.equal(session.progress().total,2);assert.equal(session.progress().completed,2);
+ c.ready=false;session.update(c,used,request,true);assert.equal(session.progress().ready,false);assert.equal(session.progress().total,0);
+ const other=context({'10001':0});session.update(other,['10001'],request,true);assert.equal(session.progress().total,0);assert.equal(session.progress().failed,0);session.destroy();
+});
+
+test('closing pauses unfinished progress and reopening resumes the original page jobs',async()=>{
+ const c=context({'00601':10,'00602':20,'00603':30});let calls=0;const pending=[];
+ const request=()=>{calls++;return new Promise(resolve=>pending.push(resolve));};
+ const session=new Session(()=>{});session.update(c,[...c.counts.keys()],request,true);await settle();
+ session.update(c,[...c.counts.keys()],request,false);pending.splice(0).forEach(resolve=>resolve(1));await settle();
+ assert.equal(session.progress().completed,2);assert.equal(session.progress().total,3);assert.equal(calls,2);
+ session.update(c,[...c.counts.keys()],request,true);await settle();assert.equal(calls,3);assert.equal(session.progress().completed,2);
+ pending.shift()(0);await settle();assert.equal(session.progress().completed,3);session.destroy();
+});
+
+test('map search-bar status reports progress, completion, failures and waiting without changing request state',()=>{
+ const controller=readFileSync(new URL(solo?'../index.html':'../src/components/portal/client-zips/map-controller.js',import.meta.url),'utf8');
+ const start=controller.indexOf('  function setLeadStatus('),block=controller.slice(start,controller.indexOf('  function leadRequest(',start));
+ const status={textContent:'',title:'',attrs:{},setAttribute(key,value){this.attrs[key]=value;}};
+ let progress={ready:true,total:12,completed:3,failed:0};
+ const paint=vm.runInNewContext(block+'\npaintLeadStatus',{$:()=>status,leadSession:{progress:()=>progress}});
+ paint();assert.equal(status.textContent,'Leads: 3/12 ZIPs');assert.equal(status.attrs['aria-busy'],'true');
+ progress={ready:true,total:12,completed:12,failed:0};paint();assert.equal(status.textContent,'Leads loaded · 12 ZIPs');assert.equal(status.attrs['aria-busy'],'false');
+ progress.failed=2;paint();assert.equal(status.textContent,'Leads finished · 2 unavailable');assert.match(status.title,/10 of 12 ZIPs/);assert.equal(status.attrs['aria-busy'],'false');
+ progress={ready:true,total:0,completed:0,failed:0};paint();assert.equal(status.textContent,'Leads: no eligible ZIPs');
+ progress.ready=false;paint();assert.equal(status.textContent,'Leads: waiting for contacts');assert.equal(status.attrs['aria-busy'],'false');
+ const markup=readFileSync(new URL(solo?'../index.html':'../src/components/portal/client-zips/map-template.ts',import.meta.url),'utf8');
+ assert.match(markup,/<header class="zl-map-top">[\s\S]*?zl-map-search-form[\s\S]*?id="zl-map-lead-status"[^>]*role="status"[\s\S]*?<\/header>/);
+});
+
+test('contact updates cannot replace the loading status or resume old pins before the new map reference loads',()=>{
+ const controller=readFileSync(new URL(solo?'../index.html':'../src/components/portal/client-zips/map-controller.js',import.meta.url),'utf8');
+ const start=controller.indexOf('  function paintLeadPins('),block=controller.slice(start,controller.indexOf('  // END ZIP MAP LEAD PINS',start));
+ let calls=0;const api=vm.runInNewContext(block+'\n({paintLeadPins,refreshLeads})',{leadMapReady:false,options:{getContacts:()=>{calls++;return null;}}});
+ api.paintLeadPins();api.refreshLeads();assert.equal(calls,0);
+});

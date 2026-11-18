@@ -3924,7 +3924,33 @@
 }
 #zip-workspace .zl-chip[data-used-zip].czw-assigned:has(input:checked) { outline-color: #356db2; }
 #zip-workspace .zl-chip[data-used-zip].czw-unassigned:has(input:checked) { opacity: 1; outline-color: #64748b; }
-    </style>
+    .zl-map-lead-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.zl-map-lead-status[aria-busy="true"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border: 1.5px solid #d8e0e9;
+  border-top-color: #50749e;
+  border-radius: 50%;
+  animation: zl-map-lead-spin 0.8s linear infinite;
+}
+@keyframes zl-map-lead-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zl-map-lead-status[aria-busy="true"]::before { animation: none; }
+}
+
+</style>
   </head>
   <body>
     <aside class="sidebar" aria-label="Portal sidebar (design only)">
@@ -4764,6 +4790,7 @@
       <button type="submit" id="zl-map-search-submit">Find</button>
       <button type="button" id="zl-map-search-clear" aria-label="Clear ZIP search" hidden>×</button>
     </form>
+    <span id="zl-map-lead-status" class="zl-map-lead-status" role="status" aria-live="polite" aria-atomic="true" aria-busy="false"></span>
     <form id="zl-map-home-form">
       <label for="zl-map-home">Home ZIP <span>(test)</span></label>
       <input id="zl-map-home" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="Optional" aria-label="Home ZIP for this test subaccount" />
@@ -6618,7 +6645,8 @@ class MapLeadSession {
       if (!positive(context.counts.get(zip))) continue;
       const previous = record.entries.get(zip);
       if (previous) {
-        if (!previous.done && record.queue.includes(previous)) previous.request = request;
+        if (!previous.done && record.queue.includes(previous))
+          previous.request = request;
         continue;
       }
       const job = { zip, request, total: null, done: false };
@@ -6627,8 +6655,30 @@ class MapLeadSession {
     }
     pump(record);
   }
+  progress() {
+    const progress = {
+      ready: Boolean(this.context?.ready),
+      total: 0,
+      completed: 0,
+      failed: 0,
+    };
+    if (!progress.ready) return progress;
+    for (const zip of this.used) {
+      if (!positive(this.context.counts.get(zip))) continue;
+      progress.total++;
+      const job = this.record?.entries.get(zip);
+      if (!job?.done) continue;
+      progress.completed++;
+      if (job.total === null) progress.failed++;
+    }
+    return progress;
+  }
   value(zip) {
-    if (!this.context?.ready || !this.used.has(zip) || !positive(this.context.counts.get(zip)))
+    if (
+      !this.context?.ready ||
+      !this.used.has(zip) ||
+      !positive(this.context.counts.get(zip))
+    )
       return null;
     const value = this.record?.entries.get(zip);
     return value?.done && value.total > 0 ? value.total : null;
@@ -6639,7 +6689,6 @@ class MapLeadSession {
     this.record = null;
   }
 }
-
 // END ZIP MAP LEAD SESSION
 
 const ZipMap = (() => {
@@ -6700,29 +6749,91 @@ const ZipMap = (() => {
   function setError(message) { $('zl-map-error').textContent=message||'';$('zl-map-error').hidden=!message; }
   // BEGIN ZIP MAP LEAD PINS
   const leadSession = new MapLeadSession(() => paintLeadPins());
-  let usedLeadZips = new Set();
+  let usedLeadZips = new Set(),
+    leadMapReady = false;
+  function setLeadStatus(text, loading = false, detail = "") {
+    const status = $("zl-map-lead-status");
+    if (!status) return;
+    status.textContent = text;
+    status.setAttribute("aria-busy", String(loading));
+    status.title = detail;
+  }
+  function paintLeadStatus() {
+    const { ready, total, completed, failed } = leadSession.progress();
+    if (!ready) {
+      setLeadStatus("Leads: waiting for contacts");
+      return;
+    }
+    const detail =
+      "Only Used ZIPs with a loaded contact count above zero are checked.";
+    if (completed < total)
+      setLeadStatus(`Leads: ${completed}/${total} ZIPs`, true, detail);
+    else if (failed)
+      setLeadStatus(
+        `Leads finished · ${failed} unavailable`,
+        false,
+        `${completed - failed} of ${total} ZIPs checked. Reload the page to retry unavailable requests.`,
+      );
+    else
+      setLeadStatus(
+        total
+          ? `Leads loaded · ${total} ZIP${total === 1 ? "" : "s"}`
+          : "Leads: no eligible ZIPs",
+        false,
+        detail,
+      );
+  }
   function leadRequest(context) {
-    const key = context?.key, read = options?.readLeadCount;
+    const key = context?.key,
+      read = options?.readLeadCount;
     return async (zip, signal) => {
       const current = options?.getContacts?.();
-      if (!key || current?.key !== key || !current.ready || typeof read !== "function") return null;
+      if (
+        !key ||
+        current?.key !== key ||
+        !current.ready ||
+        typeof read !== "function"
+      )
+        return null;
       const total = await read(zip, signal);
       const latest = options?.getContacts?.();
       return latest?.key === key && latest.ready ? total : null;
     };
   }
   function paintLeadPins() {
-    if (!map || !$("zl-map-dialog").open || !options?.getContacts) return;
+    if (
+      !leadMapReady ||
+      !map ||
+      !$("zl-map-dialog").open ||
+      !options?.getContacts
+    )
+      return;
     const context = options.getContacts();
     // Reconcile readiness before painting, so late replies cannot revive stale data.
-    leadSession.update(context, [...usedLeadZips], leadRequest(context), $("zl-map-dialog").open);
+    leadSession.update(
+      context,
+      [...usedLeadZips],
+      leadRequest(context),
+      $("zl-map-dialog").open,
+    );
+    paintLeadStatus();
     for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));
   }
   function refreshLeads() {
-    if (!options?.getContacts) return;
-    usedLeadZips = new Set((options.getSnapshot()?.used || []).map(p => p.zip).filter(zip => lookup.has(zip)));
+    if (!leadMapReady || !options?.getContacts) return;
+    usedLeadZips = new Set(
+      (options.getSnapshot()?.used || [])
+        .map((p) => p.zip)
+        .filter((zip) => lookup.has(zip)),
+    );
     const context = options.getContacts();
-    leadSession.update(context, [...usedLeadZips], leadRequest(context), !!map && $("zl-map-dialog").open);
+    leadSession.update(
+      context,
+      [...usedLeadZips],
+      leadRequest(context),
+      !!map && $("zl-map-dialog").open,
+    );
+    paintLeadStatus();
     for (const [zip, pin] of baseMarkers) paintPopulation(pin, lookup.get(zip));
   }
   // END ZIP MAP LEAD PINS
@@ -6993,17 +7104,17 @@ const ZipMap = (() => {
   async function open(config) {
     suspended=false;requestedCodes=[];recentlyAdded.clear();
     savedAreas=[];areasCanManage=false;areasBusy=false;areaReady=false;savedList();areaStatus('');
-    options=config;const current=++session,dialog=$('zl-map-dialog');
+    options=config;leadMapReady=false;setLeadStatus("Loading leads…",true);const current=++session,dialog=$('zl-map-dialog');
     if(!dialog.open)dialog.showModal();
     setError('');$('zl-map-loading').hidden=false;$('zl-map-draw').disabled=true;
     data=config.getSnapshot();$('zl-map-home').value=data.home_zip||'';
     try {
       const [,rows]=await Promise.all([libraries(),config.readReference()]);
       if(current!==session||!dialog.open)return;
-      data=config.getSnapshot();lookup=ZipMapCore.reference(rows);setup();clearArea();clearSearch();
+      data=config.getSnapshot();lookup=ZipMapCore.reference(rows);leadMapReady=true;setup();clearArea();clearSearch();
       map.invalidateSize();pins(true);refreshLeads();$('zl-map-draw').disabled=!lookup.size;
       void loadSaved(current,config);
-    } catch(error){if(current===session)setError(error.message);}
+    } catch(error){if(current===session){setError(error.message);setLeadStatus("Leads unavailable");}}
     finally {if(current===session)$('zl-map-loading').hidden=true;}
   }
   $('zl-map-close').addEventListener('click',()=>$('zl-map-dialog').close());
